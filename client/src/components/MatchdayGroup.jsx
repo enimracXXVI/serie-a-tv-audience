@@ -18,18 +18,18 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, highlightS
   return (
     <section
       id={`matchday-${matchday}`}
-      className="scroll-mt-4 rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden"
+      className="scroll-mt-4 rounded-2xl bg-white overflow-hidden shadow-lg shadow-black/20"
     >
       <header
-        className="flex items-baseline justify-between px-4 py-2.5"
-        style={{ borderBottom: `2px solid ${accent}55` }}
+        className="flex items-baseline justify-between px-4 py-2.5 border-b-2"
+        style={{ borderBottomColor: accent }}
       >
-        <h3 className="text-sm font-bold tracking-wide text-white">
+        <h3 className="text-sm font-bold tracking-wide text-[#0f1e54]">
           Matchday {matchday}
         </h3>
-        <span className="text-xs text-white/40">{range}</span>
+        <span className="text-xs text-gray-400">{range}</span>
       </header>
-      <div className="divide-y divide-white/[0.04] px-1 py-1">
+      <div className="divide-y divide-gray-100 px-1 py-1">
         {fixtures.map((f) => (
           <FixtureRow
             key={f.id}

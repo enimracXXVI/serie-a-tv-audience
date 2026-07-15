@@ -39,7 +39,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-white/10 bg-gradient-to-br from-[#003d24] to-[#00a651] px-6 py-8">
+      <header className="border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-8">
         <div className="mx-auto max-w-6xl">
           <div className="flex items-center justify-between gap-4">
             <h1 className="text-2xl font-black text-white sm:text-3xl">Serie A 26/27</h1>

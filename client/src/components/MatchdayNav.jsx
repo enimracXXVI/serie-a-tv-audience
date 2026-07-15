@@ -1,4 +1,4 @@
-export default function MatchdayNav({ matchdays, accent = '#00a651' }) {
+export default function MatchdayNav({ matchdays, accent = '#1fd8c9' }) {
   if (matchdays.length === 0) return null;
 
   return (
@@ -7,10 +7,16 @@ export default function MatchdayNav({ matchdays, accent = '#00a651' }) {
         <a
           key={md}
           href={`#matchday-${md}`}
-          className="flex h-7 min-w-7 items-center justify-center rounded-md border border-white/10 bg-white/[0.04] px-1.5 text-xs font-semibold text-white/70 transition-colors hover:text-white"
-          style={{ '--hover-border': accent }}
-          onMouseEnter={(e) => (e.currentTarget.style.borderColor = accent)}
-          onMouseLeave={(e) => (e.currentTarget.style.borderColor = '')}
+          className="flex h-7 min-w-7 items-center justify-center rounded-full border-2 px-2 text-xs font-bold text-white transition-colors"
+          style={{ borderColor: accent }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = accent;
+            e.currentTarget.style.color = '#0f1e54';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '';
+            e.currentTarget.style.color = '';
+          }}
         >
           {md}
         </a>
