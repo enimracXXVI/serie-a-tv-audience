@@ -5,7 +5,7 @@
   "scripts": {
     "install:all": "npm install --prefix client",
     "dev": "npm run dev --prefix client",
-    "preview:full": "npm run preview:full --prefix client",
+    "build": "npm run build --prefix client",
     "generate:crests": "node scripts/generate-crests.mjs"
   }
 }

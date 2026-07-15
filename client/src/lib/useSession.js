@@ -1,25 +1,31 @@
-import { useCallback, useEffect, useState } from 'react';
-import { getSession, logout as apiLogout } from './api.js';
+import { useCallback, useState } from 'react';
+import { getStoredSession, signIn as googleSignIn, signOut as googleSignOut } from './googleAuth.js';
 
 export function useSession() {
-  const [login, setLogin] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState(() => getStoredSession());
 
-  useEffect(() => {
-    getSession()
-      .then((data) => setLogin(data.login))
-      .finally(() => setLoading(false));
+  const signIn = useCallback(async () => {
+    try {
+      const s = await googleSignIn();
+      setSession(s);
+      return s;
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
   }, []);
 
-  const signIn = useCallback(() => {
-    const next = window.location.pathname + window.location.search;
-    window.location.href = `/api/auth/login?next=${encodeURIComponent(next)}`;
+  const signOut = useCallback(() => {
+    googleSignOut();
+    setSession(null);
   }, []);
 
-  const signOut = useCallback(async () => {
-    await apiLogout();
-    setLogin(null);
-  }, []);
-
-  return { login, loading, signedIn: Boolean(login), signIn, signOut };
+  return {
+    loading: false,
+    signedIn: Boolean(session?.accessToken),
+    login: session?.email ?? null,
+    accessToken: session?.accessToken ?? null,
+    signIn,
+    signOut,
+  };
 }

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Serie A 2026/27 · TV Audience Tracker</title>
+    <!--
+      GitHub Pages has no server-side routing, so a direct visit or refresh on
+      a client-side route (e.g. /calendar/juventus) 404s here. This redirects
+      to the app's index.html with the path encoded in the query string; a
+      matching script in index.html restores it. Standard, widely-used
+      technique for SPAs on GitHub Pages (spa-github-pages pattern).
+    -->
+    <script type="text/javascript">
+      var segmentCount = 1; // preserve "/serie-a-tv-audience" as the base path
+      var l = window.location;
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        l.pathname.split('/').slice(0, 1 + segmentCount).join('/') + '/?/' +
+        l.pathname.slice(1).split('/').slice(segmentCount).join('/').replace(/&/g, '~and~') +
+        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>

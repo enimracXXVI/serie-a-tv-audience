@@ -7,123 +7,119 @@ colors and crests of any teams you select.
 
 ## Stack
 
-Everything runs as a single Cloudflare Worker — no separate server to babysit:
+This is a plain static site — no server, no database to host, nothing that
+can be blocked by a corporate proxy the way `workers.dev` was:
 
 - **client/src** — Vite + React + Tailwind CSS v4, with `react-router` for the
   home page and per-team-selection branded calendar pages, built to
-  `client/dist`.
-- **client/worker** — the Worker entry point (`index.js`) and API routes
-  (fixtures, teams, GitHub-OAuth sign-in). It serves the built frontend via a
-  static-assets binding and handles everything under `/api/*` itself.
-- **client/migrations** — SQL schema + seed data for Cloudflare D1
-  (SQLite-compatible), which is where fixtures/results/audience actually live.
-- Anyone can view the calendar; only GitHub accounts listed in
-  `ALLOWED_GITHUB_LOGINS` (an env var, see setup below) can edit
-  results/audience. Sign-in is a normal "Sign in with GitHub" button — no
-  tokens to paste or lose, works the same on any device.
+  `client/dist` and deployed to **GitHub Pages**.
+- **Data** lives in a **Google Sheet**, not a database. The browser talks to
+  it directly via the Google Sheets API: reads use a restricted, public API
+  key (no sign-in needed just to browse); writes require "Sign in with
+  Google" and only succeed for Google accounts that have Editor access to the
+  Sheet — that permission check is Google Drive's own, not something this app
+  has to enforce itself.
+- **Auth** is Google Identity Services' client-side token flow — a popup,
+  no backend, no secret, works identically on any device. The sign-in token
+  lasts about an hour; after that, editing again just prompts a quick
+  re-sign-in.
 - Club crests are generated shield badges (`scripts/generate-crests.mjs`)
   built from each club's real primary/secondary colors — this dev sandbox has
   no outbound access to fetch actual crest artwork. Drop real PNG/SVG logos
   into `client/public/crests/<team-slug>.svg` (see `client/src/data/teams.json`
   for slugs) to replace them; no code changes needed.
 
+I already created and seeded the Google Sheet in your Drive:
+https://docs.google.com/spreadsheets/d/1h3ZN2H5_ISzLUCW_AtbP2nFSRoMf7htwL8PYYAtRq4o/edit
+(380 fixtures loaded, columns: id, matchday, day, date, home, away, homeScore,
+awayScore, daznAudience, skyAudience, kickoffTime, updatedAt). Its ID is
+already in `client/src/lib/config.js` — you don't need to create a sheet.
+
 ## One-time setup
 
-Cloudflare's dashboard changes its layout/labels fairly often, so treat the
-wording below as approximate — go by what each step is *for*, not the exact
-button text. Do this once; after it's done, every merge to `main` redeploys
-automatically.
+### 1. Turn on GitHub Pages
 
-### 1. Connect the repo (you've done this part)
+Repo → **Settings → Pages → Build and deployment → Source** → set to
+**GitHub Actions**. That's it — `.github/workflows/deploy-pages.yml` builds
+and deploys `client/` on every push to `main` from here on. Push anything (or
+re-run the workflow from the **Actions** tab) to get the first deploy going;
+it'll be live at `https://<your-github-username>.github.io/serie-a-tv-audience/`.
 
-**Create Application** (may also be labelled "Create" under Workers/Compute)
-→ **Connect to Git** → select this repo. In the build configuration:
+### 2. Share the Google Sheet
 
-- **Path:** `client` (the app lives in this subfolder, not the repo root)
-- **Build command:** `npm run build`
-- **Deploy command:** leave as `npx wrangler deploy`
-- **Environment variables:** skip for now, added in step 4
+Open the Sheet linked above → **Share**:
+- Set general access to **Anyone with the link → Viewer** (needed so the
+  live site can read fixtures without anyone signing in).
+- Then explicitly add yourself (and anyone else who should be able to edit)
+  as **Editor** by email. This is the actual security boundary — only
+  accounts you add as Editor here can successfully save changes through the
+  app, no matter who signs in.
 
-Click through to create it. The very first build will fail — that's expected,
-it needs the D1 database from step 2 first.
+### 3. Google Cloud Console — one project, two credentials
 
-### 2. Create the D1 database and load the schema
+Go to [console.cloud.google.com](https://console.cloud.google.com), create a
+project (or use an existing one), then:
 
-1. Find **D1** in the Cloudflare sidebar (usually under a Storage/Databases
-   section) → **Create database** → name it `serie-a-tv-audience`.
-2. Open it → find its **Console** (a place to run raw SQL) → paste the entire
-   contents of `client/migrations/0001_init.sql` → run it. This creates the
-   `fixtures` table and loads all 380 fixtures.
-3. On the database's overview page, copy its **Database ID**.
+1. **APIs & Services → Library** → search **Google Sheets API** → **Enable**.
+2. **APIs & Services → OAuth consent screen**: User type **External**, fill
+   in the required fields (app name, your email). Leave publishing status as
+   **Testing** and add yourself (and any co-editors) under **Test users** —
+   no Google review needed for personal use like this.
+3. **APIs & Services → Credentials → Create credentials → API key.** Copy it.
+   Once you know your `github.io` URL from step 1, come back and restrict
+   this key: **Application restrictions → HTTP referrers**, add
+   `https://<your-github-username>.github.io/*`; **API restrictions** →
+   limit it to Google Sheets API.
+4. **Create credentials → OAuth client ID** → Application type **Web
+   application** → under **Authorized JavaScript origins** add
+   `https://<your-github-username>.github.io` (origin only, no path, no
+   trailing slash). Copy the **Client ID** — there's no client secret to
+   handle at all with this flow.
 
-### 3. Wire the database into the repo
+(If Google prompts you to attach a billing account before enabling the API —
+this happens on some newer Cloud projects even for free-tier usage — you can
+attach one without it costing anything; Sheets API + OAuth sign-in as used
+here stay within the free quota.)
 
-Open `client/wrangler.toml` and replace `REPLACE_WITH_YOUR_D1_DATABASE_ID`
-with the ID you copied, then commit and push to `main`. Bindings for
-`wrangler deploy` are declared in this file — once it has the real ID, the
-next deploy will connect the Worker to the database automatically, no extra
-dashboard step needed.
+### 4. Wire the credentials in
 
-### 4. Create a GitHub OAuth App (this is what "Sign in with GitHub" uses)
+Send me the API key and the OAuth Client ID (neither is a secret — safe to
+share) and I'll drop them into `client/src/lib/config.js` and push. Or edit
+that file yourself:
 
-By now the project has a live URL (something like
-`https://serie-a-tv-audience.<your-subdomain>.workers.dev` — check the
-Cloudflare project page for the exact one).
+```js
+export const GOOGLE_API_KEY = '...';       // from step 3.3
+export const GOOGLE_CLIENT_ID = '...';     // from step 3.4
+```
 
-1. GitHub → **Settings → Developer settings → OAuth Apps → New OAuth App**.
-2. **Homepage URL:** that live URL.
-3. **Authorization callback URL:** `<that live URL>/api/auth/callback`.
-4. Create it, then **Generate a new client secret** — copy both the Client ID
-   and the Client Secret now (the secret is shown once).
+Push to `main` — GitHub Pages redeploys automatically.
 
-### 5. Set environment variables
+### 5. Test it
 
-On the project → its environment variables settings (the same kind of
-"Environment variables" section you saw when creating it, now editable in
-project settings):
-
-| Variable | Value |
-|---|---|
-| `GITHUB_CLIENT_ID` | from step 4 |
-| `GITHUB_CLIENT_SECRET` | from step 4 — mark it secret/encrypted if offered |
-| `SESSION_SECRET` | any long random string you make up once — mark it secret |
-| `ALLOWED_GITHUB_LOGINS` | your GitHub username (comma-separate for more than one editor) |
-
-Redeploy (retry the latest deployment, or just push anything) so the
-variables take effect.
-
-Visit the live URL, click **Sign in to edit**, authorize with GitHub, and
-confirm you can edit a score.
+Visit the live URL, confirm the calendar loads with no sign-in. Click
+**Sign in to edit**, authorize with your Google account, and confirm you can
+save a score. If a teammate should also be able to edit, add their Google
+account as a Sheet Editor (step 2) — no code or config change needed.
 
 ## Running locally (optional, for development)
 
 ```bash
 cd client
 npm install
-npm run dev              # UI only, fast iteration, no API/DB
-# or, to test the full stack (API + local D1) before pushing:
-npm run db:migrate:local  # one-time: loads schema into a local D1 emulation
-npm run preview:full      # builds and serves the Worker + local D1 together
+npm run dev
 ```
 
-## API
-
-- `GET /api/teams` — team metadata (name, crest slug, colors).
-- `GET /api/fixtures?teams=slug1,slug2` — fixtures, optionally filtered to
-  matches involving any of the given team slugs. Public, read-only.
-- `PATCH /api/fixtures/:id` — update `kickoffTime`, `homeScore`, `awayScore`,
-  `daznAudience`, `skyAudience`. Requires a signed-in session cookie from an
-  allow-listed GitHub account.
-- `GET /api/auth/login`, `GET /api/auth/callback`, `GET /api/auth/me`,
-  `POST /api/auth/logout` — GitHub OAuth sign-in.
+Reads/writes still go straight to the real Google Sheet from your local
+browser, so `npm run dev` needs the same credentials in `config.js` as
+production — there's no separate local backend to run.
 
 ## Data storage
 
-Fixtures/results/audience live in Cloudflare D1 (SQLite-compatible), not in
-Google Sheets and not in a self-hosted server — this keeps the whole app on
-one free, git-connected platform with nothing to patch or restart. See the
-original workbook (`DASHBOARD`, `bigMatches`, `Coppa & Supercoppa` tabs) for
-reference data not yet wired into the app.
+Fixtures/results/audience live in a Google Sheet, read and written directly
+from the browser — no backend, no database to host, no hosting platform that
+could get blocked by a network filter. See the original workbook
+(`DASHBOARD`, `bigMatches`, `Coppa & Supercoppa` tabs) for reference data not
+yet wired into the app.
 
 ## Roadmap
 

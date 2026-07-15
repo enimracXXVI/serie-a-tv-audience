@@ -24,8 +24,12 @@ export default function HomePage() {
   }
 
   async function handleUpdate(id, fields) {
+    if (!session.signedIn) {
+      session.signIn();
+      return;
+    }
     try {
-      await updateFixture(id, fields);
+      await updateFixture(id, fields, session.accessToken);
     } catch (err) {
       if (err.message === 'UNAUTHENTICATED') session.signIn();
       else console.error(err);

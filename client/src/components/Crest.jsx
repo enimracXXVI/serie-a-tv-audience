@@ -11,7 +11,7 @@ export default function Crest({ team, size = 36 }) {
   }
   return (
     <img
-      src={`/crests/${team.slug}.svg`}
+      src={`${import.meta.env.BASE_URL}crests/${team.slug}.svg`}
       alt={`${team.name} crest`}
       width={size}
       height={size * 1.16}

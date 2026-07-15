@@ -1,15 +1,5 @@
-import { useEffect, useState } from 'react';
-import { getTeams } from './api.js';
+import { teams } from './teams.js';
 
 export function useTeams() {
-  const [teams, setTeams] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    getTeams()
-      .then(setTeams)
-      .finally(() => setLoading(false));
-  }, []);
-
-  return { teams, loading };
+  return { teams, loading: false };
 }

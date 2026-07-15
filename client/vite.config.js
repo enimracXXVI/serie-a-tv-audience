@@ -3,9 +3,12 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
-// API routes (/api/*) are Cloudflare Pages Functions (see ./functions).
-// For local dev with the API, run `npm run dev` via wrangler (see package.json),
-// which proxies static/HMR requests to this Vite server.
-export default defineConfig({
+// Data (fixtures/results/audience) lives in Google Sheets and is read/written
+// directly from the browser (see src/lib/sheets.js, src/lib/googleAuth.js).
+// This is a plain static site - no server, no functions/ directory.
+export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
-})
+  // GitHub Pages serves this as a project site at /serie-a-tv-audience/,
+  // so the build needs to know its own base path. Local dev stays at "/".
+  base: mode === 'production' ? '/serie-a-tv-audience/' : '/',
+}))
