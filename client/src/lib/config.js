@@ -4,9 +4,9 @@
 // the OAuth Client ID is a public identifier, same idea as GitHub's Client ID).
 export const SPREADSHEET_ID = '1h3ZN2H5_ISzLUCW_AtbP2nFSRoMf7htwL8PYYAtRq4o';
 
-// The tab name inside the spreadsheet holding the fixtures. Check the tab
-// label at the bottom of the sheet and update this if it isn't "Sheet1".
-export const SHEET_NAME = 'Sheet1';
+// The tab name inside the spreadsheet holding the fixtures (shown at the
+// bottom of the sheet).
+export const SHEET_NAME = 'fixtures';
 
 // Fill these in after creating them in Google Cloud Console (see README).
 export const GOOGLE_API_KEY = 'AIzaSyDr9C0S7FaRckKh4ZeNmnxjOWnU0WyrhVg';
