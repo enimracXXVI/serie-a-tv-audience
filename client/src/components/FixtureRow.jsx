@@ -11,12 +11,16 @@ function formatDateShort(dateStr) {
 }
 
 function DaznBadge() {
-  return <span className="rounded bg-black px-1.5 py-0.5 text-[9px] font-black tracking-wide text-white">DAZN</span>;
+  return (
+    <span className="rounded bg-black px-1 py-0.5 text-[8px] font-black tracking-wide text-white sm:px-1.5 sm:text-[9px]">
+      DAZN
+    </span>
+  );
 }
 
 function SkyBadge() {
   return (
-    <span className="rounded bg-gradient-to-r from-[#0a1440] to-[#0072ff] px-1.5 py-0.5 text-[9px] font-black italic tracking-wide text-white">
+    <span className="rounded bg-gradient-to-r from-[#0a1440] to-[#0072ff] px-1 py-0.5 text-[8px] font-black italic tracking-wide text-white sm:px-1.5 sm:text-[9px]">
       sky
     </span>
   );
@@ -25,10 +29,10 @@ function SkyBadge() {
 function ScoreDisplay({ homeScore, awayScore }) {
   const played = homeScore !== null && homeScore !== undefined && awayScore !== null && awayScore !== undefined;
   return (
-    <div className="flex items-center gap-1.5 text-sm font-bold text-[#0f1e54]">
-      <span className="w-8 text-center">{played ? homeScore : '-'}</span>
+    <div className="flex items-center gap-1 text-sm font-bold text-[#0f1e54]">
+      <span className="w-6 text-center">{played ? homeScore : '-'}</span>
       <span className="text-gray-300 text-xs">-</span>
-      <span className="w-8 text-center">{played ? awayScore : '-'}</span>
+      <span className="w-6 text-center">{played ? awayScore : '-'}</span>
     </div>
   );
 }
@@ -78,16 +82,18 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
   }
 
   return (
-    <div className="px-3 py-2.5">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-        <div className="flex items-center justify-end gap-2 min-w-0">
+    <div className="px-2 py-2 sm:px-3 sm:py-2.5">
+      <div className="grid grid-cols-[1fr_auto_auto_auto_1fr] items-center gap-1 sm:gap-2">
+        <div className="flex items-center justify-end gap-1.5 min-w-0 sm:gap-2">
           <span
-            className={`truncate text-sm text-right ${homeHighlighted ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}
+            className={`truncate text-xs sm:text-sm text-right ${homeHighlighted ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}
           >
             {home.name}
           </span>
-          <Crest team={home} size={26} />
+          <Crest team={home} size={24} />
         </div>
+
+        <DaznBadge />
 
         <button
           onClick={handleSummaryClick}
@@ -97,41 +103,34 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
           <ScoreDisplay homeScore={fixture.homeScore} awayScore={fixture.awayScore} />
         </button>
 
-        <div className="flex items-center gap-2 min-w-0">
-          <Crest team={away} size={26} />
-          <span className={`truncate text-sm ${awayHighlighted ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}>
+        {fixture.onSky ? <SkyBadge /> : <span />}
+
+        <div className="flex items-center gap-1.5 min-w-0 sm:gap-2">
+          <Crest team={away} size={24} />
+          <span className={`truncate text-xs sm:text-sm ${awayHighlighted ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}>
             {away.name}
           </span>
         </div>
       </div>
 
-      <div className="mt-1.5 flex items-center justify-center gap-1.5 text-[11px] text-gray-400">
-        {metaText && <span className="mr-0.5">{metaText}</span>}
-        <DaznBadge />
-        {fixture.onSky && <SkyBadge />}
-      </div>
+      {metaText && <div className="mt-1 text-center text-[10px] text-gray-400">{metaText}</div>}
 
       {expanded && canEdit && (
         <div className="mt-3 grid grid-cols-2 gap-3 rounded-lg bg-gray-50 p-3 sm:grid-cols-4">
           <Field label="Date">
             <input
               type="date"
-              defaultValue={fixture.date ?? ''}
+              value={fixture.date ?? ''}
               className={inputClass}
-              onBlur={(e) => {
-                if (e.target.value !== (fixture.date ?? '')) onUpdate(fixture.id, { date: e.target.value || null });
-              }}
+              onChange={(e) => onUpdate(fixture.id, { date: e.target.value || null })}
             />
           </Field>
           <Field label="Kickoff time">
             <input
               type="time"
-              defaultValue={fixture.kickoffTime ?? ''}
+              value={fixture.kickoffTime ?? ''}
               className={inputClass}
-              onBlur={(e) => {
-                if (e.target.value !== (fixture.kickoffTime ?? ''))
-                  onUpdate(fixture.id, { kickoffTime: e.target.value || null });
-              }}
+              onChange={(e) => onUpdate(fixture.id, { kickoffTime: e.target.value || null })}
             />
           </Field>
           <NumberField
@@ -165,7 +164,7 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
           <NumberField
             label="DAZN simulcast audience"
             value={fixture.daznSimulcastAudience}
-            placeholder="M"
+            placeholder="M · enter once per shared slot"
             onCommit={(v) => onUpdate(fixture.id, { daznSimulcastAudience: v })}
           />
           <label className="flex items-center gap-2 self-end pb-1.5">

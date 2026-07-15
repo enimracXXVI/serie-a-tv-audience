@@ -1,24 +1,5 @@
 import { SPREADSHEET_ID, SHEET_NAME, GOOGLE_API_KEY } from './config.js';
 
-// Columns A-P in the sheet, in order.
-const COLUMNS = [
-  'id',
-  'matchday',
-  'day',
-  'date',
-  'home',
-  'away',
-  'homeScore',
-  'awayScore',
-  'daznAudience',
-  'skyAudience',
-  'kickoffTime',
-  'updatedAt',
-  'onSky',
-  'addedTime1H',
-  'addedTime2H',
-  'daznSimulcastAudience',
-];
 const NUMERIC_FIELDS = new Set([
   'id',
   'matchday',
@@ -31,9 +12,45 @@ const NUMERIC_FIELDS = new Set([
   'daznSimulcastAudience',
 ]);
 const BOOLEAN_FIELDS = new Set(['onSky']);
+const EDITABLE_FIELDS = [
+  'date',
+  'homeScore',
+  'awayScore',
+  'daznAudience',
+  'skyAudience',
+  'kickoffTime',
+  'onSky',
+  'addedTime1H',
+  'addedTime2H',
+  'daznSimulcastAudience',
+];
 
-// Rows 2-381 hold the 380 seeded fixtures; row 1 is the header.
-const DATA_RANGE = `${SHEET_NAME}!A2:P381`;
+// Generous range: columns can be reordered/added by name (see rowToFixture),
+// rows must stay in seeded order (row N+1 holds fixture id N).
+const FULL_RANGE = `${SHEET_NAME}!A1:Z500`;
+
+// Cached after the first successful fetch so writes don't need their own
+// header lookup round-trip.
+let headerIndexCache = null;
+
+function columnIndexToLetter(index) {
+  let letter = '';
+  let n = index + 1;
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    letter = String.fromCharCode(65 + rem) + letter;
+    n = Math.floor((n - 1) / 26);
+  }
+  return letter;
+}
+
+function buildHeaderIndex(headerRow) {
+  const index = {};
+  (headerRow || []).forEach((name, i) => {
+    if (name) index[String(name).trim()] = i;
+  });
+  return index;
+}
 
 function excelSerialToISODate(serial) {
   const epoch = Date.UTC(1899, 11, 30);
@@ -44,10 +61,10 @@ function cell(row, index) {
   return row[index] === undefined || row[index] === '' ? null : row[index];
 }
 
-function rowToFixture(row) {
+function rowToFixture(row, headerIndex) {
   const obj = {};
-  COLUMNS.forEach((key, i) => {
-    let value = cell(row, i);
+  for (const [key, idx] of Object.entries(headerIndex)) {
+    let value = cell(row, idx);
     if (key === 'date' && typeof value === 'number') {
       value = excelSerialToISODate(value);
     } else if (BOOLEAN_FIELDS.has(key)) {
@@ -56,13 +73,13 @@ function rowToFixture(row) {
       value = Number(value);
     }
     obj[key] = value;
-  });
+  }
   return obj;
 }
 
 export async function fetchFixtures() {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(
-    DATA_RANGE
+    FULL_RANGE
   )}?key=${GOOGLE_API_KEY}&valueRenderOption=UNFORMATTED_VALUE&_=${Date.now()}`;
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) {
@@ -76,38 +93,51 @@ export async function fetchFixtures() {
     throw new Error(`Failed to load fixtures (${res.status})${detail ? `: ${detail}` : ''}`);
   }
   const data = await res.json();
-  return (data.values || []).map(rowToFixture);
+  const rows = data.values || [];
+  const [headerRow, ...dataRows] = rows;
+  const headerIndex = buildHeaderIndex(headerRow);
+  headerIndexCache = headerIndex;
+  return dataRows.filter((r) => r.length > 0 && r[headerIndex.id] !== undefined).map((r) => rowToFixture(r, headerIndex));
+}
+
+async function ensureHeaderIndex() {
+  if (headerIndexCache) return headerIndexCache;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(
+    `${SHEET_NAME}!1:1`
+  )}?key=${GOOGLE_API_KEY}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to read sheet header row');
+  const data = await res.json();
+  headerIndexCache = buildHeaderIndex((data.values && data.values[0]) || []);
+  return headerIndexCache;
 }
 
 export async function updateFixtureRow(fixture, accessToken) {
+  const headerIndex = await ensureHeaderIndex();
   const rowNumber = Number(fixture.id) + 1; // header occupies row 1
   const updatedAt = new Date().toISOString();
+  const patch = { ...fixture, updatedAt };
 
-  const data = [
-    {
-      range: `${SHEET_NAME}!D${rowNumber}:D${rowNumber}`,
+  const data = [];
+  const missing = [];
+  for (const field of [...EDITABLE_FIELDS, 'updatedAt']) {
+    const colIdx = headerIndex[field];
+    if (colIdx === undefined) {
+      missing.push(field);
+      continue;
+    }
+    const letter = columnIndexToLetter(colIdx);
+    const value = BOOLEAN_FIELDS.has(field) ? Boolean(patch[field]) : patch[field] ?? '';
+    data.push({
+      range: `${SHEET_NAME}!${letter}${rowNumber}:${letter}${rowNumber}`,
       majorDimension: 'ROWS',
-      values: [[fixture.date ?? '']],
-    },
-    {
-      range: `${SHEET_NAME}!G${rowNumber}:P${rowNumber}`,
-      majorDimension: 'ROWS',
-      values: [
-        [
-          fixture.homeScore ?? '',
-          fixture.awayScore ?? '',
-          fixture.daznAudience ?? '',
-          fixture.skyAudience ?? '',
-          fixture.kickoffTime ?? '',
-          updatedAt,
-          Boolean(fixture.onSky),
-          fixture.addedTime1H ?? '',
-          fixture.addedTime2H ?? '',
-          fixture.daznSimulcastAudience ?? '',
-        ],
-      ],
-    },
-  ];
+      values: [[value]],
+    });
+  }
+
+  if (data.length === 0) {
+    throw new Error('No matching column headers found in the sheet - check row 1 has the expected labels');
+  }
 
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values:batchUpdate`;
   const res = await fetch(url, {
@@ -121,6 +151,9 @@ export async function updateFixtureRow(fixture, accessToken) {
 
   if (res.status === 401 || res.status === 403) throw new Error('UNAUTHENTICATED');
   if (!res.ok) throw new Error('Failed to save to Google Sheets');
+  if (missing.length > 0) {
+    console.warn(`Sheet is missing header(s) for: ${missing.join(', ')} - those fields were not saved.`);
+  }
 
   return { ...fixture, updatedAt };
 }
