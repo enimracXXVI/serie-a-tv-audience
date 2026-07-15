@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Crest from './Crest.jsx';
+import { DaznLogo, SkyLogo } from './BroadcastBadges.jsx';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
@@ -8,22 +9,6 @@ function formatDateShort(dateStr) {
   if (!dateStr) return null;
   const d = new Date(`${dateStr}T00:00:00`);
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-}
-
-function DaznBadge() {
-  return (
-    <span className="rounded bg-black px-1 py-0.5 text-[8px] font-black tracking-wide text-white sm:px-1.5 sm:text-[9px]">
-      DAZN
-    </span>
-  );
-}
-
-function SkyBadge() {
-  return (
-    <span className="rounded bg-gradient-to-r from-[#0a1440] to-[#0072ff] px-1 py-0.5 text-[8px] font-black italic tracking-wide text-white sm:px-1.5 sm:text-[9px]">
-      sky
-    </span>
-  );
 }
 
 function ScoreDisplay({ homeScore, awayScore }) {
@@ -83,37 +68,46 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
 
   return (
     <div className="px-2 py-2 sm:px-3 sm:py-2.5">
-      <div className="grid grid-cols-[1fr_auto_auto_auto_1fr] items-center gap-1 sm:gap-2">
-        <div className="flex items-center justify-end gap-1.5 min-w-0 sm:gap-2">
-          <span
-            className={`truncate text-xs sm:text-sm text-right ${homeHighlighted ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}
+      <div className="flex items-center gap-2">
+        <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1 sm:gap-2 min-w-0">
+          <div className="flex items-center justify-end gap-1.5 min-w-0 sm:gap-2">
+            <span
+              className={`truncate text-xs sm:text-sm text-right ${homeHighlighted ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}
+            >
+              {home.name}
+            </span>
+            <Crest team={home} size={24} />
+          </div>
+
+          <button
+            onClick={handleSummaryClick}
+            className="rounded-md px-1 py-1 transition-colors hover:bg-gray-100"
+            title={canEdit ? 'Edit match details' : 'Sign in to edit'}
           >
-            {home.name}
-          </span>
-          <Crest team={home} size={24} />
+            <ScoreDisplay homeScore={fixture.homeScore} awayScore={fixture.awayScore} />
+          </button>
+
+          <div className="flex items-center gap-1.5 min-w-0 sm:gap-2">
+            <Crest team={away} size={24} />
+            <span className={`truncate text-xs sm:text-sm ${awayHighlighted ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}>
+              {away.name}
+            </span>
+          </div>
         </div>
 
-        <DaznBadge />
-
-        <button
-          onClick={handleSummaryClick}
-          className="rounded-md px-1 py-1 transition-colors hover:bg-gray-100"
-          title={canEdit ? 'Edit match details' : 'Sign in to edit'}
-        >
-          <ScoreDisplay homeScore={fixture.homeScore} awayScore={fixture.awayScore} />
-        </button>
-
-        {fixture.onSky ? <SkyBadge /> : <span />}
-
-        <div className="flex items-center gap-1.5 min-w-0 sm:gap-2">
-          <Crest team={away} size={24} />
-          <span className={`truncate text-xs sm:text-sm ${awayHighlighted ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}>
-            {away.name}
-          </span>
+        <div className="hidden shrink-0 items-center gap-2 border-l border-gray-100 pl-3 sm:flex">
+          <DaznLogo height={14} />
+          {fixture.onSky && <SkyLogo height={14} />}
         </div>
       </div>
 
-      {metaText && <div className="mt-1 text-center text-[10px] text-gray-400">{metaText}</div>}
+      <div className="mt-1 flex items-center justify-center gap-2 text-[10px] text-gray-400">
+        {metaText && <span>{metaText}</span>}
+        <div className="flex items-center gap-1.5 sm:hidden">
+          <DaznLogo height={12} />
+          {fixture.onSky && <SkyLogo height={12} />}
+        </div>
+      </div>
 
       {expanded && canEdit && (
         <div className="mt-3 grid grid-cols-2 gap-3 rounded-lg bg-gray-50 p-3 sm:grid-cols-4">
