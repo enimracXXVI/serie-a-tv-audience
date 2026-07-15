@@ -9,5 +9,5 @@ export const SPREADSHEET_ID = '1h3ZN2H5_ISzLUCW_AtbP2nFSRoMf7htwL8PYYAtRq4o';
 export const SHEET_NAME = 'Sheet1';
 
 // Fill these in after creating them in Google Cloud Console (see README).
-export const GOOGLE_API_KEY = 'REPLACE_WITH_YOUR_GOOGLE_API_KEY';
-export const GOOGLE_CLIENT_ID = 'REPLACE_WITH_YOUR_GOOGLE_OAUTH_CLIENT_ID';
+export const GOOGLE_API_KEY = 'AIzaSyDr9C0S7FaRckKh4ZeNmnxjOWnU0WyrhVg';
+export const GOOGLE_CLIENT_ID = '469039071101-9mj46erho7lok1om9uuevtgn1j2p5q8u.apps.googleusercontent.com';
