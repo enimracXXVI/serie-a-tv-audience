@@ -16,7 +16,7 @@ export default function BrandedCalendarPage() {
     [slugsParam]
   );
   const { teams, loading: teamsLoading } = useTeams();
-  const { fixtures, loading: fixturesLoading, updateFixture } = useFixtures(slugs);
+  const { fixtures, loading: fixturesLoading, error: fixturesError, updateFixture } = useFixtures(slugs);
   const session = useSession();
 
   const selectedTeams = useMemo(
@@ -87,6 +87,10 @@ export default function BrandedCalendarPage() {
       <main className="mx-auto max-w-6xl px-6 py-8">
         {teamsLoading || fixturesLoading ? (
           <p className="text-white/40 text-sm">Loading calendar…</p>
+        ) : fixturesError ? (
+          <p className="rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-200">
+            {fixturesError}
+          </p>
         ) : (
           <CalendarView
             fixtures={fixtures}

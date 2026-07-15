@@ -10,7 +10,7 @@ import { getSavedTeams } from '../lib/savedTeams.js';
 
 export default function HomePage() {
   const { teams, loading: teamsLoading } = useTeams();
-  const { fixtures, loading: fixturesLoading, updateFixture } = useFixtures([]);
+  const { fixtures, loading: fixturesLoading, error: fixturesError, updateFixture } = useFixtures([]);
   const session = useSession();
   const [selected, setSelected] = useState(() => getSavedTeams());
   const navigate = useNavigate();
@@ -72,6 +72,10 @@ export default function HomePage() {
           <h2 className="text-sm font-bold uppercase tracking-wide text-white/70">Full season calendar</h2>
           {fixturesLoading ? (
             <p className="text-white/40 text-sm">Loading fixtures…</p>
+          ) : fixturesError ? (
+            <p className="rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-200">
+              {fixturesError}
+            </p>
           ) : (
             <CalendarView
               fixtures={fixtures}

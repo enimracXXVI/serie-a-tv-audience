@@ -48,7 +48,16 @@ export async function fetchFixtures() {
     DATA_RANGE
   )}?key=${GOOGLE_API_KEY}&valueRenderOption=UNFORMATTED_VALUE&_=${Date.now()}`;
   const res = await fetch(url, { cache: 'no-store' });
-  if (!res.ok) throw new Error('Failed to load fixtures from Google Sheets');
+  if (!res.ok) {
+    let detail = '';
+    try {
+      const body = await res.json();
+      detail = body?.error?.message || '';
+    } catch {
+      // response wasn't JSON; ignore
+    }
+    throw new Error(`Failed to load fixtures (${res.status})${detail ? `: ${detail}` : ''}`);
+  }
   const data = await res.json();
   return (data.values || []).map(rowToFixture);
 }
