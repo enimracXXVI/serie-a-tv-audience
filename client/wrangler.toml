@@ -9,4 +9,4 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "DB"
 database_name = "serie-a-tv-audience"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "158f374d-3820-4a93-b9f2-5abe94152b38"
