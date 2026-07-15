@@ -1,5 +1,5 @@
-import { serializeFixture } from '../../_shared/teams.js';
-import { verifySessionToken, parseCookies } from '../../_shared/session.js';
+import { serializeFixture, slugFor } from '../_shared/teams.js';
+import { verifySessionToken, parseCookies } from '../_shared/session.js';
 
 const COLUMN_MAP = {
   kickoffTime: 'kickoff_time',
@@ -16,14 +16,26 @@ function json(data, status = 200) {
   });
 }
 
-export async function onRequestPatch({ request, env, params }) {
-  const cookies = parseCookies(request);
-  const session = await verifySessionToken(cookies.session, env.SESSION_SECRET);
-  if (!session) {
-    return json({ error: 'Sign in required' }, 401);
+export async function handleFixturesList(request, env) {
+  const url = new URL(request.url);
+  const teamsParam = url.searchParams.get('teams');
+
+  const { results } = await env.DB.prepare('SELECT * FROM fixtures ORDER BY matchday, id').all();
+  let rows = results;
+
+  if (teamsParam) {
+    const wanted = new Set(teamsParam.split(',').filter(Boolean));
+    rows = rows.filter((r) => wanted.has(slugFor(r.home_team)) || wanted.has(slugFor(r.away_team)));
   }
 
-  const id = Number(params.id);
+  return json(rows.map(serializeFixture));
+}
+
+export async function handleFixturePatch(request, env, id) {
+  const cookies = parseCookies(request);
+  const session = await verifySessionToken(cookies.session, env.SESSION_SECRET);
+  if (!session) return json({ error: 'Sign in required' }, 401);
+
   const body = await request.json();
 
   const setClauses = [];
@@ -36,18 +48,16 @@ export async function onRequestPatch({ request, env, params }) {
     }
   }
 
-  if (setClauses.length === 0) {
-    return json({ error: 'No valid fields provided' }, 400);
-  }
+  if (setClauses.length === 0) return json({ error: 'No valid fields provided' }, 400);
 
   setClauses.push("updated_at = datetime('now')");
-  bindings.push(id);
+  bindings.push(Number(id));
 
   await env.DB.prepare(`UPDATE fixtures SET ${setClauses.join(', ')} WHERE id = ?`)
     .bind(...bindings)
     .run();
 
-  const row = await env.DB.prepare('SELECT * FROM fixtures WHERE id = ?').bind(id).first();
+  const row = await env.DB.prepare('SELECT * FROM fixtures WHERE id = ?').bind(Number(id)).first();
   if (!row) return json({ error: 'Fixture not found' }, 404);
 
   return json(serializeFixture(row));

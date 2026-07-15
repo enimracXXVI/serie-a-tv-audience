@@ -7,17 +7,18 @@ colors and crests of any teams you select.
 
 ## Stack
 
-Everything runs as a single Cloudflare Pages project — no separate server to
-babysit:
+Everything runs as a single Cloudflare Worker — no separate server to babysit:
 
 - **client/src** — Vite + React + Tailwind CSS v4, with `react-router` for the
-  home page and per-team-selection branded calendar pages.
-- **client/functions** — Cloudflare Pages Functions (the API): fixtures,
-  teams, and GitHub-OAuth-based sign-in, all deployed alongside the frontend.
+  home page and per-team-selection branded calendar pages, built to
+  `client/dist`.
+- **client/worker** — the Worker entry point (`index.js`) and API routes
+  (fixtures, teams, GitHub-OAuth sign-in). It serves the built frontend via a
+  static-assets binding and handles everything under `/api/*` itself.
 - **client/migrations** — SQL schema + seed data for Cloudflare D1
   (SQLite-compatible), which is where fixtures/results/audience actually live.
 - Anyone can view the calendar; only GitHub accounts listed in
-  `ALLOWED_GITHUB_LOGINS` (a Cloudflare env var, see setup below) can edit
+  `ALLOWED_GITHUB_LOGINS` (an env var, see setup below) can edit
   results/audience. Sign-in is a normal "Sign in with GitHub" button — no
   tokens to paste or lose, works the same on any device.
 - Club crests are generated shield badges (`scripts/generate-crests.mjs`)
@@ -26,64 +27,73 @@ babysit:
   into `client/public/crests/<team-slug>.svg` (see `client/src/data/teams.json`
   for slugs) to replace them; no code changes needed.
 
-## One-time setup (all via web dashboards, no CLI required)
+## One-time setup
 
-Do these once, in order. After this, every merge to `main` redeploys
-automatically — nothing else to run.
+Cloudflare's dashboard changes its layout/labels fairly often, so treat the
+wording below as approximate — go by what each step is *for*, not the exact
+button text. Do this once; after it's done, every merge to `main` redeploys
+automatically.
 
-### 1. Create a Cloudflare Pages project
+### 1. Connect the repo (you've done this part)
 
-1. Sign up free at [dash.cloudflare.com](https://dash.cloudflare.com).
-2. **Workers & Pages → Create → Pages → Connect to Git** → pick this repo.
-3. Build settings:
-   - **Root directory:** `client`
-   - **Build command:** `npm install && npm run build`
-   - **Build output directory:** `dist`
-4. Deploy. You'll get a URL like `https://serie-a-tv-audience.pages.dev` —
-   copy it, you need it in the next step.
+**Create Application** (may also be labelled "Create" under Workers/Compute)
+→ **Connect to Git** → select this repo. In the build configuration:
 
-### 2. Create a GitHub OAuth App (this is what "Sign in with GitHub" uses)
+- **Path:** `client` (the app lives in this subfolder, not the repo root)
+- **Build command:** `npm run build`
+- **Deploy command:** leave as `npx wrangler deploy`
+- **Environment variables:** skip for now, added in step 4
+
+Click through to create it. The very first build will fail — that's expected,
+it needs the D1 database from step 2 first.
+
+### 2. Create the D1 database and load the schema
+
+1. Find **D1** in the Cloudflare sidebar (usually under a Storage/Databases
+   section) → **Create database** → name it `serie-a-tv-audience`.
+2. Open it → find its **Console** (a place to run raw SQL) → paste the entire
+   contents of `client/migrations/0001_init.sql` → run it. This creates the
+   `fixtures` table and loads all 380 fixtures.
+3. On the database's overview page, copy its **Database ID**.
+
+### 3. Wire the database into the repo
+
+Open `client/wrangler.toml` and replace `REPLACE_WITH_YOUR_D1_DATABASE_ID`
+with the ID you copied, then commit and push to `main`. Bindings for
+`wrangler deploy` are declared in this file — once it has the real ID, the
+next deploy will connect the Worker to the database automatically, no extra
+dashboard step needed.
+
+### 4. Create a GitHub OAuth App (this is what "Sign in with GitHub" uses)
+
+By now the project has a live URL (something like
+`https://serie-a-tv-audience.<your-subdomain>.workers.dev` — check the
+Cloudflare project page for the exact one).
 
 1. GitHub → **Settings → Developer settings → OAuth Apps → New OAuth App**.
-2. **Homepage URL:** your `pages.dev` URL from step 1.
-3. **Authorization callback URL:** `<your pages.dev URL>/api/auth/callback`.
+2. **Homepage URL:** that live URL.
+3. **Authorization callback URL:** `<that live URL>/api/auth/callback`.
 4. Create it, then **Generate a new client secret** — copy both the Client ID
    and the Client Secret now (the secret is shown once).
 
-### 3. Create the D1 database and load the schema
-
-1. **Workers & Pages → D1 → Create database** → name it
-   `serie-a-tv-audience`.
-2. Open it → **Console** tab → paste the entire contents of
-   `client/migrations/0001_init.sql` → Run. This creates the `fixtures` table
-   and loads all 380 fixtures.
-
-### 4. Bind the database to the Pages project
-
-Pages project → **Settings → Functions → D1 database bindings → Add binding**:
-- Variable name: `DB`
-- D1 database: `serie-a-tv-audience`
-
 ### 5. Set environment variables
 
-Pages project → **Settings → Environment variables** (set for Production;
-add to Preview too if you want it):
+On the project → its environment variables settings (the same kind of
+"Environment variables" section you saw when creating it, now editable in
+project settings):
 
 | Variable | Value |
 |---|---|
-| `GITHUB_CLIENT_ID` | from step 2 |
-| `GITHUB_CLIENT_SECRET` | from step 2 — click "Encrypt" |
-| `SESSION_SECRET` | any long random string you make up once — click "Encrypt" |
+| `GITHUB_CLIENT_ID` | from step 4 |
+| `GITHUB_CLIENT_SECRET` | from step 4 — mark it secret/encrypted if offered |
+| `SESSION_SECRET` | any long random string you make up once — mark it secret |
 | `ALLOWED_GITHUB_LOGINS` | your GitHub username (comma-separate for more than one editor) |
 
-### 6. Redeploy once
+Redeploy (retry the latest deployment, or just push anything) so the
+variables take effect.
 
-Pages project → **Deployments** → **Retry deployment** on the latest one, so
-it picks up the bindings/env vars you just added. From now on, every merge to
-`main` triggers this automatically — that's the whole update workflow.
-
-Visit your `pages.dev` URL, click **Sign in to edit**, authorize with GitHub,
-and confirm you can edit a score.
+Visit the live URL, click **Sign in to edit**, authorize with GitHub, and
+confirm you can edit a score.
 
 ## Running locally (optional, for development)
 
@@ -93,7 +103,7 @@ npm install
 npm run dev              # UI only, fast iteration, no API/DB
 # or, to test the full stack (API + local D1) before pushing:
 npm run db:migrate:local  # one-time: loads schema into a local D1 emulation
-npm run preview:full      # builds and serves client + functions + local D1 together
+npm run preview:full      # builds and serves the Worker + local D1 together
 ```
 
 ## API

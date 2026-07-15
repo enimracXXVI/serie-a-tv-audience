@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "preview:full": "npm run build && wrangler pages dev ./dist --compatibility-date=2024-11-01 --port 8788",
+    "preview:full": "npm run build && wrangler dev --port 8788",
+    "deploy": "npm run build && wrangler deploy",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
