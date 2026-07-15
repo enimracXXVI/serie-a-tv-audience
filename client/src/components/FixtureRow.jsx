@@ -56,7 +56,7 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
   const [expanded, setExpanded] = useState(false);
   const homeHighlighted = highlightSlugs.includes(home.slug);
   const awayHighlighted = highlightSlugs.includes(away.slug);
-  const metaText = [formatDateShort(fixture.date), fixture.kickoffTime].filter(Boolean).join(' · ');
+  const dateShort = formatDateShort(fixture.date);
 
   function handleSummaryClick() {
     if (!canEdit) {
@@ -68,7 +68,13 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
 
   return (
     <div className="px-2 py-2 sm:px-3 sm:py-2.5">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2">
+        {/* Fixed-width so it never affects where home/score/away land */}
+        <div className="w-10 shrink-0 text-center text-[9px] leading-tight text-gray-400 sm:w-14 sm:text-[10px]">
+          {dateShort && <div>{dateShort}</div>}
+          {fixture.kickoffTime && <div>{fixture.kickoffTime}</div>}
+        </div>
+
         <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1 sm:gap-2 min-w-0">
           <div className="flex items-center justify-end gap-1.5 min-w-0 sm:gap-2">
             <span
@@ -95,16 +101,11 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
           </div>
         </div>
 
-        <div className="hidden shrink-0 items-center gap-2 border-l border-gray-100 pl-3 sm:flex">
+        {/* Also fixed-width regardless of whether Sky is present, so this
+            never shifts the center block between rows. Stacks on mobile
+            since Sky's logo is inherently wide (~4:1 aspect ratio). */}
+        <div className="flex w-12 shrink-0 flex-col items-start gap-1 sm:w-24 sm:flex-row sm:items-center sm:gap-2">
           <DaznLogo height={14} />
-          {fixture.onSky && <SkyLogo height={14} />}
-        </div>
-      </div>
-
-      <div className="mt-1 flex items-center justify-center gap-2 text-[10px] text-gray-400">
-        {metaText && <span>{metaText}</span>}
-        <div className="flex items-center gap-1.5 sm:hidden">
-          <DaznLogo height={12} />
           {fixture.onSky && <SkyLogo height={12} />}
         </div>
       </div>
