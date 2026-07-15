@@ -1,6 +1,6 @@
 import { GOOGLE_CLIENT_ID } from './config.js';
 
-const SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
+const SCOPE = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email';
 const STORAGE_KEY = 'serieATvAudience.googleSession';
 
 let gisLoadPromise = null;

@@ -27,7 +27,12 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, highlightS
         <h3 className="text-sm font-bold tracking-wide text-[#0f1e54]">
           Matchday {matchday}
         </h3>
-        <span className="text-xs text-gray-400">{range}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-400">{range}</span>
+          <a href="#top" className="text-xs font-semibold text-gray-400 hover:text-[#0f1e54]">
+            ↑ Top
+          </a>
+        </div>
       </header>
       <div className="divide-y divide-gray-100 px-1 py-1">
         {fixtures.map((f) => (

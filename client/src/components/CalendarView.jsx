@@ -14,6 +14,13 @@ export default function CalendarView({
     if (!byMatchday.has(f.matchday)) byMatchday.set(f.matchday, []);
     byMatchday.get(f.matchday).push(f);
   }
+  for (const group of byMatchday.values()) {
+    group.sort((a, b) => {
+      const dateCompare = (a.date ?? '9999').localeCompare(b.date ?? '9999');
+      if (dateCompare !== 0) return dateCompare;
+      return (a.kickoffTime ?? '99:99').localeCompare(b.kickoffTime ?? '99:99');
+    });
+  }
   const matchdays = [...byMatchday.keys()].sort((a, b) => a - b);
 
   if (fixtures.length === 0) {

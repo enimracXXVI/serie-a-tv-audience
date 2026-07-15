@@ -16,6 +16,10 @@ export function enrichFixture(raw) {
     awayScore: raw.awayScore,
     daznAudience: raw.daznAudience,
     skyAudience: raw.skyAudience,
+    onSky: raw.onSky,
+    addedTime1H: raw.addedTime1H,
+    addedTime2H: raw.addedTime2H,
+    daznSimulcastAudience: raw.daznSimulcastAudience,
     updatedAt: raw.updatedAt,
   };
 }

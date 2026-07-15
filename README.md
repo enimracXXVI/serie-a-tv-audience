@@ -31,9 +31,20 @@ can be blocked by a corporate proxy the way `workers.dev` was:
 
 I already created and seeded the Google Sheet in your Drive:
 https://docs.google.com/spreadsheets/d/1h3ZN2H5_ISzLUCW_AtbP2nFSRoMf7htwL8PYYAtRq4o/edit
-(380 fixtures loaded, columns: id, matchday, day, date, home, away, homeScore,
-awayScore, daznAudience, skyAudience, kickoffTime, updatedAt). Its ID is
-already in `client/src/lib/config.js` — you don't need to create a sheet.
+(380 fixtures loaded). Its ID is already in `client/src/lib/config.js` — you
+don't need to create a sheet. Columns A-L (id, matchday, day, date, home,
+away, homeScore, awayScore, daznAudience, skyAudience, kickoffTime,
+updatedAt) were part of the original seed. The app also now reads/writes
+columns M-P for newer fields — the app writes to these by cell position, so
+it works with or without header labels, but for your own reference when you
+open the sheet directly, add these labels to row 1 if you want them:
+
+| Column | Label | Meaning |
+|---|---|---|
+| M | onSky | TRUE/FALSE — also broadcast on Sky (default off, DAZN-only) |
+| N | addedTime1H | Added/injury time, first half (minutes) |
+| O | addedTime2H | Added/injury time, second half (minutes) |
+| P | daznSimulcastAudience | Audience for DAZN's multi-game simulcast slot, when applicable |
 
 ## One-time setup
 

@@ -53,7 +53,7 @@ export default function BrandedCalendarPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div id="top" className="min-h-screen">
       <header className="border-b border-white/10 px-6 py-10" style={{ background: gradient }}>
         <div className="mx-auto max-w-6xl">
           <div className="flex items-start justify-between gap-4">
@@ -68,15 +68,37 @@ export default function BrandedCalendarPage() {
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            {selectedTeams.map((t) => (
-              <div key={t.slug} className="flex items-center gap-2 rounded-full bg-black/20 px-3 py-1.5 backdrop-blur-sm">
-                <Crest team={t} size={22} />
-                <span className="text-sm font-bold" style={{ color: headerText }}>
-                  {t.name}
-                </span>
-              </div>
-            ))}
+            {selectedTeams.map((t) =>
+              selectedTeams.length > 1 ? (
+                <Link
+                  key={t.slug}
+                  to={`/calendar/${t.slug}`}
+                  title={`${t.name} calendar only`}
+                  className="flex items-center gap-2 rounded-full bg-black/20 px-3 py-1.5 backdrop-blur-sm transition-colors hover:bg-black/35"
+                >
+                  <Crest team={t} size={22} />
+                  <span className="text-sm font-bold" style={{ color: headerText }}>
+                    {t.name}
+                  </span>
+                </Link>
+              ) : (
+                <div
+                  key={t.slug}
+                  className="flex items-center gap-2 rounded-full bg-black/20 px-3 py-1.5 backdrop-blur-sm"
+                >
+                  <Crest team={t} size={22} />
+                  <span className="text-sm font-bold" style={{ color: headerText }}>
+                    {t.name}
+                  </span>
+                </div>
+              )
+            )}
           </div>
+          {selectedTeams.length > 1 && (
+            <p className="mt-2 text-xs opacity-70" style={{ color: headerText }}>
+              Tap a club above to see only their calendar.
+            </p>
+          )}
 
           <h1 className="mt-4 text-2xl font-black sm:text-3xl" style={{ color: headerText }}>
             {selectedTeams.length > 1 ? 'Combined' : selectedTeams[0]?.name ?? ''} Calendar · 26/27
