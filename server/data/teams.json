@@ -1,0 +1,22 @@
+[
+  { "slug": "atalanta",   "name": "Atalanta",   "short": "ATA", "primary": "#1E71B8", "secondary": "#000000" },
+  { "slug": "bologna",    "name": "Bologna",    "short": "BOL", "primary": "#8B1D2C", "secondary": "#1B3E7A" },
+  { "slug": "cagliari",   "name": "Cagliari",   "short": "CAG", "primary": "#C8102E", "secondary": "#00205B" },
+  { "slug": "como",       "name": "Como",       "short": "COM", "primary": "#0066B3", "secondary": "#FFFFFF" },
+  { "slug": "fiorentina", "name": "Fiorentina", "short": "FIO", "primary": "#482E92", "secondary": "#FFFFFF" },
+  { "slug": "frosinone",  "name": "Frosinone",  "short": "FRO", "primary": "#FFD400", "secondary": "#003DA5" },
+  { "slug": "genoa",      "name": "Genoa",      "short": "GEN", "primary": "#C8102E", "secondary": "#00205B" },
+  { "slug": "inter",      "name": "Inter",      "short": "INT", "primary": "#003DA5", "secondary": "#000000" },
+  { "slug": "juventus",   "name": "Juventus",   "short": "JUV", "primary": "#000000", "secondary": "#FFFFFF" },
+  { "slug": "lazio",      "name": "Lazio",      "short": "LAZ", "primary": "#87D8F7", "secondary": "#FFFFFF" },
+  { "slug": "lecce",      "name": "Lecce",      "short": "LEC", "primary": "#FFD100", "secondary": "#C8102E" },
+  { "slug": "milan",      "name": "Milan",      "short": "MIL", "primary": "#FB090B", "secondary": "#000000" },
+  { "slug": "monza",      "name": "Monza",      "short": "MON", "primary": "#C8102E", "secondary": "#FFFFFF" },
+  { "slug": "napoli",     "name": "Napoli",     "short": "NAP", "primary": "#12A0D7", "secondary": "#003DA5" },
+  { "slug": "parma",      "name": "Parma",      "short": "PAR", "primary": "#FFD400", "secondary": "#003DA5" },
+  { "slug": "roma",       "name": "Roma",       "short": "ROM", "primary": "#8E1F2F", "secondary": "#F0BC42" },
+  { "slug": "sassuolo",   "name": "Sassuolo",   "short": "SAS", "primary": "#00A650", "secondary": "#000000" },
+  { "slug": "torino",     "name": "Torino",     "short": "TOR", "primary": "#7B1E3A", "secondary": "#FFFFFF" },
+  { "slug": "udinese",    "name": "Udinese",    "short": "UDI", "primary": "#000000", "secondary": "#FFFFFF" },
+  { "slug": "venezia",    "name": "Venezia",    "short": "VEN", "primary": "#FF6600", "secondary": "#000000" }
+]
