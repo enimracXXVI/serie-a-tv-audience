@@ -21,24 +21,15 @@ function Pill({ md, accent }) {
 export default function MatchdayNav({ matchdays, accent = '#1fd8c9' }) {
   if (matchdays.length === 0) return null;
 
-  const mid = Math.ceil(matchdays.length / 2);
-  const firstRow = matchdays.slice(0, mid);
-  const secondRow = matchdays.slice(mid);
-
   return (
-    <nav className="flex flex-col gap-1.5" aria-label="Jump to matchday">
-      <div className="flex flex-wrap gap-1.5">
-        {firstRow.map((md) => (
-          <Pill key={md} md={md} accent={accent} />
-        ))}
-      </div>
-      {secondRow.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {secondRow.map((md) => (
-            <Pill key={md} md={md} accent={accent} />
-          ))}
-        </div>
-      )}
+    <nav
+      id="matchday-nav"
+      className="scroll-mt-4 flex gap-1.5 overflow-x-auto pb-1"
+      aria-label="Jump to matchday"
+    >
+      {matchdays.map((md) => (
+        <Pill key={md} md={md} accent={accent} />
+      ))}
     </nav>
   );
 }

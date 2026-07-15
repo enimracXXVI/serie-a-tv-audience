@@ -1,6 +1,27 @@
 // Real broadcaster marks (not text pills) - both SVG sources provided directly.
 
-export function SkyLogo({ height = 16 }) {
+// Compact crop of the mark below: just the blue "sky" swoosh, no red
+// "SKY SPORT" wordmark box - used on mobile where there's no room for the
+// full ~4:1 lockup next to the DAZN mark.
+export function SkyLogo({ height = 16, compact = false }) {
+  if (compact) {
+    return (
+      <svg viewBox="0 0 180 120" height={height} style={{ width: 'auto' }} xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="sky-b-compact" x1="86.85" x2="86.85" y1="8.41" y2="112.95" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#0f33d5" offset=".05" />
+            <stop stopColor="#0c28c7" offset=".29" />
+            <stop stopColor="#040ea2" offset=".74" />
+            <stop stopColor="#00008f" offset=".95" />
+          </linearGradient>
+        </defs>
+        <path
+          fill="url(#sky-b-compact)"
+          d="M119.89,111.37c1.43.73,4.33,1.61,7.98,1.7,6.27.14,9.68-2.26,12.22-7.87l33.61-74.84c-1.38-.74-4.47-1.57-6.96-1.61-4.33-.09-10.14.78-13.83,9.62l-10.88,25.64-21.35-34.71c-1.38-.42-4.75-1.01-7.19-1.01-7.56,0-11.76,2.76-16.14,7.5l-20.75,22.65,16.69,26.24c3.09,4.79,7.15,7.23,13.74,7.23,4.33,0,7.93-1.01,9.59-1.79l-20.1-30.24,14.25-15.1,23.38,36.64-14.25,29.97ZM75.79,83.06c0,5.52-2.17,8.7-12.96,8.7-1.43,0-2.67-.09-3.87-.28V18.3c0-5.57,1.89-11.37,12.77-11.37,1.38,0,2.77.14,4.06.42v75.72ZM53.53,72.01c0,10.31-6.73,17.81-20.43,19.29-9.91,1.06-24.25-.18-31.08-.97-.23-1.1-.41-2.48-.41-3.59,0-8.98,4.84-11.05,9.41-11.05s12.22.83,17.75.83c6.13,0,7.98-2.07,7.98-4.05,0-2.58-2.44-3.64-7.19-4.56l-13-2.49C5.76,63.36,0,55.9,0,47.98c0-9.62,6.82-17.68,20.24-19.15,10.14-1.11,22.5.14,29.28.97.23,1.15.37,2.26.37,3.45,0,8.97-4.75,10.91-9.31,10.91-3.5,0-8.95-.64-15.17-.64s-8.95,1.75-8.95,3.87c0,2.26,2.49,3.18,6.46,3.87l12.4,2.3c12.73,2.35,18.21,9.57,18.21,18.46Z"
+        />
+      </svg>
+    );
+  }
   return (
     <svg viewBox="0 0 507.55 120" height={height} style={{ width: 'auto' }} xmlns="http://www.w3.org/2000/svg">
       <defs>

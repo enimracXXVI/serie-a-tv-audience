@@ -29,7 +29,7 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, highlightS
         </h3>
         <div className="flex items-center gap-3">
           <span className="text-xs text-gray-400">{range}</span>
-          <a href="#top" className="text-xs font-semibold text-gray-400 hover:text-[#0f1e54]">
+          <a href="#matchday-nav" className="text-xs font-semibold text-gray-400 hover:text-[#0f1e54]">
             ↑ Top
           </a>
         </div>

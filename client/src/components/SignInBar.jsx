@@ -43,9 +43,9 @@ export default function SignInBar({ session, tone = 'dark' }) {
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-20 mt-2 w-56 rounded-lg border border-gray-200 bg-white p-3 shadow-xl">
-            <p className="truncate text-xs text-gray-500">Signed in as</p>
-            <p className="truncate text-sm font-semibold text-[#0f1e54]">{session.login}</p>
+          <div className="absolute right-0 z-20 mt-2 w-64 max-w-[90vw] rounded-lg border border-gray-200 bg-white p-3 shadow-xl">
+            <p className="text-xs text-gray-500">Signed in as</p>
+            <p className="break-words text-sm font-semibold text-[#0f1e54]">{session.login}</p>
             <button
               onClick={() => {
                 session.signOut();

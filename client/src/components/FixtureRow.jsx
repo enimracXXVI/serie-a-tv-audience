@@ -103,9 +103,18 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
         {/* Also fixed-width regardless of whether Sky is present, so this
             never shifts the center block between rows. Stacks on mobile
             since Sky's logo is inherently wide (~4:1 aspect ratio). */}
-        <div className="flex w-12 shrink-0 flex-col items-start gap-1 sm:w-24 sm:flex-row sm:items-center sm:gap-2">
+        <div className="flex w-12 shrink-0 items-center gap-1 sm:w-24 sm:gap-2">
           <DaznLogo height={14} />
-          {fixture.onSky && <SkyLogo height={12} />}
+          {fixture.onSky && (
+            <>
+              <span className="sm:hidden">
+                <SkyLogo height={14} compact />
+              </span>
+              <span className="hidden sm:inline">
+                <SkyLogo height={12} />
+              </span>
+            </>
+          )}
         </div>
       </div>
 
