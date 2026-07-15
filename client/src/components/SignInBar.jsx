@@ -1,57 +1,63 @@
-export default function SignInBar({ session, tone = 'dark' }) {
-  const textClass = tone === 'light' ? 'text-black/70' : 'text-white/70';
-  const btnClass =
-    tone === 'light'
-      ? 'bg-black/10 hover:bg-black/20 text-black'
-      : 'bg-white/10 hover:bg-white/20 text-white';
+import { useState } from 'react';
 
-  if (session.loading) return <div className="h-7" />;
+function AccountIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M4 20c1.5-4 5-6 8-6s6.5 2 8 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export default function SignInBar({ session, tone = 'dark' }) {
+  const [open, setOpen] = useState(false);
+  const isLight = tone === 'light';
+  const ringClass = isLight ? 'border-black/30 text-black hover:bg-black/10' : 'border-white/40 text-white hover:bg-white/10';
+
+  if (session.loading) return <div className="h-9 w-9" />;
 
   if (!session.signedIn) {
     return (
       <button
         onClick={session.signIn}
-        className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${btnClass}`}
+        title="Sign in with Google to edit"
+        className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${ringClass}`}
       >
-        <GoogleMark /> Sign in to edit
+        <AccountIcon />
       </button>
     );
   }
 
-  return (
-    <div className="flex items-center gap-2">
-      <span className={`text-xs ${textClass}`}>
-        Signed in as <span className="font-semibold">{session.login}</span>
-      </span>
-      <button
-        onClick={session.signOut}
-        className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${btnClass}`}
-      >
-        Sign out
-      </button>
-    </div>
-  );
-}
+  const initial = session.login ? session.login[0].toUpperCase() : '?';
 
-function GoogleMark() {
   return (
-    <svg width="14" height="14" viewBox="0 0 48 48" aria-hidden="true">
-      <path
-        fill="#4285F4"
-        d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"
-      />
-      <path
-        fill="#34A853"
-        d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M11.69 28.18A13.9 13.9 0 0 1 10.95 24c0-1.45.25-2.86.74-4.18v-5.7H4.34A21.93 21.93 0 0 0 2 24c0 3.55.85 6.91 2.34 9.88l7.35-5.7z"
-      />
-      <path
-        fill="#EA4335"
-        d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"
-      />
-    </svg>
+    <div className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        title={session.login}
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1fd8c9] text-sm font-bold text-[#0f1e54] transition-transform hover:scale-105"
+      >
+        {initial}
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 z-20 mt-2 w-56 rounded-lg border border-gray-200 bg-white p-3 shadow-xl">
+            <p className="truncate text-xs text-gray-500">Signed in as</p>
+            <p className="truncate text-sm font-semibold text-[#0f1e54]">{session.login}</p>
+            <button
+              onClick={() => {
+                session.signOut();
+                setOpen(false);
+              }}
+              className="mt-2 w-full rounded-md bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-200"
+            >
+              Sign out
+            </button>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

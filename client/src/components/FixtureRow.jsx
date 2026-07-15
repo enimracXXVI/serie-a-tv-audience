@@ -51,7 +51,7 @@ function NumberField({ label, value, onCommit, placeholder = '' }) {
   );
 }
 
-export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], canEdit, onRequireSignIn }) {
+export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], canEdit }) {
   const { home, away } = fixture;
   const [expanded, setExpanded] = useState(false);
   const homeHighlighted = highlightSlugs.includes(home.slug);
@@ -59,10 +59,7 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
   const dateShort = formatDateShort(fixture.date);
 
   function handleSummaryClick() {
-    if (!canEdit) {
-      onRequireSignIn();
-      return;
-    }
+    if (!canEdit) return;
     setExpanded((e) => !e);
   }
 
@@ -80,15 +77,16 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
             <span
               className={`truncate text-xs sm:text-sm text-right ${homeHighlighted ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}
             >
-              {home.name}
+              <span className="sm:hidden">{home.short ?? home.name}</span>
+              <span className="hidden sm:inline">{home.name}</span>
             </span>
             <Crest team={home} size={24} />
           </div>
 
           <button
             onClick={handleSummaryClick}
-            className="rounded-md px-1 py-1 transition-colors hover:bg-gray-100"
-            title={canEdit ? 'Edit match details' : 'Sign in to edit'}
+            className={`rounded-md px-1 py-1 transition-colors ${canEdit ? 'hover:bg-gray-100 cursor-pointer' : 'cursor-default'}`}
+            title={canEdit ? 'Edit match details' : undefined}
           >
             <ScoreDisplay homeScore={fixture.homeScore} awayScore={fixture.awayScore} />
           </button>
@@ -96,7 +94,8 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
           <div className="flex items-center gap-1.5 min-w-0 sm:gap-2">
             <Crest team={away} size={24} />
             <span className={`truncate text-xs sm:text-sm ${awayHighlighted ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}>
-              {away.name}
+              <span className="sm:hidden">{away.short ?? away.name}</span>
+              <span className="hidden sm:inline">{away.name}</span>
             </span>
           </div>
         </div>
