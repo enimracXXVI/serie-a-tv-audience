@@ -16,7 +16,10 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, highlightS
       : '';
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
+    <section
+      id={`matchday-${matchday}`}
+      className="scroll-mt-4 rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden"
+    >
       <header
         className="flex items-baseline justify-between px-4 py-2.5"
         style={{ borderBottom: `2px solid ${accent}55` }}

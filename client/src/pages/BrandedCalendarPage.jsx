@@ -7,6 +7,7 @@ import { useTeams } from '../lib/useTeams.js';
 import { useFixtures } from '../lib/useFixtures.js';
 import { useSession } from '../lib/useSession.js';
 import { themeGradient, contrastText } from '../lib/color.js';
+import { saveTeams } from '../lib/savedTeams.js';
 
 export default function BrandedCalendarPage() {
   const { teams: slugsParam } = useParams();
@@ -24,7 +25,7 @@ export default function BrandedCalendarPage() {
   );
 
   const gradient = themeGradient(selectedTeams.map((t) => t.primary));
-  const accent = selectedTeams[0]?.primary ?? '#c084fc';
+  const accent = selectedTeams[0]?.primary ?? '#00a651';
   const headerText = contrastText(selectedTeams[0]?.primary ?? '#1a1030');
   const headerTone = headerText === '#0b0f16' ? 'light' : 'dark';
 
@@ -33,6 +34,10 @@ export default function BrandedCalendarPage() {
       ? `${selectedTeams.map((t) => t.name).join(' & ')} · Serie A Calendar`
       : 'Serie A Calendar';
   }, [selectedTeams]);
+
+  useEffect(() => {
+    if (slugs.length > 0) saveTeams(slugs);
+  }, [slugs]);
 
   async function handleUpdate(id, fields) {
     if (!session.signedIn) {
@@ -74,12 +79,8 @@ export default function BrandedCalendarPage() {
           </div>
 
           <h1 className="mt-4 text-2xl font-black sm:text-3xl" style={{ color: headerText }}>
-            {selectedTeams.length > 1 ? 'Combined' : selectedTeams[0]?.name ?? ''} Calendar · 2026/27
+            {selectedTeams.length > 1 ? 'Combined' : selectedTeams[0]?.name ?? ''} Calendar · 26/27
           </h1>
-          <p className="mt-1 text-sm opacity-80" style={{ color: headerText }}>
-            Every fixture involving {selectedTeams.map((t) => t.name).join(', ') || 'your teams'}, with results
-            and DAZN / Sky audience.
-          </p>
         </div>
       </header>
 

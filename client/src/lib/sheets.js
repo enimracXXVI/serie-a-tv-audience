@@ -46,8 +46,8 @@ function rowToFixture(row) {
 export async function fetchFixtures() {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(
     DATA_RANGE
-  )}?key=${GOOGLE_API_KEY}&valueRenderOption=UNFORMATTED_VALUE`;
-  const res = await fetch(url);
+  )}?key=${GOOGLE_API_KEY}&valueRenderOption=UNFORMATTED_VALUE&_=${Date.now()}`;
+  const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to load fixtures from Google Sheets');
   const data = await res.json();
   return (data.values || []).map(rowToFixture);

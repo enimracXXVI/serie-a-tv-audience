@@ -1,10 +1,11 @@
 import MatchdayGroup from './MatchdayGroup.jsx';
+import MatchdayNav from './MatchdayNav.jsx';
 
 export default function CalendarView({
   fixtures,
   onUpdate,
   highlightSlugs = [],
-  accent = '#c084fc',
+  accent = '#00a651',
   canEdit = false,
   onRequireSignIn,
 }) {
@@ -21,6 +22,7 @@ export default function CalendarView({
 
   return (
     <div className="flex flex-col gap-4">
+      <MatchdayNav matchdays={matchdays} accent={accent} />
       {matchdays.map((md) => (
         <MatchdayGroup
           key={md}
