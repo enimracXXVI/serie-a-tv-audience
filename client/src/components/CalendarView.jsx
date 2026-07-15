@@ -1,6 +1,13 @@
 import MatchdayGroup from './MatchdayGroup.jsx';
 
-export default function CalendarView({ fixtures, onUpdate, highlightSlugs = [], accent = '#c084fc' }) {
+export default function CalendarView({
+  fixtures,
+  onUpdate,
+  highlightSlugs = [],
+  accent = '#c084fc',
+  canEdit = false,
+  onRequireSignIn,
+}) {
   const byMatchday = new Map();
   for (const f of fixtures) {
     if (!byMatchday.has(f.matchday)) byMatchday.set(f.matchday, []);
@@ -22,6 +29,8 @@ export default function CalendarView({ fixtures, onUpdate, highlightSlugs = [], 
           onUpdate={onUpdate}
           highlightSlugs={highlightSlugs}
           accent={accent}
+          canEdit={canEdit}
+          onRequireSignIn={onRequireSignIn}
         />
       ))}
     </div>

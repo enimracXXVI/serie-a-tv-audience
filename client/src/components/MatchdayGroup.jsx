@@ -6,7 +6,7 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 }
 
-export default function MatchdayGroup({ matchday, fixtures, onUpdate, highlightSlugs, accent }) {
+export default function MatchdayGroup({ matchday, fixtures, onUpdate, highlightSlugs, accent, canEdit, onRequireSignIn }) {
   const dates = fixtures.map((f) => f.date).filter(Boolean);
   const range =
     dates.length > 0
@@ -28,7 +28,14 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, highlightS
       </header>
       <div className="divide-y divide-white/[0.04] px-1 py-1">
         {fixtures.map((f) => (
-          <FixtureRow key={f.id} fixture={f} onUpdate={onUpdate} highlightSlugs={highlightSlugs} />
+          <FixtureRow
+            key={f.id}
+            fixture={f}
+            onUpdate={onUpdate}
+            highlightSlugs={highlightSlugs}
+            canEdit={canEdit}
+            onRequireSignIn={onRequireSignIn}
+          />
         ))}
       </div>
     </section>

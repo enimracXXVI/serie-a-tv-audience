@@ -16,9 +16,21 @@ export async function getFixtures(teamSlugs = []) {
 export async function patchFixture(id, fields) {
   const res = await fetch(`${BASE}/fixtures/${id}`, {
     method: 'PATCH',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(fields),
   });
+  if (res.status === 401) throw new Error('UNAUTHENTICATED');
   if (!res.ok) throw new Error('Failed to update fixture');
   return res.json();
+}
+
+export async function getSession() {
+  const res = await fetch(`${BASE}/auth/me`, { credentials: 'include' });
+  if (!res.ok) return { login: null };
+  return res.json();
+}
+
+export async function logout() {
+  await fetch(`${BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
 }
