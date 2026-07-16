@@ -25,11 +25,9 @@ export default function Crest({ team, size = 36 }) {
     <img
       src={src}
       alt={`${team.name} crest`}
-      width={size}
-      height={size * 1.16}
-      style={{ width: size, height: size * 1.16 }}
       loading="lazy"
       onError={() => setBroken(true)}
+      style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }}
     />
   );
 }
