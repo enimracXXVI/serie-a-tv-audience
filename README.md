@@ -61,12 +61,24 @@ open the sheet directly, add these labels to row 1 if you want them:
 | T | awayMatchdaySponsor | Same three, for the away club |
 | U | awayPlayerMascot | |
 | V | awayWalkabout | |
+| W | isBigMatch | TRUE/FALSE — both clubs in this fixture are marked `bigClub` |
+| X | isDerby | TRUE/FALSE — the two clubs in this fixture are each other's `derbyRival` |
 
 The Q-V columns are only editable from the home page's **Sponsors** tab (per
 matchday card), and only show checkboxes for whichever side of a fixture is a
 club marked `sponsored` in the `teams` tab (see below). Whatever's checked
 shows up as a small badge on that fixture everywhere it's displayed — home
 page, combined calendars, single-team calendars — regardless of sign-in.
+
+W-X aren't editable anywhere in the app - they're a read-only mirror of what
+the `teams` tab's `bigClub`/`derbyRival` settings compute for that fixture,
+written there so you can see/filter/reference it directly in the sheet
+instead of only inside the app. They get refreshed automatically whenever
+that fixture is edited from any of the home page's tabs, and you can also
+click **Sync big match / derby tags to sheet** (top of the home page, signed
+in) to write them for every currently-loaded fixture in one go - useful right
+after changing a club's `bigClub`/`derbyRival` in Settings, so historical
+rows update immediately instead of waiting for their next edit.
 
 ### Team settings tab (name/short/colours/sponsorship)
 

@@ -1,5 +1,6 @@
 import { SPREADSHEET_ID, SHEET_NAME, GOOGLE_API_KEY } from './config.js';
 import { columnIndexToLetter, buildHeaderIndex, cell } from './sheetsCommon.js';
+import { computeMatchTags } from './matchTags.js';
 
 const NUMERIC_FIELDS = new Set([
   'id',
@@ -20,6 +21,8 @@ const BOOLEAN_FIELDS = new Set([
   'awayMatchdaySponsor',
   'awayPlayerMascot',
   'awayWalkabout',
+  'isBigMatch',
+  'isDerby',
 ]);
 const EDITABLE_FIELDS = [
   'date',
@@ -38,6 +41,8 @@ const EDITABLE_FIELDS = [
   'awayMatchdaySponsor',
   'awayPlayerMascot',
   'awayWalkabout',
+  'isBigMatch',
+  'isDerby',
 ];
 
 // Generous range: columns can be reordered/added by name (see rowToFixture),
@@ -148,4 +153,47 @@ export async function updateFixtureRow(fixture, accessToken) {
   }
 
   return { ...fixture, updatedAt };
+}
+
+// isBigMatch/isDerby also get written opportunistically whenever a fixture is
+// otherwise edited (see EDITABLE_FIELDS above), but that only reaches rows
+// someone happens to touch. This does every currently-loaded fixture in one
+// go, so the sheet is a complete, queryable mirror of what Settings computes
+// right after configuring bigClub/derbyRival, not just the rows someone
+// happened to edit.
+export async function syncMatchTags(fixtures, accessToken) {
+  const headerIndex = await ensureHeaderIndex();
+  const bigIdx = headerIndex.isBigMatch;
+  const derbyIdx = headerIndex.isDerby;
+  if (bigIdx === undefined && derbyIdx === undefined) {
+    throw new Error('Sheet is missing isBigMatch/isDerby column headers - see README.');
+  }
+
+  const data = [];
+  for (const fixture of fixtures) {
+    const rowNumber = Number(fixture.id) + 1;
+    const { isBigMatch, isDerby } = computeMatchTags(fixture);
+    if (bigIdx !== undefined) {
+      const letter = columnIndexToLetter(bigIdx);
+      data.push({ range: `${SHEET_NAME}!${letter}${rowNumber}:${letter}${rowNumber}`, majorDimension: 'ROWS', values: [[isBigMatch]] });
+    }
+    if (derbyIdx !== undefined) {
+      const letter = columnIndexToLetter(derbyIdx);
+      data.push({ range: `${SHEET_NAME}!${letter}${rowNumber}:${letter}${rowNumber}`, majorDimension: 'ROWS', values: [[isDerby]] });
+    }
+  }
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values:batchUpdate`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ valueInputOption: 'RAW', data }),
+  });
+
+  if (res.status === 401 || res.status === 403) throw new Error('UNAUTHENTICATED');
+  if (!res.ok) throw new Error('Failed to sync tags to Google Sheets');
+  return fixtures.length;
 }
