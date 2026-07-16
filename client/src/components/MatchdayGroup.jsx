@@ -40,7 +40,7 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, highlightS
           </div>
         </div>
         {canEdit && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap justify-center gap-1.5">
             {TABS.map((t) => (
               <button
                 key={t.key}
