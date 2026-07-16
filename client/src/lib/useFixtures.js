@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchFixtures, updateFixtureRow } from './sheets.js';
 import { enrichFixture } from './teams.js';
+import { computeDayOfWeek } from './matchdays.js';
 
 export function useFixtures(teamSlugs, teams) {
   const [rawFixtures, setRawFixtures] = useState([]);
@@ -47,8 +48,13 @@ export function useFixtures(teamSlugs, teams) {
       const current = fixtures.find((f) => f.id === id);
       if (!current) return;
       const merged = { ...current, ...fields };
+      // Recomputed on every save (not just when `date` is the field being
+      // touched) so `day` can never drift out of sync with `date`.
+      merged.day = computeDayOfWeek(merged.date);
       const updated = await updateFixtureRow(merged, accessToken);
-      setRawFixtures((prev) => prev.map((r) => (r.id === id ? { ...r, ...fields, updatedAt: updated.updatedAt } : r)));
+      setRawFixtures((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, ...fields, day: merged.day, updatedAt: updated.updatedAt } : r))
+      );
     },
     [fixtures]
   );

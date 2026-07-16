@@ -60,7 +60,10 @@ https://docs.google.com/spreadsheets/d/1h3ZN2H5_ISzLUCW_AtbP2nFSRoMf7htwL8PYYAtR
 (380 fixtures loaded). Its ID is already in `client/src/lib/config.js` — you
 don't need to create a sheet. Columns A-L (id, matchday, day, date, home,
 away, homeScore, awayScore, daznAudience, skyAudience, kickoffTime,
-updatedAt) were part of the original seed. The app also now reads/writes
+updatedAt) were part of the original seed - `day` is kept in sync
+automatically: editing a fixture's `date` from the app recomputes `day` from
+the new date on every save, so it can't go stale even though it started as a
+plain static value at seed time. The app also now reads/writes
 columns M-P for newer fields — the app writes to these by cell position, so
 it works with or without header labels, but for your own reference when you
 open the sheet directly, add these labels to row 1 if you want them:
@@ -237,10 +240,27 @@ gives each game in a shared slot an even split of that slot's shared figure
 (`daznSimulcastAudience ÷ number of games in the slot`), added on top - a
 smart-but-approximate adjustment, off by default.
 
-The page has three parts: a ranked bar chart (pick the metric from the
-dropdown), a sortable full-club table, and a top-games leaderboard (filter by
-club, home-only, and how many to show). Click a club anywhere to focus it
-across all three.
+The page has a ranked bar chart (pick the metric from the dropdown) and a
+sortable full-club table, both club-level; click a club anywhere on the page
+to focus it, which narrows every section below to just that club's games
+(click again, or its row again, to go back to league-wide).
+
+Below that:
+- **Scheduling patterns** - average audience by day of week and by kickoff
+  time (Serie A's own broadcaster picks these, so it's league-wide by
+  default), plus a sortable day+kickoff breakdown table for the exact
+  combinations actually used so far.
+- **Big match / derby audience premium** - average audience for regular
+  games vs. big matches vs. derbies, so you can see the uplift a game's
+  billing carries independent of which two clubs are playing.
+- **Sponsor activation audience** - focus a sponsored club to see, per
+  activation type (matchday sponsor / player mascot / walkabout), how many
+  times it's been checked on the home page's Sponsors tab and the
+  cumulative/average audience those specific games actually reached - what
+  the activations already logged this season actually delivered, not just
+  how many there were.
+- **Top games by audience** - filter by club, home-only, and how many to
+  show.
 
 ## One-time setup
 

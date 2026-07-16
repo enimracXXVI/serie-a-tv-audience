@@ -26,6 +26,7 @@ const BOOLEAN_FIELDS = new Set([
 ]);
 const EDITABLE_FIELDS = [
   'date',
+  'day',
   'homeScore',
   'awayScore',
   'daznAudience',

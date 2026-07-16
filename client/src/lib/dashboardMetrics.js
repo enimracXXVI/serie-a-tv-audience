@@ -1,4 +1,6 @@
 import { isPlayed } from './standings.js';
+import { computeMatchTags } from './matchTags.js';
+import { SPONSOR_TYPES } from './sponsorCounts.js';
 
 function blockKey(fixture) {
   return `${fixture.date ?? ''}|${fixture.kickoffTime ?? ''}`;
@@ -99,4 +101,95 @@ export function computeTopGames(fixtures, simulcastInfo, includeSimulcast, { tea
     .map((f) => ({ fixture: f, audience: effectiveAudience(f, simulcastInfo, includeSimulcast) }))
     .sort((a, b) => b.audience - a.audience)
     .slice(0, limit);
+}
+
+function filterForTeam(fixtures, teamSlug) {
+  if (!teamSlug) return fixtures;
+  return fixtures.filter((f) => f.home.slug === teamSlug || f.away.slug === teamSlug);
+}
+
+const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+// Kickoff scheduling (day of week, kickoff time) is a broadcaster decision,
+// not a club one, so these are league-wide (optionally narrowed to one
+// club's own games) rather than per-team like the home/total split above.
+export function computeAudienceByDay(fixtures, simulcastInfo, includeSimulcast, teamSlug) {
+  const played = filterForTeam(fixtures, teamSlug).filter((f) => isPlayed(f) && f.day);
+  const byDay = new Map();
+  for (const f of played) {
+    const aud = effectiveAudience(f, simulcastInfo, includeSimulcast);
+    if (!byDay.has(f.day)) byDay.set(f.day, []);
+    byDay.get(f.day).push(aud);
+  }
+  return DAY_ORDER.filter((d) => byDay.has(d)).map((d) => {
+    const list = byDay.get(d);
+    return { key: d, label: d, avg: avg(list), total: sum(list), count: list.length };
+  });
+}
+
+export function computeAudienceByKickoff(fixtures, simulcastInfo, includeSimulcast, teamSlug) {
+  const played = filterForTeam(fixtures, teamSlug).filter((f) => isPlayed(f) && f.kickoffTime);
+  const byTime = new Map();
+  for (const f of played) {
+    const aud = effectiveAudience(f, simulcastInfo, includeSimulcast);
+    if (!byTime.has(f.kickoffTime)) byTime.set(f.kickoffTime, []);
+    byTime.get(f.kickoffTime).push(aud);
+  }
+  return [...byTime.entries()]
+    .map(([time, list]) => ({ key: time, label: time, avg: avg(list), total: sum(list), count: list.length }))
+    .sort((a, b) => a.key.localeCompare(b.key));
+}
+
+export function computeAudienceByDayAndTime(fixtures, simulcastInfo, includeSimulcast, teamSlug) {
+  const played = filterForTeam(fixtures, teamSlug).filter((f) => isPlayed(f) && f.day && f.kickoffTime);
+  const byKey = new Map();
+  for (const f of played) {
+    const aud = effectiveAudience(f, simulcastInfo, includeSimulcast);
+    const key = `${f.day}|${f.kickoffTime}`;
+    if (!byKey.has(key)) byKey.set(key, { day: f.day, time: f.kickoffTime, list: [] });
+    byKey.get(key).list.push(aud);
+  }
+  return [...byKey.values()].map(({ day, time, list }) => ({
+    day,
+    time,
+    avg: avg(list),
+    total: sum(list),
+    count: list.length,
+  }));
+}
+
+// How much of a visibility premium big matches and derbies carry over an
+// ordinary game - useful context when a package's value depends on which
+// fixtures it happens to cover.
+export function computeTagPremium(fixtures, simulcastInfo, includeSimulcast, teamSlug) {
+  const played = filterForTeam(fixtures, teamSlug).filter(isPlayed);
+  const buckets = { regular: [], bigMatch: [], derby: [] };
+  for (const f of played) {
+    const aud = effectiveAudience(f, simulcastInfo, includeSimulcast);
+    const { isBigMatch, isDerby } = computeMatchTags(f);
+    if (isBigMatch) buckets.bigMatch.push(aud);
+    if (isDerby) buckets.derby.push(aud);
+    if (!isBigMatch && !isDerby) buckets.regular.push(aud);
+  }
+  return {
+    regular: { avg: avg(buckets.regular), count: buckets.regular.length },
+    bigMatch: { avg: avg(buckets.bigMatch), count: buckets.bigMatch.length },
+    derby: { avg: avg(buckets.derby), count: buckets.derby.length },
+  };
+}
+
+// Ties the Sponsors tab's per-fixture activation checkboxes directly to the
+// audience they actually reached - "what did checking that box deliver?"
+// rather than just how many times it was checked.
+export function computeActivationAudience(team, fixtures, simulcastInfo, includeSimulcast) {
+  const forTeam = fixtures.filter((f) => f.home.slug === team.slug || f.away.slug === team.slug);
+  return SPONSOR_TYPES.map(({ fixtureKey, label }) => {
+    const audiences = [];
+    for (const f of forTeam) {
+      if (!isPlayed(f)) continue;
+      const side = f.home.slug === team.slug ? 'home' : 'away';
+      if (f[`${side}${fixtureKey}`]) audiences.push(effectiveAudience(f, simulcastInfo, includeSimulcast));
+    }
+    return { key: fixtureKey, label, count: audiences.length, total: sum(audiences), avg: avg(audiences) };
+  });
 }
