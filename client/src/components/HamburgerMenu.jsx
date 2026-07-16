@@ -4,7 +4,7 @@ import TeamPicker from './TeamPicker.jsx';
 import TeamSettingsPanel from './TeamSettingsPanel.jsx';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useSession } from '../lib/useSession.js';
-import { getSavedTeams } from '../lib/savedTeams.js';
+import { getSavedTeams, saveTeams } from '../lib/savedTeams.js';
 
 function HamburgerIcon() {
   return (
@@ -96,7 +96,11 @@ export default function HamburgerMenu() {
   }
 
   function toggleTeam(slug) {
-    setSelectedTeams((prev) => (prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]));
+    setSelectedTeams((prev) => {
+      const next = prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug];
+      saveTeams(next);
+      return next;
+    });
   }
 
   function viewTeamCalendar() {
@@ -106,10 +110,18 @@ export default function HamburgerMenu() {
     navigate(`/calendar/${selectedTeams.join(',')}`);
   }
 
+  // Jumps straight to a combined view of every sponsored club without
+  // touching selectedTeams - "All sponsored teams" is a one-off shortcut,
+  // not something that should show up pre-checked in the picker afterwards.
+  function viewStandings() {
+    pushedLevels.current = 0;
+    setView('closed');
+    navigate('/standings');
+  }
+
   function viewAllSponsored() {
     const sponsoredSlugs = teams.filter((t) => t.sponsored).map((t) => t.slug);
     if (sponsoredSlugs.length === 0) return;
-    setSelectedTeams(sponsoredSlugs);
     pushedLevels.current = 0;
     setView('closed');
     navigate(`/calendar/${sponsoredSlugs.join(',')}`);
@@ -189,8 +201,11 @@ export default function HamburgerMenu() {
                     >
                       Settings <span aria-hidden="true">›</span>
                     </button>
-                    <button className="flex cursor-default items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white/40">
-                      Standings
+                    <button
+                      onClick={viewStandings}
+                      className="flex items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white hover:bg-white/10"
+                    >
+                      Standings <span aria-hidden="true">›</span>
                     </button>
                     <button className="flex cursor-default items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white/40">
                       Dashboard

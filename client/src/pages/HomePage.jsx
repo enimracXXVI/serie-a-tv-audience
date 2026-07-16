@@ -4,29 +4,30 @@ import { useFixtures } from '../lib/useFixtures.js';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useSession } from '../lib/useSession.js';
 import { syncMatchTags } from '../lib/sheets.js';
+import { callWithReauth } from '../lib/reauth.js';
 
 export default function HomePage() {
   const { teams } = useTeams();
   const { fixtures, loading: fixturesLoading, error: fixturesError, updateFixture } = useFixtures([], teams);
   const session = useSession();
   const [syncStatus, setSyncStatus] = useState(null); // null | 'syncing' | 'done' | error message
+  const [updateError, setUpdateError] = useState(null);
 
   async function handleUpdate(id, fields) {
     try {
-      await updateFixture(id, fields, session.accessToken);
+      await callWithReauth(session, (token) => updateFixture(id, fields, token));
+      setUpdateError(null);
     } catch (err) {
-      if (err.message === 'UNAUTHENTICATED') session.signIn();
-      else console.error(err);
+      setUpdateError(err.message);
     }
   }
 
   async function handleSyncTags() {
     setSyncStatus('syncing');
     try {
-      await syncMatchTags(fixtures, session.accessToken);
+      await callWithReauth(session, (token) => syncMatchTags(fixtures, token));
       setSyncStatus('done');
     } catch (err) {
-      if (err.message === 'UNAUTHENTICATED') session.signIn();
       setSyncStatus(err.message);
     }
   }
@@ -56,6 +57,12 @@ export default function HomePage() {
               <span className="text-xs text-red-300">{syncStatus}</span>
             )}
           </div>
+        )}
+
+        {updateError && (
+          <p className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs text-red-200">
+            {updateError}
+          </p>
         )}
 
         {fixturesLoading ? (

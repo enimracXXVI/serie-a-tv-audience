@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Crest from './Crest.jsx';
 import { useTeams } from '../lib/useTeams.jsx';
+import { callWithReauth } from '../lib/reauth.js';
 
 const inputClass =
   'w-full rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9] placeholder:text-white/30';
@@ -224,15 +225,7 @@ export default function TeamSettingsPanel({ session }) {
   const { teams, loading, error, saveTeam } = useTeams();
 
   async function handleSave(slug, fields) {
-    try {
-      await saveTeam(slug, fields, session.accessToken);
-    } catch (err) {
-      if (err.message === 'UNAUTHENTICATED') {
-        session.signIn();
-        return;
-      }
-      throw err;
-    }
+    await callWithReauth(session, (token) => saveTeam(slug, fields, token));
   }
 
   return (

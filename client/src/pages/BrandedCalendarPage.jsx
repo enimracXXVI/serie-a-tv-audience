@@ -6,7 +6,7 @@ import TeamCalendarView from '../components/TeamCalendarView.jsx';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useFixtures } from '../lib/useFixtures.js';
 import { themeGradient, contrastText } from '../lib/color.js';
-import { saveTeams } from '../lib/savedTeams.js';
+import { FIXTURE_FILTERS, applyFixtureFilters } from '../lib/fixtureFilters.js';
 
 // Team calendars are view-only - editing (scores, audience, sponsorship
 // activity) only happens from the home page's full calendar.
@@ -19,6 +19,11 @@ export default function BrandedCalendarPage() {
   );
   const { teams, loading: teamsLoading } = useTeams();
   const { fixtures, loading: fixturesLoading, error: fixturesError } = useFixtures(slugs, teams);
+  const [activeFilters, setActiveFilters] = useState([]);
+  const filteredFixtures = useMemo(() => applyFixtureFilters(fixtures, activeFilters), [fixtures, activeFilters]);
+  function toggleFilter(key) {
+    setActiveFilters((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  }
 
   const selectedTeams = useMemo(
     () => slugs.map((s) => teams.find((t) => t.slug === s)).filter(Boolean),
@@ -59,10 +64,6 @@ export default function BrandedCalendarPage() {
       ? `${selectedTeams.map((t) => t.name).join(' & ')} · Serie A Calendar`
       : 'Serie A Calendar';
   }, [selectedTeams]);
-
-  useEffect(() => {
-    if (slugs.length > 0) saveTeams(slugs);
-  }, [slugs]);
 
   return (
     <div className="min-h-screen">
@@ -109,6 +110,32 @@ export default function BrandedCalendarPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-6">
+        {!teamsLoading && !fixturesLoading && !fixturesError && fixtures.length > 0 && (
+          <div className="mb-4 flex flex-wrap items-center gap-1.5">
+            {FIXTURE_FILTERS.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => toggleFilter(f.key)}
+                className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                  activeFilters.includes(f.key)
+                    ? 'bg-[#1fd8c9] text-[#0f1e54]'
+                    : 'bg-white/10 text-white/70 hover:bg-white/20'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+            {activeFilters.length > 0 && (
+              <button
+                onClick={() => setActiveFilters([])}
+                className="px-2 text-xs font-semibold text-white/40 hover:text-white/70"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        )}
+
         {teamsLoading || fixturesLoading ? (
           <p className="text-white/40 text-sm">Loading calendar…</p>
         ) : fixturesError ? (
@@ -116,9 +143,9 @@ export default function BrandedCalendarPage() {
             {fixturesError}
           </p>
         ) : selectedTeams.length === 1 ? (
-          <TeamCalendarView fixtures={fixtures} team={selectedTeams[0]} accent={accent} />
+          <TeamCalendarView fixtures={filteredFixtures} team={selectedTeams[0]} accent={accent} />
         ) : (
-          <CalendarView fixtures={fixtures} highlightSlugs={slugs} accent={accent} canEdit={false} />
+          <CalendarView fixtures={filteredFixtures} highlightSlugs={slugs} accent={accent} canEdit={false} />
         )}
       </main>
     </div>

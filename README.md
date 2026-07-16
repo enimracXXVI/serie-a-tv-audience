@@ -11,10 +11,12 @@ exactly one team shows a different, flatter layout instead of the two-team
 combined view: every match in the season, one after another (no matchday
 filter to page through), one row per match - date/time, a home or away icon,
 the opponent, score and broadcasters - laid out in multiple columns once
-there's room for it. The hamburger menu's Teams picker defaults to whichever
-clubs are marked `sponsored` in Settings, the first time there's no saved
-selection yet - or jump straight to a combined calendar of every sponsored
-club with the **All sponsored teams →** button there.
+there's room for it. The hamburger menu's Teams picker only remembers clubs
+you've deliberately checked there - it never pre-selects anything on its own.
+The **All sponsored teams →** button next to it is a one-off shortcut to a
+combined calendar of every sponsored club; using it doesn't touch the
+picker's own checkboxes, so reopening the menu afterwards still shows
+whatever (if anything) you'd actually picked, not the 5 sponsored clubs.
 
 On any branded calendar page, the header's club pills are toggles, not just
 links: click one to add or remove that club from the current view (dimmed =
@@ -22,6 +24,10 @@ not currently included) - narrowing down to one switches to the single-team
 layout, and the other clubs' pills stay put so you can add them back. Big
 matches and derbies get an emphatic gradient bar + tinted background on their
 row, with both DERBY and BIG labels shown together when a fixture is both.
+A row of filter chips (Big matches, Derbies, Matchday sponsor, Player mascot,
+Walkabout) narrows the fixtures shown down to matches meeting any of the
+checked criteria - handy on the sponsored-teams view to jump straight to the
+matches your activations actually happened at.
 
 ## Stack
 
@@ -181,6 +187,22 @@ If after all 38 games, two teams are tied on points for either first place or fo
     Higher number of goals scored
     Play-off game at a neutral venue if relevant to decide European qualification or relegation; otherwise by coin flip
 
+The app can't simulate a play-off or a coin flip, so the **Standings** page
+(hamburger menu → Standings) applies points, then the four tiebreakers above
+in order, then falls back to alphabetical if a tie somehow survives all of
+them - the same order at every matchday, not just the final table.
+
+It's two views:
+- A normal league table - played/won/drawn/lost, goals for/against/difference,
+  points - with sponsored clubs given a subtle highlight.
+- **Standing by matchday**: a line chart plotting every club's cumulative
+  points, one line per club in that club's own colour, from matchday 1 up to
+  wherever the slider underneath is set - drag it back and forward and the
+  chart redraws to that point in the season. Sponsored clubs (plus whoever's
+  currently top) get a crest label directly on their line; hover any line (or
+  a row in the ranked list beside the chart, which always shows the exact
+  top-to-bottom order at the slider's matchday) to highlight it.
+
 ## One-time setup
 
 ### 1. Turn on GitHub Pages
@@ -269,4 +291,4 @@ yet wired into the app.
 
 ## Roadmap
 
-- Team/league performance dashboards (audience trends, big-match tracking).
+- Audience-trend dashboards (DAZN/Sky viewership over the season).
