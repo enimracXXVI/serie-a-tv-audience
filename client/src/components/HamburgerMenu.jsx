@@ -119,6 +119,12 @@ export default function HamburgerMenu() {
     navigate('/standings');
   }
 
+  function viewDashboard() {
+    pushedLevels.current = 0;
+    setView('closed');
+    navigate('/dashboard');
+  }
+
   function viewAllSponsored() {
     const sponsoredSlugs = teams.filter((t) => t.sponsored).map((t) => t.slug);
     if (sponsoredSlugs.length === 0) return;
@@ -207,8 +213,11 @@ export default function HamburgerMenu() {
                     >
                       Standings <span aria-hidden="true">›</span>
                     </button>
-                    <button className="flex cursor-default items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white/40">
-                      Dashboard
+                    <button
+                      onClick={viewDashboard}
+                      className="flex items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white hover:bg-white/10"
+                    >
+                      Dashboard <span aria-hidden="true">›</span>
                     </button>
                   </nav>
                 </div>

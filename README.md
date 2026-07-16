@@ -195,13 +195,50 @@ them - the same order at every matchday, not just the final table.
 It's two views:
 - A normal league table - played/won/drawn/lost, goals for/against/difference,
   points - with sponsored clubs given a subtle highlight.
-- **Standing by matchday**: a line chart plotting every club's cumulative
-  points, one line per club in that club's own colour, from matchday 1 up to
-  wherever the slider underneath is set - drag it back and forward and the
-  chart redraws to that point in the season. Sponsored clubs (plus whoever's
-  currently top) get a crest label directly on their line; hover any line (or
-  a row in the ranked list beside the chart, which always shows the exact
-  top-to-bottom order at the slider's matchday) to highlight it.
+- **Standing by matchday**: two line charts - cumulative points, and league
+  position (1st at the top) - plotting every club in that club's own colour,
+  from matchday 1 up to wherever the shared slider underneath is set; drag it
+  back and forward and both redraw to that point in the season. Each line
+  ends in that club's own crest instead of a plain dot, nudged apart just
+  enough to stay readable when clubs are tied. Hover any line (or a row in
+  the ranked list beside the charts, which always shows the exact
+  top-to-bottom order at the slider's matchday) to highlight it across both
+  charts and the list together.
+
+## Dashboard
+
+The hamburger menu's **Dashboard** (`/dashboard`) is for evaluating sponsorship
+deals, not for following the season - it covers all 20 clubs (sponsored ones
+pinned to the top of the table and dotted elsewhere), not just the ones
+you've sponsored, since you need the numbers for clubs you're *considering* too.
+
+Two audience figures are tracked, for two different kinds of deal:
+- **Home audience** - only that club's home games. This is what an LED
+  perimeter-board package buys, since those boards only exist at that club's
+  own stadium.
+- **Total audience** - home and away combined. This is what a jersey/kit
+  partnership buys, since the badge is on screen wherever the club plays.
+
+Both are DAZN + Sky combined (Sky's figure only counts on games also marked
+`onSky`). **Added time** (average stoppage-time minutes per home game) is
+tracked separately, unweighted by audience, for evaluating the cheaper
+LED packages that only run during stoppage time.
+
+**Simulcast handling**: when several games share an exact kickoff slot, DAZN
+airs them as one program with a single shared `daznSimulcastAudience` figure
+(see the fixtures sheet columns above) instead of - or alongside - each
+game's own `daznAudience`. Counting both as-is would double-count the same
+viewers across every game in the slot, so by default the dashboard ignores
+`daznSimulcastAudience` entirely and uses only each game's own `daznAudience`.
+Flipping on **Include simulcast audience** (top right of the page) instead
+gives each game in a shared slot an even split of that slot's shared figure
+(`daznSimulcastAudience ÷ number of games in the slot`), added on top - a
+smart-but-approximate adjustment, off by default.
+
+The page has three parts: a ranked bar chart (pick the metric from the
+dropdown), a sortable full-club table, and a top-games leaderboard (filter by
+club, home-only, and how many to show). Click a club anywhere to focus it
+across all three.
 
 ## One-time setup
 
@@ -291,4 +328,4 @@ yet wired into the app.
 
 ## Roadmap
 
-- Audience-trend dashboards (DAZN/Sky viewership over the season).
+- Nothing currently planned - open an issue or just ask for the next thing.
