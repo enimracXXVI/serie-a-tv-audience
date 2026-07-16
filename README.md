@@ -7,10 +7,13 @@ calendar page branded with the colors and crests of any teams you select.
 
 All editing happens on the home page's full calendar - the per-team and
 combined branded calendar pages (`/calendar/...`) are view-only. Picking
-exactly one team shows a different, flatter layout (one row per match: date,
-home/away, opponent, score) instead of the two-team combined view. The
-hamburger menu's Teams picker defaults to whichever clubs are marked
-`sponsored` in Settings, the first time there's no saved selection yet.
+exactly one team shows a different, flatter layout instead of the two-team
+combined view: every match in the season, one after another (no matchday
+filter to page through), one row per match - date/time, a home or away icon,
+the opponent, score and broadcasters - laid out in multiple columns once
+there's room for it. The hamburger menu's Teams picker defaults to whichever
+clubs are marked `sponsored` in Settings, the first time there's no saved
+selection yet.
 
 ## Stack
 
@@ -73,7 +76,7 @@ that doesn't exist yet in the seeded sheet — add it yourself:
 1. Add a new sheet tab named exactly `teams`.
 2. Put this header row in row 1: `slug`, `name`, `short`, `primary`,
    `secondary`, `crestUrl`, `sponsored`, `matchdaySponsors`, `playerMascots`,
-   `walkabouts`.
+   `walkabouts`, `bigClub`, `derbyRival`.
 3. Select cell A2 and paste this block (one row per club, tab-separated —
    copy it as-is and Sheets will split it into columns automatically):
 
@@ -112,6 +115,18 @@ rows, crests, branded pages) for anyone with the app open in a browser tab —
 no reload needed — though it's a one-way sync: someone else's browser only
 picks up your change the next time they load the app, there's no live
 push between devices.
+
+`bigClub` and `derbyRival` drive automatic match highlighting - neither is
+stored per fixture, both are worked out live from the two teams involved:
+- **Big match**: flip `bigClub` on for any club considered a marquee side:
+  whenever two `bigClub` clubs play each other, that fixture is a big match.
+- **Derby**: pick a `derbyRival` for a club (a dropdown of every other club in
+  Settings) and a fixture only counts as a derby between those two *specific*
+  clubs - e.g. Roma's rival set to Lazio means Roma-Lazio is a derby, but
+  Roma-Milan isn't, even if Milan has its own derby rival set elsewhere.
+
+Both show up as a small coloured left border plus a DERBY/BIG label on the
+fixture, everywhere it's displayed.
 
 `crestUrl` replaces the generated placeholder shield with a real badge.
 Editing it from the Settings panel writes an `=IMAGE("url")` formula into the

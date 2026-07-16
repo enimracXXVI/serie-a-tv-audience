@@ -72,7 +72,22 @@ function ColorField({ label, value, onCommit }) {
   );
 }
 
-function TeamSettingsRow({ team, canEdit, onSave }) {
+function SelectField({ label, value, onCommit, options, width = 'w-40' }) {
+  return (
+    <Field label={label}>
+      <select value={value ?? ''} onChange={(e) => onCommit(e.target.value || null)} className={`${inputClass} ${width}`}>
+        <option value="">None</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </Field>
+  );
+}
+
+function TeamSettingsRow({ team, allTeams, canEdit, onSave }) {
   const [expanded, setExpanded] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
@@ -94,6 +109,16 @@ function TeamSettingsRow({ team, canEdit, onSave }) {
         {team.sponsored && (
           <span className="rounded-full bg-[#1fd8c9]/20 px-2 py-0.5 text-[10px] font-bold uppercase text-[#1fd8c9]">
             Sponsor
+          </span>
+        )}
+        {team.bigClub && (
+          <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-400">
+            Big
+          </span>
+        )}
+        {team.derbyRival && (
+          <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-red-400">
+            Derby
           </span>
         )}
         <span className="text-white/40">{expanded ? '▾' : '▸'}</span>
@@ -121,15 +146,34 @@ function TeamSettingsRow({ team, canEdit, onSave }) {
                 width="w-full"
                 onCommit={(v) => commit({ crestUrl: v })}
               />
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={Boolean(team.sponsored)}
-                  onChange={(e) => commit({ sponsored: e.target.checked })}
-                  className="h-4 w-4 accent-[#1fd8c9]"
+              <div className="flex flex-wrap items-end gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(team.sponsored)}
+                    onChange={(e) => commit({ sponsored: e.target.checked })}
+                    className="h-4 w-4 accent-[#1fd8c9]"
+                  />
+                  <span className="text-xs font-semibold text-white/70">We sponsor this team</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(team.bigClub)}
+                    onChange={(e) => commit({ bigClub: e.target.checked })}
+                    className="h-4 w-4 accent-[#1fd8c9]"
+                  />
+                  <span className="text-xs font-semibold text-white/70">Big club (marquee matches)</span>
+                </label>
+                <SelectField
+                  label="Derby rival"
+                  value={team.derbyRival}
+                  onCommit={(v) => commit({ derbyRival: v })}
+                  options={allTeams
+                    .filter((t) => t.slug !== team.slug)
+                    .map((t) => ({ value: t.slug, label: t.name }))}
                 />
-                <span className="text-xs font-semibold text-white/70">We sponsor this team</span>
-              </label>
+              </div>
               {team.sponsored && (
                 <div className="flex flex-wrap gap-2">
                   <NumberField
@@ -155,6 +199,10 @@ function TeamSettingsRow({ team, canEdit, onSave }) {
             <div className="flex flex-col gap-1 text-xs text-white/50">
               <span>Primary colour: {team.primary}</span>
               <span>Secondary colour: {team.secondary}</span>
+              {team.bigClub && <span>Big club</span>}
+              {team.derbyRival && (
+                <span>Derby rival: {allTeams.find((t) => t.slug === team.derbyRival)?.name ?? team.derbyRival}</span>
+              )}
               {team.sponsored ? (
                 <>
                   <span>Sponsored - matchday sponsors: {team.matchdaySponsors ?? '-'}</span>
@@ -202,7 +250,13 @@ export default function TeamSettingsPanel({ session }) {
       ) : (
         <div className="flex flex-col gap-1.5">
           {teams.map((team) => (
-            <TeamSettingsRow key={team.slug} team={team} canEdit={session.signedIn} onSave={handleSave} />
+            <TeamSettingsRow
+              key={team.slug}
+              team={team}
+              allTeams={teams}
+              canEdit={session.signedIn}
+              onSave={handleSave}
+            />
           ))}
         </div>
       )}

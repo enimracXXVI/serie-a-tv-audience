@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import MatchdayGroup from './MatchdayGroup.jsx';
 import MatchdaySelector from './MatchdaySelector.jsx';
 import { closestMatchday } from '../lib/matchdays.js';
+import { computeMatchTags } from '../lib/matchTags.js';
 
 export default function CalendarView({
   fixtures,
@@ -28,6 +29,7 @@ export default function CalendarView({
       const key = `${f.date ?? ''}|${f.kickoffTime ?? ''}`;
       f.isFirstInBlock = key !== lastKey;
       lastKey = key;
+      Object.assign(f, computeMatchTags(f));
     }
   }
   const matchdays = [...byMatchday.keys()].sort((a, b) => a - b);

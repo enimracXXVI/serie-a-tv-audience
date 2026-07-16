@@ -36,6 +36,10 @@ function ScoreDisplay({ usScore, themScore }) {
   );
 }
 
+// Deliberately one uniform (not viewport-responsive) size: this row lands
+// inside CSS columns whose actual rendered width has nothing to do with the
+// viewport width - a "desktop" sm: breakpoint would fire while the card
+// itself is still narrow, squeezing the opponent name to nothing.
 export default function TeamFixtureRow({ fixture, team }) {
   const isHome = fixture.home.slug === team.slug;
   const opponent = isHome ? fixture.away : fixture.home;
@@ -45,15 +49,18 @@ export default function TeamFixtureRow({ fixture, team }) {
   const sponsorFlags = isHome
     ? { matchdaySponsor: fixture.homeMatchdaySponsor, playerMascot: fixture.homePlayerMascot, walkabout: fixture.homeWalkabout }
     : { matchdaySponsor: fixture.awayMatchdaySponsor, playerMascot: fixture.awayPlayerMascot, walkabout: fixture.awayWalkabout };
+  const accentBorder = fixture.isDerby ? '#ef4444' : fixture.isBigMatch ? '#f59e0b' : 'transparent';
 
   return (
-    <div className="flex items-center gap-1.5 px-2 py-2 sm:gap-2 sm:px-3 sm:py-2.5">
-      <div className="w-8 shrink-0 text-center text-[10px] font-bold uppercase tracking-wide text-gray-400 sm:w-10">
+    <div className="flex items-center gap-1.5 border-l-4 px-2 py-2" style={{ borderLeftColor: accentBorder }}>
+      <div className="w-8 shrink-0 text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
         MD{fixture.matchday}
       </div>
 
-      <div className="w-10 shrink-0 text-center text-[9px] leading-tight text-gray-400 sm:w-14 sm:text-[10px]">
+      <div className="w-10 shrink-0 text-center text-[9px] leading-tight text-gray-400">
         {dateShort && <div>{dateShort}</div>}
+        {fixture.isDerby && <div className="font-bold text-red-500">DERBY</div>}
+        {!fixture.isDerby && fixture.isBigMatch && <div className="font-bold text-amber-500">BIG</div>}
         {fixture.kickoffTime && <div>{fixture.kickoffTime}</div>}
       </div>
 
@@ -61,12 +68,9 @@ export default function TeamFixtureRow({ fixture, team }) {
         {isHome ? <HomeIcon /> : <PlaneIcon />}
       </div>
 
-      <div className="flex flex-1 items-center gap-1.5 min-w-0 sm:gap-2">
-        <Crest team={opponent} size={24} />
-        <span className="truncate text-xs font-semibold text-[#0f1e54] sm:text-sm">
-          <span className="sm:hidden">{opponent.short ?? opponent.name}</span>
-          <span className="hidden sm:inline">{opponent.name}</span>
-        </span>
+      <div className="flex flex-1 items-center gap-1.5 min-w-0">
+        <Crest team={opponent} size={22} />
+        <span className="truncate text-xs font-semibold text-[#0f1e54]">{opponent.name}</span>
         <SponsorBadges {...sponsorFlags} />
       </div>
 
@@ -74,18 +78,9 @@ export default function TeamFixtureRow({ fixture, team }) {
         <ScoreDisplay usScore={usScore} themScore={themScore} />
       </div>
 
-      <div className="flex w-12 shrink-0 items-center gap-1 sm:w-24 sm:gap-2">
-        <DaznLogo height={14} />
-        {fixture.onSky && (
-          <>
-            <span className="sm:hidden">
-              <SkyLogo height={14} compact />
-            </span>
-            <span className="hidden sm:inline">
-              <SkyLogo height={12} />
-            </span>
-          </>
-        )}
+      <div className="flex w-10 shrink-0 items-center gap-1">
+        <DaznLogo height={13} />
+        {fixture.onSky && <SkyLogo height={13} compact />}
       </div>
     </div>
   );

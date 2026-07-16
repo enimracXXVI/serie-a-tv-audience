@@ -2,7 +2,7 @@ import { SPREADSHEET_ID, GOOGLE_API_KEY, TEAMS_SHEET_NAME } from './config.js';
 import { columnIndexToLetter, buildHeaderIndex, cell } from './sheetsCommon.js';
 
 const NUMERIC_FIELDS = new Set(['matchdaySponsors', 'playerMascots', 'walkabouts']);
-const BOOLEAN_FIELDS = new Set(['sponsored']);
+const BOOLEAN_FIELDS = new Set(['sponsored', 'bigClub']);
 const EDITABLE_FIELDS = [
   'name',
   'short',
@@ -13,6 +13,8 @@ const EDITABLE_FIELDS = [
   'matchdaySponsors',
   'playerMascots',
   'walkabouts',
+  'bigClub',
+  'derbyRival',
 ];
 
 const FULL_RANGE = `${TEAMS_SHEET_NAME}!A1:Z200`;
