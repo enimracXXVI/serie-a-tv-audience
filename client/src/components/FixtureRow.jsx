@@ -3,6 +3,7 @@ import Crest from './Crest.jsx';
 import { DaznLogo, SkyLogo } from './BroadcastBadges.jsx';
 import SponsorBadges from './SponsorBadges.jsx';
 import { matchTagStyle } from '../lib/matchTags.js';
+import { SPONSOR_TYPES } from '../lib/sponsorCounts.js';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
@@ -135,10 +136,10 @@ function AudienceFields({ fixture, onUpdate }) {
   );
 }
 
-function SponsorshipFields({ fixture, onUpdate }) {
+function SponsorshipFields({ fixture, onUpdate, sponsorCounts }) {
   const sides = [];
-  if (fixture.home.sponsored) sides.push({ prefix: 'home', label: fixture.home.name });
-  if (fixture.away.sponsored) sides.push({ prefix: 'away', label: fixture.away.name });
+  if (fixture.home.sponsored) sides.push({ prefix: 'home', team: fixture.home });
+  if (fixture.away.sponsored) sides.push({ prefix: 'away', team: fixture.away });
 
   if (sides.length === 0) {
     return <p className="text-xs text-gray-400">No sponsored club in this fixture.</p>;
@@ -146,37 +147,33 @@ function SponsorshipFields({ fixture, onUpdate }) {
 
   return (
     <div className="flex flex-wrap gap-4">
-      {sides.map(({ prefix, label }) => (
+      {sides.map(({ prefix, team }) => (
         <div key={prefix} className="flex flex-col gap-1.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{team.name}</span>
           <div className="flex flex-wrap gap-3">
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={Boolean(fixture[`${prefix}MatchdaySponsor`])}
-                onChange={(e) => onUpdate(fixture.id, { [`${prefix}MatchdaySponsor`]: e.target.checked })}
-                className="h-4 w-4 accent-[#1fd8c9]"
-              />
-              <span className="text-xs font-semibold text-gray-600">Matchday sponsor</span>
-            </label>
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={Boolean(fixture[`${prefix}PlayerMascot`])}
-                onChange={(e) => onUpdate(fixture.id, { [`${prefix}PlayerMascot`]: e.target.checked })}
-                className="h-4 w-4 accent-[#1fd8c9]"
-              />
-              <span className="text-xs font-semibold text-gray-600">Player mascot</span>
-            </label>
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={Boolean(fixture[`${prefix}Walkabout`])}
-                onChange={(e) => onUpdate(fixture.id, { [`${prefix}Walkabout`]: e.target.checked })}
-                className="h-4 w-4 accent-[#1fd8c9]"
-              />
-              <span className="text-xs font-semibold text-gray-600">Walkabout</span>
-            </label>
+            {SPONSOR_TYPES.map(({ fixtureKey, capField, label }) => {
+              const fieldName = `${prefix}${fixtureKey}`;
+              const checked = Boolean(fixture[fieldName]);
+              const cap = team[capField];
+              const current = sponsorCounts?.[team.slug]?.[capField] ?? 0;
+              const capReached = !checked && cap !== null && cap !== undefined && cap !== '' && current >= Number(cap);
+              return (
+                <label
+                  key={fixtureKey}
+                  className={`flex items-center gap-1.5 ${capReached ? 'opacity-40' : ''}`}
+                  title={capReached ? `${label} cap reached (${current}/${cap}) - raise it in Settings to allow more.` : undefined}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={capReached}
+                    onChange={(e) => onUpdate(fixture.id, { [fieldName]: e.target.checked })}
+                    className="h-4 w-4 accent-[#1fd8c9] disabled:cursor-not-allowed"
+                  />
+                  <span className="text-xs font-semibold text-gray-600">{label}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
       ))}
@@ -184,7 +181,7 @@ function SponsorshipFields({ fixture, onUpdate }) {
   );
 }
 
-export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], canEdit, editMode }) {
+export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], canEdit, editMode, sponsorCounts }) {
   const { home, away } = fixture;
   const homeHighlighted = highlightSlugs.includes(home.slug);
   const awayHighlighted = highlightSlugs.includes(away.slug);
@@ -263,13 +260,15 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
           {editMode === 'kickoff' && <KickoffFields fixture={fixture} onUpdate={onUpdate} />}
           {editMode === 'result' && <ResultFields fixture={fixture} onUpdate={onUpdate} />}
           {editMode === 'audience' && <AudienceFields fixture={fixture} onUpdate={onUpdate} />}
-          {editMode === 'sponsors' && <SponsorshipFields fixture={fixture} onUpdate={onUpdate} />}
+          {editMode === 'sponsors' && (
+            <SponsorshipFields fixture={fixture} onUpdate={onUpdate} sponsorCounts={sponsorCounts} />
+          )}
           {editMode === 'all' && (
             <>
               <KickoffFields fixture={fixture} onUpdate={onUpdate} />
               <ResultFields fixture={fixture} onUpdate={onUpdate} />
               <AudienceFields fixture={fixture} onUpdate={onUpdate} />
-              <SponsorshipFields fixture={fixture} onUpdate={onUpdate} />
+              <SponsorshipFields fixture={fixture} onUpdate={onUpdate} sponsorCounts={sponsorCounts} />
             </>
           )}
         </div>

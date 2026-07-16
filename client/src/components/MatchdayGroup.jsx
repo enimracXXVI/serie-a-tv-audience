@@ -15,7 +15,7 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 }
 
-export default function MatchdayGroup({ matchday, fixtures, onUpdate, highlightSlugs, accent, canEdit }) {
+export default function MatchdayGroup({ matchday, fixtures, onUpdate, highlightSlugs, accent, canEdit, sponsorCounts }) {
   const [activeTab, setActiveTab] = useState(null);
   const dates = fixtures.map((f) => f.date).filter(Boolean);
   const range =
@@ -65,6 +65,7 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, highlightS
             highlightSlugs={highlightSlugs}
             canEdit={canEdit}
             editMode={activeTab}
+            sponsorCounts={sponsorCounts}
           />
         ))}
       </div>

@@ -33,9 +33,11 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-8">
+      <header className="border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-3">
         <div className="mx-auto max-w-6xl">
-          <h1 className="text-2xl font-black text-white sm:text-3xl">Serie A 26/27</h1>
+          <h1 className="text-lg font-black text-white sm:text-xl">
+            Serie A <span className="ml-1.5 text-xs font-semibold opacity-60">26/27</span>
+          </h1>
         </div>
       </header>
 

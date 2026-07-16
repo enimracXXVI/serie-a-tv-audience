@@ -3,6 +3,7 @@ import MatchdayGroup from './MatchdayGroup.jsx';
 import MatchdaySelector from './MatchdaySelector.jsx';
 import { closestMatchday } from '../lib/matchdays.js';
 import { computeMatchTags } from '../lib/matchTags.js';
+import { computeSponsorCounts } from '../lib/sponsorCounts.js';
 
 export default function CalendarView({
   fixtures,
@@ -34,6 +35,9 @@ export default function CalendarView({
   }
   const matchdays = [...byMatchday.keys()].sort((a, b) => a - b);
 
+  // Caps apply across the whole season, not just the visible matchday(s).
+  const sponsorCounts = useMemo(() => computeSponsorCounts(fixtures), [fixtures]);
+
   // matchdays/byMatchday are recomputed fresh every render from fixtures,
   // so fixtures is the only dependency that should retrigger this memo.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -63,6 +67,7 @@ export default function CalendarView({
           highlightSlugs={highlightSlugs}
           accent={accent}
           canEdit={canEdit}
+          sponsorCounts={sponsorCounts}
         />
       ))}
     </div>

@@ -40,27 +40,21 @@ const VIEW_DEPTH = { main: 1, teams: 2, settings: 2 };
 // of navigating the underlying page away.
 export default function HamburgerMenu() {
   const [view, setView] = useState('closed'); // 'closed' | 'main' | 'teams' | 'settings'
-  const [mounted, setMounted] = useState(false);
+  // Keeps whatever content was last showing rendered during the close
+  // transition, so the drawer slides away with its last screen still in it
+  // instead of going blank the instant `view` becomes 'closed'.
+  const [displayedView, setDisplayedView] = useState('main');
+  const [visible, setVisible] = useState(false); // still in the DOM (mid close-transition)
+  const [mounted, setMounted] = useState(false); // slid/faded into the "open" position
   const pushedLevels = useRef(0);
   const session = useSession();
   const { teams } = useTeams();
   const [selectedTeams, setSelectedTeams] = useState(() => getSavedTeams());
-  // Already had a saved selection to start with, so auto-select should never
-  // kick in this session even if the user later clears it down to none.
-  const autoSelectedRef = useRef(selectedTeams.length > 0);
   const navigate = useNavigate();
 
-  // First time there's no saved "my teams" choice yet, default to whichever
-  // clubs are marked sponsored instead of starting empty. Only happens once
-  // per session - later manual (de)selections are never overridden.
   useEffect(() => {
-    if (autoSelectedRef.current) return;
-    const sponsoredSlugs = teams.filter((t) => t.sponsored).map((t) => t.slug);
-    if (sponsoredSlugs.length > 0) {
-      autoSelectedRef.current = true;
-      setSelectedTeams(sponsoredSlugs);
-    }
-  }, [teams, selectedTeams]);
+    if (view !== 'closed') setDisplayedView(view);
+  }, [view]);
 
   useEffect(() => {
     function onPopState(e) {
@@ -75,8 +69,10 @@ export default function HamburgerMenu() {
   useEffect(() => {
     if (view === 'closed') {
       setMounted(false);
-      return;
+      const timeout = setTimeout(() => setVisible(false), 300);
+      return () => clearTimeout(timeout);
     }
+    setVisible(true);
     const id = requestAnimationFrame(() => setMounted(true));
     return () => cancelAnimationFrame(id);
   }, [view]);
@@ -124,23 +120,26 @@ export default function HamburgerMenu() {
   return (
     <>
       <button
-        onClick={() => pushView('main')}
-        aria-label="Open menu"
-        className="fixed right-4 top-4 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/30 text-white backdrop-blur-sm transition-colors hover:bg-black/45"
+        onClick={open ? closeMenu : () => pushView('main')}
+        aria-label={open ? 'Close menu' : 'Open menu'}
+        className="fixed right-4 top-3 z-[60] flex h-9 w-9 items-center justify-center rounded-full border border-[#1fd8c9]/70 bg-black/30 text-[#1fd8c9] backdrop-blur-sm transition-colors hover:bg-black/45"
       >
-        <HamburgerIcon />
+        {open ? <CloseIcon /> : <HamburgerIcon />}
       </button>
 
-      {open && (
+      {visible && (
         <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-black/50" onClick={closeMenu} />
+          <div
+            className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-0'}`}
+            onClick={closeMenu}
+          />
           <div
             className={`relative flex h-full w-full flex-col bg-[#0f1e54] shadow-2xl transition-transform duration-300 ease-out sm:w-96 ${
               mounted ? 'translate-x-0' : 'translate-x-full'
             }`}
           >
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-              {view === 'teams' || view === 'settings' ? (
+            <div className="flex items-center border-b border-white/10 px-5 py-4">
+              {displayedView === 'teams' || displayedView === 'settings' ? (
                 <button
                   onClick={backToMain}
                   className="flex items-center gap-1.5 text-sm font-semibold text-white/70 hover:text-white"
@@ -150,13 +149,10 @@ export default function HamburgerMenu() {
               ) : (
                 <span className="text-sm font-bold uppercase tracking-wide text-white/50">Menu</span>
               )}
-              <button onClick={closeMenu} aria-label="Close menu" className="text-white/70 hover:text-white">
-                <CloseIcon />
-              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-4">
-              {view === 'main' && (
+              {displayedView === 'main' && (
                 <div className="flex flex-col gap-6">
                   <div className="rounded-xl bg-white/5 p-4">
                     {session.signedIn ? (
@@ -203,7 +199,7 @@ export default function HamburgerMenu() {
                 </div>
               )}
 
-              {view === 'teams' && (
+              {displayedView === 'teams' && (
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-sm font-bold uppercase tracking-wide text-white/70">Build a team calendar</h2>
@@ -233,7 +229,7 @@ export default function HamburgerMenu() {
                 </div>
               )}
 
-              {view === 'settings' && <TeamSettingsPanel session={session} />}
+              {displayedView === 'settings' && <TeamSettingsPanel session={session} />}
             </div>
           </div>
         </div>
