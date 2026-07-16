@@ -1,8 +1,10 @@
 import Crest from './Crest.jsx';
 
-export default function TeamPicker({ teams, selected, onToggle }) {
+const DEFAULT_GRID = 'grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-10 gap-2';
+
+export default function TeamPicker({ teams, selected, onToggle, gridClassName = DEFAULT_GRID }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-10 gap-2">
+    <div className={gridClassName}>
       {teams.map((team) => {
         const isActive = selected.includes(team.slug);
         return (

@@ -2,7 +2,6 @@ import { useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Crest from '../components/Crest.jsx';
 import CalendarView from '../components/CalendarView.jsx';
-import SignInBar from '../components/SignInBar.jsx';
 import { useTeams } from '../lib/useTeams.js';
 import { useFixtures } from '../lib/useFixtures.js';
 import { useSession } from '../lib/useSession.js';
@@ -27,7 +26,6 @@ export default function BrandedCalendarPage() {
   const gradient = themeGradient(selectedTeams.map((t) => t.primary));
   const accent = selectedTeams[0]?.primary ?? '#00a651';
   const headerText = contrastText(selectedTeams[0]?.primary ?? '#1a1030');
-  const headerTone = headerText === '#0b0f16' ? 'light' : 'dark';
 
   useEffect(() => {
     document.title = selectedTeams.length
@@ -40,10 +38,6 @@ export default function BrandedCalendarPage() {
   }, [slugs]);
 
   async function handleUpdate(id, fields) {
-    if (!session.signedIn) {
-      session.signIn();
-      return;
-    }
     try {
       await updateFixture(id, fields, session.accessToken);
     } catch (err) {
@@ -53,19 +47,16 @@ export default function BrandedCalendarPage() {
   }
 
   return (
-    <div id="top" className="min-h-screen">
+    <div className="min-h-screen">
       <header className="border-b border-white/10 px-6 py-10" style={{ background: gradient }}>
         <div className="mx-auto max-w-6xl">
-          <div className="flex items-start justify-between gap-4">
-            <Link
-              to="/"
-              className="text-xs font-semibold uppercase tracking-wide opacity-70 hover:opacity-100"
-              style={{ color: headerText }}
-            >
-              ← All teams
-            </Link>
-            <SignInBar session={session} tone={headerTone} />
-          </div>
+          <Link
+            to="/"
+            className="text-xs font-semibold uppercase tracking-wide opacity-70 hover:opacity-100"
+            style={{ color: headerText }}
+          >
+            ← All teams
+          </Link>
 
           <div className="mt-3 flex flex-wrap items-center gap-3">
             {selectedTeams.map((t) =>
@@ -120,7 +111,6 @@ export default function BrandedCalendarPage() {
             highlightSlugs={slugs}
             accent={accent}
             canEdit={session.signedIn}
-            onRequireSignIn={session.signIn}
           />
         )}
       </main>

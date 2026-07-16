@@ -38,7 +38,7 @@ function NumberField({ label, value, onCommit, placeholder = '' }) {
       <input
         type="number"
         min="0"
-        className={inputClass}
+        className={`${inputClass} w-24`}
         placeholder={placeholder}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
@@ -51,17 +51,93 @@ function NumberField({ label, value, onCommit, placeholder = '' }) {
   );
 }
 
-export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], canEdit }) {
+function KickoffFields({ fixture, onUpdate }) {
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <Field label="Date">
+        <input
+          type="date"
+          value={fixture.date ?? ''}
+          className={`${inputClass} w-36`}
+          onChange={(e) => onUpdate(fixture.id, { date: e.target.value || null })}
+        />
+      </Field>
+      <Field label="Kickoff time">
+        <input
+          type="time"
+          value={fixture.kickoffTime ?? ''}
+          className={`${inputClass} w-28`}
+          onChange={(e) => onUpdate(fixture.id, { kickoffTime: e.target.value || null })}
+        />
+      </Field>
+      <label className="flex items-center gap-2 pb-1.5">
+        <input
+          type="checkbox"
+          checked={Boolean(fixture.onSky)}
+          onChange={(e) => onUpdate(fixture.id, { onSky: e.target.checked })}
+          className="h-4 w-4 accent-[#1fd8c9]"
+        />
+        <span className="text-xs font-semibold text-gray-600">Also on Sky</span>
+      </label>
+    </div>
+  );
+}
+
+function ResultFields({ fixture, onUpdate }) {
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <NumberField label="Home score" value={fixture.homeScore} onCommit={(v) => onUpdate(fixture.id, { homeScore: v })} />
+      <NumberField label="Away score" value={fixture.awayScore} onCommit={(v) => onUpdate(fixture.id, { awayScore: v })} />
+      <NumberField
+        label="Added time 1H"
+        value={fixture.addedTime1H}
+        placeholder="min"
+        onCommit={(v) => onUpdate(fixture.id, { addedTime1H: v })}
+      />
+      <NumberField
+        label="Added time 2H"
+        value={fixture.addedTime2H}
+        placeholder="min"
+        onCommit={(v) => onUpdate(fixture.id, { addedTime2H: v })}
+      />
+    </div>
+  );
+}
+
+function AudienceFields({ fixture, onUpdate }) {
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <NumberField
+        label="DAZN audience"
+        value={fixture.daznAudience}
+        placeholder="M"
+        onCommit={(v) => onUpdate(fixture.id, { daznAudience: v })}
+      />
+      {fixture.onSky && (
+        <NumberField
+          label="Sky audience"
+          value={fixture.skyAudience}
+          placeholder="M"
+          onCommit={(v) => onUpdate(fixture.id, { skyAudience: v })}
+        />
+      )}
+      {fixture.isFirstInBlock && (
+        <NumberField
+          label="DAZN simulcast audience"
+          value={fixture.daznSimulcastAudience}
+          placeholder="M · shared slot"
+          onCommit={(v) => onUpdate(fixture.id, { daznSimulcastAudience: v })}
+        />
+      )}
+    </div>
+  );
+}
+
+export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], canEdit, editMode }) {
   const { home, away } = fixture;
-  const [expanded, setExpanded] = useState(false);
   const homeHighlighted = highlightSlugs.includes(home.slug);
   const awayHighlighted = highlightSlugs.includes(away.slug);
   const dateShort = formatDateShort(fixture.date);
-
-  function handleSummaryClick() {
-    if (!canEdit) return;
-    setExpanded((e) => !e);
-  }
 
   return (
     <div className="px-2 py-2 sm:px-3 sm:py-2.5">
@@ -83,13 +159,9 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
             <Crest team={home} size={24} />
           </div>
 
-          <button
-            onClick={handleSummaryClick}
-            className={`rounded-md px-1 py-1 transition-colors ${canEdit ? 'hover:bg-gray-100 cursor-pointer' : 'cursor-default'}`}
-            title={canEdit ? 'Edit match details' : undefined}
-          >
+          <div className="rounded-md px-1 py-1">
             <ScoreDisplay homeScore={fixture.homeScore} awayScore={fixture.awayScore} />
-          </button>
+          </div>
 
           <div className="flex items-center gap-1.5 min-w-0 sm:gap-2">
             <Crest team={away} size={24} />
@@ -101,8 +173,7 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
         </div>
 
         {/* Also fixed-width regardless of whether Sky is present, so this
-            never shifts the center block between rows. Stacks on mobile
-            since Sky's logo is inherently wide (~4:1 aspect ratio). */}
+            never shifts the center block between rows. */}
         <div className="flex w-12 shrink-0 items-center gap-1 sm:w-24 sm:gap-2">
           <DaznLogo height={14} />
           {fixture.onSky && (
@@ -118,74 +189,17 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
         </div>
       </div>
 
-      {expanded && canEdit && (
-        <div className="mt-3 grid grid-cols-2 gap-3 rounded-lg bg-gray-50 p-3 sm:grid-cols-4">
-          <Field label="Date">
-            <input
-              type="date"
-              value={fixture.date ?? ''}
-              className={inputClass}
-              onChange={(e) => onUpdate(fixture.id, { date: e.target.value || null })}
-            />
-          </Field>
-          <Field label="Kickoff time">
-            <input
-              type="time"
-              value={fixture.kickoffTime ?? ''}
-              className={inputClass}
-              onChange={(e) => onUpdate(fixture.id, { kickoffTime: e.target.value || null })}
-            />
-          </Field>
-          <NumberField
-            label="Home score"
-            value={fixture.homeScore}
-            onCommit={(v) => onUpdate(fixture.id, { homeScore: v })}
-          />
-          <NumberField
-            label="Away score"
-            value={fixture.awayScore}
-            onCommit={(v) => onUpdate(fixture.id, { awayScore: v })}
-          />
-          <NumberField
-            label="Added time 1H"
-            value={fixture.addedTime1H}
-            placeholder="min"
-            onCommit={(v) => onUpdate(fixture.id, { addedTime1H: v })}
-          />
-          <NumberField
-            label="Added time 2H"
-            value={fixture.addedTime2H}
-            placeholder="min"
-            onCommit={(v) => onUpdate(fixture.id, { addedTime2H: v })}
-          />
-          <NumberField
-            label="DAZN audience"
-            value={fixture.daznAudience}
-            placeholder="M"
-            onCommit={(v) => onUpdate(fixture.id, { daznAudience: v })}
-          />
-          <NumberField
-            label="DAZN simulcast audience"
-            value={fixture.daznSimulcastAudience}
-            placeholder="M · enter once per shared slot"
-            onCommit={(v) => onUpdate(fixture.id, { daznSimulcastAudience: v })}
-          />
-          <label className="flex items-center gap-2 self-end pb-1.5">
-            <input
-              type="checkbox"
-              checked={Boolean(fixture.onSky)}
-              onChange={(e) => onUpdate(fixture.id, { onSky: e.target.checked })}
-              className="h-4 w-4 accent-[#1fd8c9]"
-            />
-            <span className="text-xs font-semibold text-gray-600">Also on Sky</span>
-          </label>
-          {fixture.onSky && (
-            <NumberField
-              label="Sky audience"
-              value={fixture.skyAudience}
-              placeholder="M"
-              onCommit={(v) => onUpdate(fixture.id, { skyAudience: v })}
-            />
+      {canEdit && editMode && (
+        <div className="mt-2 flex flex-col gap-2 rounded-lg bg-gray-50 p-2.5">
+          {editMode === 'kickoff' && <KickoffFields fixture={fixture} onUpdate={onUpdate} />}
+          {editMode === 'result' && <ResultFields fixture={fixture} onUpdate={onUpdate} />}
+          {editMode === 'audience' && <AudienceFields fixture={fixture} onUpdate={onUpdate} />}
+          {editMode === 'all' && (
+            <>
+              <KickoffFields fixture={fixture} onUpdate={onUpdate} />
+              <ResultFields fixture={fixture} onUpdate={onUpdate} />
+              <AudienceFields fixture={fixture} onUpdate={onUpdate} />
+            </>
           )}
         </div>
       )}
