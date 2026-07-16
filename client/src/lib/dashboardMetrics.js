@@ -178,6 +178,30 @@ export function computeTagPremium(fixtures, simulcastInfo, includeSimulcast, tea
   };
 }
 
+// League-wide average audience per matchday across the season, plus one
+// club's own game each matchday if focused - shows whether audience is
+// rising or falling as the season progresses, and how a club's own games
+// track against the league baseline.
+export function computeSeasonTrend(fixtures, simulcastInfo, includeSimulcast, teamSlug) {
+  const matchdays = [...new Set(fixtures.map((f) => f.matchday))].sort((a, b) => a - b);
+  return matchdays.map((matchday) => {
+    const played = fixtures.filter((f) => f.matchday === matchday && isPlayed(f));
+    const leagueAvg = avg(played.map((f) => effectiveAudience(f, simulcastInfo, includeSimulcast)));
+    let teamValue = null;
+    if (teamSlug) {
+      const game = played.find((f) => f.home.slug === teamSlug || f.away.slug === teamSlug);
+      teamValue = game ? effectiveAudience(game, simulcastInfo, includeSimulcast) : null;
+    }
+    return { matchday, leagueAvg, teamValue };
+  });
+}
+
+export function computeSkyShare(fixtures, teamSlug) {
+  const played = filterForTeam(fixtures, teamSlug).filter(isPlayed);
+  const onSky = played.filter((f) => f.onSky).length;
+  return { pct: played.length ? (onSky / played.length) * 100 : 0, onSky, total: played.length };
+}
+
 // Ties the Sponsors tab's per-fixture activation checkboxes directly to the
 // audience they actually reached - "what did checking that box deliver?"
 // rather than just how many times it was checked.

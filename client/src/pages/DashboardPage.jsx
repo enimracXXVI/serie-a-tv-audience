@@ -9,6 +9,8 @@ import {
   computeAudienceByDayAndTime,
   computeTagPremium,
   computeActivationAudience,
+  computeSeasonTrend,
+  computeSkyShare,
 } from '../lib/dashboardMetrics.js';
 import { isPlayed } from '../lib/standings.js';
 import AudienceBarChart from '../components/AudienceBarChart.jsx';
@@ -16,6 +18,10 @@ import TeamMetricsTable from '../components/TeamMetricsTable.jsx';
 import TopGamesList from '../components/TopGamesList.jsx';
 import AudienceByBucketChart from '../components/AudienceByBucketChart.jsx';
 import DayTimeBreakdownTable from '../components/DayTimeBreakdownTable.jsx';
+import SeasonTrendChart from '../components/SeasonTrendChart.jsx';
+import DayTimeHeatmap from '../components/DayTimeHeatmap.jsx';
+import AudienceMeter from '../components/AudienceMeter.jsx';
+import ActivationDonut from '../components/ActivationDonut.jsx';
 
 function StatTile({ label, value, sub }) {
   return (
@@ -80,21 +86,19 @@ function ActivationAudienceCard({ team, activations }) {
       </div>
     );
   }
+  const totalActivations = activations.reduce((a, b) => a + b.count, 0);
+  if (totalActivations === 0) {
+    return (
+      <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
+        <h3 className="mb-2 text-sm font-bold text-[#0f1e54]">{team.name} - sponsor activation audience</h3>
+        <p className="text-xs text-gray-400">No activations checked yet on the home page's Sponsors tab.</p>
+      </div>
+    );
+  }
   return (
     <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
       <h3 className="mb-3 text-sm font-bold text-[#0f1e54]">{team.name} - sponsor activation audience</h3>
-      <div className="flex flex-col gap-2">
-        {activations.map((a) => (
-          <div key={a.key} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
-            <span className="text-xs font-semibold text-gray-600">{a.label}</span>
-            <div className="flex items-center gap-3 text-right">
-              <span className="text-[10px] text-gray-400">{a.count} activations</span>
-              <span className="text-xs font-bold text-[#0f1e54]">{formatM(a.total)} total</span>
-              <span className="text-xs text-gray-500">{formatM(a.avg)} avg</span>
-            </div>
-          </div>
-        ))}
-      </div>
+      <ActivationDonut activations={activations} />
     </div>
   );
 }
@@ -146,6 +150,11 @@ export default function DashboardPage() {
     () => (focusedTeam ? computeActivationAudience(focusedTeam, fixtures, simulcastInfo, includeSimulcast) : []),
     [focusedTeam, fixtures, simulcastInfo, includeSimulcast]
   );
+  const seasonTrend = useMemo(
+    () => computeSeasonTrend(fixtures, simulcastInfo, includeSimulcast, focusedSlug),
+    [fixtures, simulcastInfo, includeSimulcast, focusedSlug]
+  );
+  const skyShare = useMemo(() => computeSkyShare(fixtures, focusedSlug), [fixtures, focusedSlug]);
 
   return (
     <div className="min-h-screen">
@@ -186,6 +195,8 @@ export default function DashboardPage() {
 
             <TeamMetricsTable metrics={metrics} focusedSlug={focusedSlug} onFocus={setFocusedSlug} />
 
+            <SeasonTrendChart trend={seasonTrend} team={focusedTeam} />
+
             <div>
               <p className="mb-2 text-xs font-semibold text-white/40">
                 {focusedTeam
@@ -198,12 +209,19 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            <DayTimeHeatmap rows={audienceByDayAndTime} />
             <DayTimeBreakdownTable rows={audienceByDayAndTime} />
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <TagPremiumCard premium={tagPremium} />
-              <ActivationAudienceCard team={focusedTeam} activations={activationAudience} />
+              <AudienceMeter
+                label={focusedTeam ? `${focusedTeam.name} games also on Sky` : 'Games also on Sky'}
+                pct={skyShare.pct}
+                sub={`${skyShare.onSky} of ${skyShare.total} played games`}
+              />
             </div>
+
+            <ActivationAudienceCard team={focusedTeam} activations={activationAudience} />
 
             <TopGamesList
               fixtures={fixtures}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import FixtureRow from './FixtureRow.jsx';
 
 const TABS = [
@@ -17,6 +17,20 @@ function formatDate(dateStr) {
 
 export default function MatchdayGroup({ matchday, fixtures, onUpdate, highlightSlugs, accent, canEdit, sponsorCounts }) {
   const [activeTab, setActiveTab] = useState(null);
+  // Editing a date re-sorts this matchday the instant it's saved, which
+  // jumps the row out from under you mid-edit - so while any tab is open the
+  // row ORDER is frozen (each row's own values still update live), and only
+  // re-sorts once you close the tab. Switching matchday remounts this
+  // component fresh, which also releases the freeze.
+  const [frozenOrder, setFrozenOrder] = useState(null);
+  useEffect(() => {
+    setFrozenOrder(activeTab ? (prev) => prev ?? fixtures.map((f) => f.id) : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  const fixturesById = useMemo(() => new Map(fixtures.map((f) => [f.id, f])), [fixtures]);
+  const orderedFixtures = frozenOrder ? frozenOrder.map((id) => fixturesById.get(id)).filter(Boolean) : fixtures;
+
   const dates = fixtures.map((f) => f.date).filter(Boolean);
   const range =
     dates.length > 0
@@ -57,7 +71,7 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, highlightS
         )}
       </header>
       <div className="divide-y divide-gray-100 px-1 py-1">
-        {fixtures.map((f) => (
+        {orderedFixtures.map((f) => (
           <FixtureRow
             key={f.id}
             fixture={f}

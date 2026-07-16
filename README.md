@@ -246,19 +246,26 @@ to focus it, which narrows every section below to just that club's games
 (click again, or its row again, to go back to league-wide).
 
 Below that:
+- **Season audience trend** - a line chart of average audience per matchday
+  across the season (league-wide), with the focused club's own game each
+  matchday overlaid as a second line, so you can see whether audience is
+  rising or falling as the season goes on and how a club's own games track
+  against that baseline.
 - **Scheduling patterns** - average audience by day of week and by kickoff
   time (Serie A's own broadcaster picks these, so it's league-wide by
-  default), plus a sortable day+kickoff breakdown table for the exact
-  combinations actually used so far.
+  default), plus a **heatmap** of every day+kickoff combination actually
+  used so far (darker = higher average audience) with a sortable table
+  underneath for the exact numbers.
 - **Big match / derby audience premium** - average audience for regular
   games vs. big matches vs. derbies, so you can see the uplift a game's
   billing carries independent of which two clubs are playing.
-- **Sponsor activation audience** - focus a sponsored club to see, per
-  activation type (matchday sponsor / player mascot / walkabout), how many
-  times it's been checked on the home page's Sponsors tab and the
-  cumulative/average audience those specific games actually reached - what
-  the activations already logged this season actually delivered, not just
-  how many there were.
+- **Games also on Sky** - a simple share meter (a two-way split reads better
+  as a percentage than a pie).
+- **Sponsor activation audience** - focus a sponsored club to see a donut of
+  how its audience-delivered total splits across activation types (matchday
+  sponsor / player mascot / walkabout) - what those checkboxes on the home
+  page's Sponsors tab actually delivered, not just how many times they were
+  checked.
 - **Top games by audience** - filter by club, home-only, and how many to
   show.
 
