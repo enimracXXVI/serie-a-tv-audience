@@ -60,7 +60,7 @@ export default function TeamFixtureRow({ fixture, team }) {
           MD{fixture.matchday}
         </div>
 
-        <div className="w-10 shrink-0 text-center text-[9px] leading-tight text-gray-400">
+        <div className="flex h-14 w-10 shrink-0 flex-col items-center justify-center text-center text-[9px] leading-tight text-gray-400">
           {dateShort && <div>{dateShort}</div>}
           {tagStyle.labels.map((l) => (
             <div key={l.text} className={`font-black ${l.className}`}>

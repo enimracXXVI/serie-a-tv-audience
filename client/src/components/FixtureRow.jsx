@@ -193,8 +193,10 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
       <div className="w-1.5 shrink-0" style={{ background: tagStyle.bar }} />
       <div className="min-w-0 flex-1 px-2 py-2 sm:px-3 sm:py-2.5">
       <div className="flex items-center gap-1 sm:gap-2">
-        {/* Fixed-width so it never affects where home/score/away land */}
-        <div className="w-10 shrink-0 text-center text-[9px] leading-tight text-gray-400 sm:w-14 sm:text-[10px]">
+        {/* Fixed width AND height so a derby/big-match label never changes
+            row height - every row is the same size whether it has 0, 1 or 2
+            extra labels. */}
+        <div className="flex h-14 w-10 shrink-0 flex-col items-center justify-center text-center text-[9px] leading-tight text-gray-400 sm:w-14 sm:text-[10px]">
           {dateShort && <div>{dateShort}</div>}
           {fixture.kickoffTime && <div>{fixture.kickoffTime}</div>}
           {tagStyle.labels.map((l) => (

@@ -110,6 +110,22 @@ export function computeStandingsHistory(fixtures, teams) {
   return history;
 }
 
+// One ranked-position snapshot per matchday that has at least one fixture -
+// the data the "standing by matchday" position chart plots. Needs the full
+// tiebreak sort (unlike computeStandingsHistory's raw points), so it's
+// costlier - fine at this fixture count, called once per render.
+export function computeRankHistory(fixtures, teams) {
+  const matchdays = [...new Set(fixtures.map((f) => f.matchday))].sort((a, b) => a - b);
+  return matchdays.map((matchday) => {
+    const table = computeStandings(fixtures, teams, matchday);
+    const ranks = {};
+    table.forEach((row, i) => {
+      ranks[row.slug] = i + 1;
+    });
+    return { matchday, ranks };
+  });
+}
+
 export function maxPlayedMatchday(fixtures) {
   let max = 0;
   for (const f of fixtures) {
