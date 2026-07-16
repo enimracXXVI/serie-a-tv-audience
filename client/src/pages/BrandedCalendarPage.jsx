@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Crest from '../components/Crest.jsx';
 import CalendarView from '../components/CalendarView.jsx';
 import TeamCalendarView from '../components/TeamCalendarView.jsx';
@@ -67,16 +67,9 @@ export default function BrandedCalendarPage() {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-white/10 px-6 py-3" style={{ background: gradient }}>
+      <header className="sticky top-0 z-40 border-b border-white/10 px-6 py-3" style={{ background: gradient }}>
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <div className="flex items-center gap-3">
-            <Link
-              to="/"
-              className="text-xs font-semibold uppercase tracking-wide opacity-70 hover:opacity-100"
-              style={{ color: headerText }}
-            >
-              ← All teams
-            </Link>
             {selectedTeams.length === 1 && <Crest team={selectedTeams[0]} size={26} />}
             <h1 className="text-lg font-black sm:text-xl" style={{ color: headerText }}>
               {selectedTeams.length === 1 ? selectedTeams[0].name : 'Combined Calendar'}

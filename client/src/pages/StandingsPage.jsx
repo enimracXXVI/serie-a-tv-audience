@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useFixtures } from '../lib/useFixtures.js';
 import { computeStandings } from '../lib/standings.js';
@@ -14,11 +13,8 @@ export default function StandingsPage() {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-3">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-3">
         <div className="mx-auto flex max-w-6xl items-center gap-3">
-          <Link to="/" className="text-xs font-semibold uppercase tracking-wide text-white/70 hover:text-white">
-            ← All teams
-          </Link>
           <h1 className="text-lg font-black text-white sm:text-xl">
             Standings <span className="ml-1.5 text-xs font-semibold opacity-60">26/27</span>
           </h1>

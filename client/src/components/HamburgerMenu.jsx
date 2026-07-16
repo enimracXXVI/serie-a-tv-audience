@@ -32,14 +32,14 @@ function BackIcon() {
 
 // How many history entries each view sits behind the closed menu - used to
 // know how many popstate levels to unwind when closing programmatically.
-const VIEW_DEPTH = { main: 1, teams: 2, settings: 2 };
+const VIEW_DEPTH = { main: 1, fixtures: 2, settings: 2 };
 
 // Menu open/closed and submenu state is mirrored into browser history (via
 // pushState + a popstate listener) so the hardware/browser back button
 // closes the menu - or steps back to the main menu from a submenu - instead
 // of navigating the underlying page away.
 export default function HamburgerMenu() {
-  const [view, setView] = useState('closed'); // 'closed' | 'main' | 'teams' | 'settings'
+  const [view, setView] = useState('closed'); // 'closed' | 'main' | 'fixtures' | 'settings'
   // Keeps whatever content was last showing rendered during the close
   // transition, so the drawer slides away with its last screen still in it
   // instead of going blank the instant `view` becomes 'closed'.
@@ -110,9 +110,12 @@ export default function HamburgerMenu() {
     navigate(`/calendar/${selectedTeams.join(',')}`);
   }
 
-  // Jumps straight to a combined view of every sponsored club without
-  // touching selectedTeams - "All sponsored teams" is a one-off shortcut,
-  // not something that should show up pre-checked in the picker afterwards.
+  function viewAllTeams() {
+    pushedLevels.current = 0;
+    setView('closed');
+    navigate('/');
+  }
+
   function viewStandings() {
     pushedLevels.current = 0;
     setView('closed');
@@ -125,6 +128,9 @@ export default function HamburgerMenu() {
     navigate('/dashboard');
   }
 
+  // Jumps straight to a combined view of every sponsored club without
+  // touching selectedTeams - "All sponsored teams" is a one-off shortcut,
+  // not something that should show up pre-checked in the picker afterwards.
   function viewAllSponsored() {
     const sponsoredSlugs = teams.filter((t) => t.sponsored).map((t) => t.slug);
     if (sponsoredSlugs.length === 0) return;
@@ -157,7 +163,7 @@ export default function HamburgerMenu() {
             }`}
           >
             <div className="flex items-center border-b border-white/10 px-5 py-4">
-              {displayedView === 'teams' || displayedView === 'settings' ? (
+              {displayedView === 'fixtures' || displayedView === 'settings' ? (
                 <button
                   onClick={backToMain}
                   className="flex items-center gap-1.5 text-sm font-semibold text-white/70 hover:text-white"
@@ -196,16 +202,10 @@ export default function HamburgerMenu() {
 
                   <nav className="flex flex-col gap-1">
                     <button
-                      onClick={() => pushView('teams')}
+                      onClick={() => pushView('fixtures')}
                       className="flex items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white hover:bg-white/10"
                     >
-                      Teams <span aria-hidden="true">›</span>
-                    </button>
-                    <button
-                      onClick={() => pushView('settings')}
-                      className="flex items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white hover:bg-white/10"
-                    >
-                      Settings <span aria-hidden="true">›</span>
+                      Fixtures <span aria-hidden="true">›</span>
                     </button>
                     <button
                       onClick={viewStandings}
@@ -219,12 +219,34 @@ export default function HamburgerMenu() {
                     >
                       Dashboard <span aria-hidden="true">›</span>
                     </button>
+                    <button
+                      onClick={() => pushView('settings')}
+                      className="flex items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white hover:bg-white/10"
+                    >
+                      Settings <span aria-hidden="true">›</span>
+                    </button>
                   </nav>
                 </div>
               )}
 
-              {displayedView === 'teams' && (
+              {displayedView === 'fixtures' && (
                 <div className="flex flex-col gap-4">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={viewAllTeams}
+                      className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-white/20"
+                    >
+                      All teams →
+                    </button>
+                    {teams.some((t) => t.sponsored) && (
+                      <button
+                        onClick={viewAllSponsored}
+                        className="rounded-full bg-[#1fd8c9]/20 px-3 py-1.5 text-xs font-bold text-[#1fd8c9] transition-colors hover:bg-[#1fd8c9]/30"
+                      >
+                        All sponsored teams →
+                      </button>
+                    )}
+                  </div>
                   <div className="flex items-center justify-between">
                     <h2 className="text-sm font-bold uppercase tracking-wide text-white/70">Build a team calendar</h2>
                     {selectedTeams.length > 0 && (
@@ -236,14 +258,6 @@ export default function HamburgerMenu() {
                       </button>
                     )}
                   </div>
-                  {teams.some((t) => t.sponsored) && (
-                    <button
-                      onClick={viewAllSponsored}
-                      className="self-start rounded-full bg-[#1fd8c9]/20 px-3 py-1.5 text-xs font-bold text-[#1fd8c9] transition-colors hover:bg-[#1fd8c9]/30"
-                    >
-                      All sponsored teams →
-                    </button>
-                  )}
                   <TeamPicker
                     teams={teams}
                     selected={selectedTeams}

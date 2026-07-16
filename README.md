@@ -11,12 +11,14 @@ exactly one team shows a different, flatter layout instead of the two-team
 combined view: every match in the season, one after another (no matchday
 filter to page through), one row per match - date/time, a home or away icon,
 the opponent, score and broadcasters - laid out in multiple columns once
-there's room for it. The hamburger menu's Teams picker only remembers clubs
-you've deliberately checked there - it never pre-selects anything on its own.
-The **All sponsored teams →** button next to it is a one-off shortcut to a
-combined calendar of every sponsored club; using it doesn't touch the
-picker's own checkboxes, so reopening the menu afterwards still shows
-whatever (if anything) you'd actually picked, not the 5 sponsored clubs.
+there's room for it. The hamburger menu's **Fixtures** entry is where you get
+to any of these views: **All teams →** goes back to the home page's full
+calendar, **All sponsored teams →** jumps to a combined calendar of every
+sponsored club, and the picker underneath builds a custom combination -
+it only remembers clubs you've deliberately checked there, never
+pre-selecting anything on its own. Using either of the two shortcut buttons
+doesn't touch the picker's own checkboxes, so reopening the menu afterwards
+still shows whatever (if anything) you'd actually picked into the picker.
 
 On any branded calendar page, the header's club pills are toggles, not just
 links: click one to add or remove that club from the current view (dimmed =
