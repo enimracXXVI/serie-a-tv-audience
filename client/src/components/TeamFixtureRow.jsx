@@ -1,6 +1,7 @@
 import Crest from './Crest.jsx';
 import { DaznLogo, SkyLogo } from './BroadcastBadges.jsx';
 import SponsorBadges from './SponsorBadges.jsx';
+import { matchTagStyle } from '../lib/matchTags.js';
 
 function formatDateShort(dateStr) {
   if (!dateStr) return null;
@@ -49,38 +50,44 @@ export default function TeamFixtureRow({ fixture, team }) {
   const sponsorFlags = isHome
     ? { matchdaySponsor: fixture.homeMatchdaySponsor, playerMascot: fixture.homePlayerMascot, walkabout: fixture.homeWalkabout }
     : { matchdaySponsor: fixture.awayMatchdaySponsor, playerMascot: fixture.awayPlayerMascot, walkabout: fixture.awayWalkabout };
-  const accentBorder = fixture.isDerby ? '#ef4444' : fixture.isBigMatch ? '#f59e0b' : 'transparent';
+  const tagStyle = matchTagStyle(fixture);
 
   return (
-    <div className="flex items-center gap-1.5 border-l-4 px-2 py-2" style={{ borderLeftColor: accentBorder }}>
-      <div className="w-8 shrink-0 text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
-        MD{fixture.matchday}
-      </div>
+    <div className="flex items-stretch" style={{ background: tagStyle.background }}>
+      <div className="w-1.5 shrink-0" style={{ background: tagStyle.bar }} />
+      <div className="flex flex-1 items-center gap-1.5 px-2 py-2">
+        <div className="w-8 shrink-0 text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
+          MD{fixture.matchday}
+        </div>
 
-      <div className="w-10 shrink-0 text-center text-[9px] leading-tight text-gray-400">
-        {dateShort && <div>{dateShort}</div>}
-        {fixture.isDerby && <div className="font-bold text-red-500">DERBY</div>}
-        {!fixture.isDerby && fixture.isBigMatch && <div className="font-bold text-amber-500">BIG</div>}
-        {fixture.kickoffTime && <div>{fixture.kickoffTime}</div>}
-      </div>
+        <div className="w-10 shrink-0 text-center text-[9px] leading-tight text-gray-400">
+          {dateShort && <div>{dateShort}</div>}
+          {tagStyle.labels.map((l) => (
+            <div key={l.text} className={`font-black ${l.className}`}>
+              {l.text}
+            </div>
+          ))}
+          {fixture.kickoffTime && <div>{fixture.kickoffTime}</div>}
+        </div>
 
-      <div className="flex w-5 shrink-0 justify-center text-gray-400" title={isHome ? 'Home' : 'Away'}>
-        {isHome ? <HomeIcon /> : <PlaneIcon />}
-      </div>
+        <div className="flex w-5 shrink-0 justify-center text-gray-400" title={isHome ? 'Home' : 'Away'}>
+          {isHome ? <HomeIcon /> : <PlaneIcon />}
+        </div>
 
-      <div className="flex flex-1 items-center gap-1.5 min-w-0">
-        <Crest team={opponent} size={22} />
-        <span className="truncate text-xs font-semibold text-[#0f1e54]">{opponent.name}</span>
-        <SponsorBadges {...sponsorFlags} />
-      </div>
+        <div className="flex flex-1 items-center gap-1.5 min-w-0">
+          <Crest team={opponent} size={22} />
+          <span className="truncate text-xs font-semibold text-[#0f1e54]">{opponent.name}</span>
+          <SponsorBadges {...sponsorFlags} />
+        </div>
 
-      <div className="shrink-0 rounded-md px-1 py-1">
-        <ScoreDisplay usScore={usScore} themScore={themScore} />
-      </div>
+        <div className="shrink-0 rounded-md px-1 py-1">
+          <ScoreDisplay usScore={usScore} themScore={themScore} />
+        </div>
 
-      <div className="flex w-10 shrink-0 items-center gap-1">
-        <DaznLogo height={13} />
-        {fixture.onSky && <SkyLogo height={13} compact />}
+        <div className="flex w-10 shrink-0 items-center gap-1">
+          <DaznLogo height={13} />
+          {fixture.onSky && <SkyLogo height={13} compact />}
+        </div>
       </div>
     </div>
   );

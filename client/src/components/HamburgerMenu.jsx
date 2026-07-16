@@ -110,6 +110,15 @@ export default function HamburgerMenu() {
     navigate(`/calendar/${selectedTeams.join(',')}`);
   }
 
+  function viewAllSponsored() {
+    const sponsoredSlugs = teams.filter((t) => t.sponsored).map((t) => t.slug);
+    if (sponsoredSlugs.length === 0) return;
+    setSelectedTeams(sponsoredSlugs);
+    pushedLevels.current = 0;
+    setView('closed');
+    navigate(`/calendar/${sponsoredSlugs.join(',')}`);
+  }
+
   const open = view !== 'closed';
 
   return (
@@ -207,6 +216,14 @@ export default function HamburgerMenu() {
                       </button>
                     )}
                   </div>
+                  {teams.some((t) => t.sponsored) && (
+                    <button
+                      onClick={viewAllSponsored}
+                      className="self-start rounded-full bg-[#1fd8c9]/20 px-3 py-1.5 text-xs font-bold text-[#1fd8c9] transition-colors hover:bg-[#1fd8c9]/30"
+                    >
+                      All sponsored teams →
+                    </button>
+                  )}
                   <TeamPicker
                     teams={teams}
                     selected={selectedTeams}

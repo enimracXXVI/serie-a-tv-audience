@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Crest from './Crest.jsx';
 import { DaznLogo, SkyLogo } from './BroadcastBadges.jsx';
 import SponsorBadges from './SponsorBadges.jsx';
+import { matchTagStyle } from '../lib/matchTags.js';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
@@ -188,17 +189,22 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
   const homeHighlighted = highlightSlugs.includes(home.slug);
   const awayHighlighted = highlightSlugs.includes(away.slug);
   const dateShort = formatDateShort(fixture.date);
-  const accentBorder = fixture.isDerby ? '#ef4444' : fixture.isBigMatch ? '#f59e0b' : 'transparent';
+  const tagStyle = matchTagStyle(fixture);
 
   return (
-    <div className="border-l-4 px-2 py-2 sm:px-3 sm:py-2.5" style={{ borderLeftColor: accentBorder }}>
+    <div className="flex items-stretch" style={{ background: tagStyle.background }}>
+      <div className="w-1.5 shrink-0" style={{ background: tagStyle.bar }} />
+      <div className="min-w-0 flex-1 px-2 py-2 sm:px-3 sm:py-2.5">
       <div className="flex items-center gap-1 sm:gap-2">
         {/* Fixed-width so it never affects where home/score/away land */}
         <div className="w-10 shrink-0 text-center text-[9px] leading-tight text-gray-400 sm:w-14 sm:text-[10px]">
           {dateShort && <div>{dateShort}</div>}
           {fixture.kickoffTime && <div>{fixture.kickoffTime}</div>}
-          {fixture.isDerby && <div className="font-bold text-red-500">DERBY</div>}
-          {!fixture.isDerby && fixture.isBigMatch && <div className="font-bold text-amber-500">BIG</div>}
+          {tagStyle.labels.map((l) => (
+            <div key={l.text} className={`font-black ${l.className}`}>
+              {l.text}
+            </div>
+          ))}
         </div>
 
         <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1 sm:gap-2 min-w-0">
@@ -268,6 +274,7 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

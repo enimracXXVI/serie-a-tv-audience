@@ -11,3 +11,27 @@ export function computeMatchTags(fixture) {
   );
   return { isBigMatch, isDerby };
 }
+
+// A fixture can be both at once (e.g. two big clubs who are also each
+// other's derby rival) - both labels should show, and the combination
+// should look more emphatic than either alone, not just pick one.
+export function matchTagStyle({ isDerby, isBigMatch }) {
+  const labels = [];
+  if (isDerby) labels.push({ text: 'DERBY', className: 'text-red-600' });
+  if (isBigMatch) labels.push({ text: 'BIG', className: 'text-amber-600' });
+
+  if (isDerby && isBigMatch) {
+    return {
+      bar: 'linear-gradient(180deg, #ef4444, #f59e0b)',
+      background: 'linear-gradient(90deg, #fee2e2, #fef3c7)',
+      labels,
+    };
+  }
+  if (isDerby) {
+    return { bar: '#ef4444', background: '#fef2f2', labels };
+  }
+  if (isBigMatch) {
+    return { bar: '#f59e0b', background: '#fffbeb', labels };
+  }
+  return { bar: 'transparent', background: undefined, labels };
+}

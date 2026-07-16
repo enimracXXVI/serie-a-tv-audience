@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import Crest from '../components/Crest.jsx';
 import CalendarView from '../components/CalendarView.jsx';
 import TeamCalendarView from '../components/TeamCalendarView.jsx';
@@ -12,6 +12,7 @@ import { saveTeams } from '../lib/savedTeams.js';
 // activity) only happens from the home page's full calendar.
 export default function BrandedCalendarPage() {
   const { teams: slugsParam } = useParams();
+  const navigate = useNavigate();
   const slugs = useMemo(
     () => (slugsParam ?? '').split(',').filter(Boolean),
     [slugsParam]
@@ -23,6 +24,31 @@ export default function BrandedCalendarPage() {
     () => slugs.map((s) => teams.find((t) => t.slug === s)).filter(Boolean),
     [slugs, teams]
   );
+
+  // The full set of clubs the header's pills offer to toggle - stays put as
+  // clubs are added/removed via the pills themselves, but resets whenever the
+  // user arrives here some other way (a fresh /calendar/... navigation).
+  const [pillSlugs, setPillSlugs] = useState(slugs);
+  const internalNavRef = useRef(false);
+  useEffect(() => {
+    if (internalNavRef.current) {
+      internalNavRef.current = false;
+      return;
+    }
+    setPillSlugs(slugs);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slugs]);
+  const pillTeams = useMemo(
+    () => pillSlugs.map((s) => teams.find((t) => t.slug === s)).filter(Boolean),
+    [pillSlugs, teams]
+  );
+
+  function toggleTeamInView(slug) {
+    const next = slugs.includes(slug) ? slugs.filter((s) => s !== slug) : [...slugs, slug];
+    if (next.length === 0) return;
+    internalNavRef.current = true;
+    navigate(`/calendar/${next.join(',')}`, { replace: true });
+  }
 
   const gradient = themeGradient(selectedTeams.map((t) => t.primary));
   const accent = selectedTeams[0]?.primary ?? '#00a651';
@@ -40,56 +66,49 @@ export default function BrandedCalendarPage() {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-white/10 px-6 py-10" style={{ background: gradient }}>
-        <div className="mx-auto max-w-6xl">
-          <Link
-            to="/"
-            className="text-xs font-semibold uppercase tracking-wide opacity-70 hover:opacity-100"
-            style={{ color: headerText }}
-          >
-            ← All teams
-          </Link>
-
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            {selectedTeams.map((t) =>
-              selectedTeams.length > 1 ? (
-                <Link
-                  key={t.slug}
-                  to={`/calendar/${t.slug}`}
-                  title={`${t.name} calendar only`}
-                  className="flex items-center gap-2 rounded-full bg-black/20 px-3 py-1.5 backdrop-blur-sm transition-colors hover:bg-black/35"
-                >
-                  <Crest team={t} size={22} />
-                  <span className="text-sm font-bold" style={{ color: headerText }}>
-                    {t.name}
-                  </span>
-                </Link>
-              ) : (
-                <div
-                  key={t.slug}
-                  className="flex items-center gap-2 rounded-full bg-black/20 px-3 py-1.5 backdrop-blur-sm"
-                >
-                  <Crest team={t} size={22} />
-                  <span className="text-sm font-bold" style={{ color: headerText }}>
-                    {t.name}
-                  </span>
-                </div>
-              )
-            )}
+      <header className="border-b border-white/10 px-6 py-3" style={{ background: gradient }}>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <div className="flex items-center gap-3">
+            <Link
+              to="/"
+              className="text-xs font-semibold uppercase tracking-wide opacity-70 hover:opacity-100"
+              style={{ color: headerText }}
+            >
+              ← All teams
+            </Link>
+            {selectedTeams.length === 1 && <Crest team={selectedTeams[0]} size={26} />}
+            <h1 className="text-lg font-black sm:text-xl" style={{ color: headerText }}>
+              {selectedTeams.length === 1 ? selectedTeams[0].name : 'Combined Calendar'}
+              <span className="ml-1.5 text-xs font-semibold opacity-60">26/27</span>
+            </h1>
           </div>
-          {selectedTeams.length > 1 && (
-            <p className="mt-2 text-xs opacity-70" style={{ color: headerText }}>
-              Tap a club above to see only their calendar.
-            </p>
-          )}
 
-          <h1 className="mt-4 text-2xl font-black sm:text-3xl" style={{ color: headerText }}>
-            {selectedTeams.length > 1 ? 'Combined' : selectedTeams[0]?.name ?? ''} Calendar · 26/27
-          </h1>
+          {pillTeams.length > 1 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {pillTeams.map((t) => {
+                const active = slugs.includes(t.slug);
+                return (
+                  <button
+                    key={t.slug}
+                    onClick={() => toggleTeamInView(t.slug)}
+                    title={active ? `Remove ${t.name} from this view` : `Add ${t.name} to this view`}
+                    className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 backdrop-blur-sm transition-all ${
+                      active ? 'bg-black/25 hover:bg-black/35' : 'bg-black/5 opacity-40 hover:opacity-70'
+                    }`}
+                  >
+                    <Crest team={t} size={18} />
+                    <span className="text-xs font-bold" style={{ color: headerText }}>
+                      {t.short ?? t.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-8">
+      <main className="mx-auto max-w-6xl px-6 py-6">
         {teamsLoading || fixturesLoading ? (
           <p className="text-white/40 text-sm">Loading calendar…</p>
         ) : fixturesError ? (

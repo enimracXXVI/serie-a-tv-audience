@@ -13,7 +13,15 @@ filter to page through), one row per match - date/time, a home or away icon,
 the opponent, score and broadcasters - laid out in multiple columns once
 there's room for it. The hamburger menu's Teams picker defaults to whichever
 clubs are marked `sponsored` in Settings, the first time there's no saved
-selection yet.
+selection yet - or jump straight to a combined calendar of every sponsored
+club with the **All sponsored teams →** button there.
+
+On any branded calendar page, the header's club pills are toggles, not just
+links: click one to add or remove that club from the current view (dimmed =
+not currently included) - narrowing down to one switches to the single-team
+layout, and the other clubs' pills stay put so you can add them back. Big
+matches and derbies get an emphatic gradient bar + tinted background on their
+row, with both DERBY and BIG labels shown together when a fixture is both.
 
 ## Stack
 
