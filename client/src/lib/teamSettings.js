@@ -7,6 +7,7 @@ const EDITABLE_FIELDS = [
   'name',
   'short',
   'primary',
+  'secondary',
   'crestUrl',
   'sponsored',
   'matchdaySponsors',

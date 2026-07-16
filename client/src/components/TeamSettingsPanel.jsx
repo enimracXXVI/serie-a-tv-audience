@@ -106,7 +106,8 @@ function TeamSettingsRow({ team, canEdit, onSave }) {
                   uppercase
                   onCommit={(v) => commit({ short: v })}
                 />
-                <ColorField label="Colour" value={team.primary} onCommit={(v) => commit({ primary: v })} />
+                <ColorField label="Primary colour" value={team.primary} onCommit={(v) => commit({ primary: v })} />
+                <ColorField label="Secondary colour" value={team.secondary} onCommit={(v) => commit({ secondary: v })} />
               </div>
               <TextField
                 label="Crest image URL"
@@ -141,7 +142,8 @@ function TeamSettingsRow({ team, canEdit, onSave }) {
             </>
           ) : (
             <div className="flex flex-col gap-1 text-xs text-white/50">
-              <span>Colour: {team.primary}</span>
+              <span>Primary colour: {team.primary}</span>
+              <span>Secondary colour: {team.secondary}</span>
               {team.sponsored ? (
                 <>
                   <span>Sponsored - matchday sponsors: {team.matchdaySponsors ?? '-'}</span>
