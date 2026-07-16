@@ -172,6 +172,15 @@ Renaming a club here is safe for existing fixtures: matching against the
 original bundled name, not whatever you rename it to, so historical rows
 keep resolving correctly either way.
 
+## Standing Tiebreakers
+If after all 38 games, two teams are tied on points for either first place or for 17th (the last safety spot), the outcome is decided by a single-legged play-off match. This match consists of 90 minutes of regulation time followed by penalties if necessary (no extra time). The game is to be held at a neutral venue, with the designated "home" team determined by the performance-based criteria listed below. In cases where there are at least three teams tied for one of these positions, a mini table is created using the same tiebreakers to determine which two teams will play in the decider. For ties concerning all other league positions, the following tiebreakers are applied:
+
+    Head-to-head points
+    Goal difference of head-to-head games
+    Goal difference overall
+    Higher number of goals scored
+    Play-off game at a neutral venue if relevant to decide European qualification or relegation; otherwise by coin flip
+
 ## One-time setup
 
 ### 1. Turn on GitHub Pages
