@@ -53,7 +53,7 @@ that doesn't exist yet in the seeded sheet — add it yourself:
 
 1. Add a new sheet tab named exactly `teams`.
 2. Put this header row in row 1: `slug`, `name`, `short`, `primary`,
-   `sponsored`, `matchdaySponsors`, `playerMascots`, `walkabouts`.
+   `crestUrl`, `sponsored`, `matchdaySponsors`, `playerMascots`, `walkabouts`.
 3. Select cell A2 and paste this block (one row per club, tab-separated —
    copy it as-is and Sheets will split it into columns automatically):
 
@@ -80,18 +80,31 @@ udinese	Udinese	UDI	#000000
 venezia	Venezia	VEN	#FF6600
 ```
 
-`slug` is the join key back to `client/src/data/teams.json` (crest artwork
-lives at `client/public/crests/<slug>.svg`) — don't edit it. Everything else
-is fair game from the Settings panel once you're signed in: rename a club,
-change its short code or colour, and flip **We sponsor this team** on to
-reveal three counters — matchday sponsors, player mascots, and walkabouts —
-for tracking your company's in-stadium sponsorship activity at that club.
-Leave `sponsored`/the three counts blank for clubs you don't sponsor.
+`slug` is the join key back to `client/src/data/teams.json` — don't edit it.
+Everything else is fair game from the Settings panel once you're signed in:
+rename a club, change its short code, colour or crest, and flip **We sponsor
+this team** on to reveal three counters — matchday sponsors, player mascots,
+and walkabouts — for tracking your company's in-stadium sponsorship activity
+at that club. Leave `sponsored`/the three counts blank for clubs you don't
+sponsor. Every edit here shows up immediately across the whole app (fixture
+rows, crests, branded pages) for anyone with the app open in a browser tab —
+no reload needed — though it's a one-way sync: someone else's browser only
+picks up your change the next time they load the app, there's no live
+push between devices.
 
-Note: renaming a club here doesn't retroactively rewrite the `home`/`away`
-text already typed into the `fixtures` tab's rows — if you rename a club
-partway through the season, update its existing fixture rows to match too,
-or the fixtures-to-team lookup for that club's past rows will stop working.
+`crestUrl` replaces the generated placeholder shield with a real badge, but
+it has to be a **direct image URL** (ending in `.svg`/`.png`/etc., something
+you can paste into a new browser tab and see just the image) — Sheets'
+"Insert image in cell" feature embeds the picture as opaque binary data with
+no retrievable URL, which the API can't read, so that path won't work. The
+easiest source is Wikipedia: open the club's crest file page, right-click the
+image → **Copy image address**, and paste that. Leave it blank to keep the
+generated placeholder for that club.
+
+Renaming a club here is safe for existing fixtures: matching against the
+`fixtures` tab's `home`/`away` text is keyed internally to each club's
+original bundled name, not whatever you rename it to, so historical rows
+keep resolving correctly either way.
 
 ## One-time setup
 

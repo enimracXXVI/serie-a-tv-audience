@@ -1,4 +1,12 @@
+import { useEffect, useState } from 'react';
+
 export default function Crest({ team, size = 36 }) {
+  const [broken, setBroken] = useState(false);
+
+  useEffect(() => {
+    setBroken(false);
+  }, [team?.crestUrl, team?.slug]);
+
   if (!team?.slug) {
     return (
       <div
@@ -9,14 +17,19 @@ export default function Crest({ team, size = 36 }) {
       </div>
     );
   }
+
+  const staticSrc = `${import.meta.env.BASE_URL}crests/${team.slug}.svg`;
+  const src = team.crestUrl && !broken ? team.crestUrl : staticSrc;
+
   return (
     <img
-      src={`${import.meta.env.BASE_URL}crests/${team.slug}.svg`}
+      src={src}
       alt={`${team.name} crest`}
       width={size}
       height={size * 1.16}
       style={{ width: size, height: size * 1.16 }}
       loading="lazy"
+      onError={() => setBroken(true)}
     />
   );
 }

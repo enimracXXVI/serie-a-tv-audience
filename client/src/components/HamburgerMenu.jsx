@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TeamPicker from './TeamPicker.jsx';
 import TeamSettingsPanel from './TeamSettingsPanel.jsx';
-import { useTeams } from '../lib/useTeams.js';
+import { useTeams } from '../lib/useTeams.jsx';
 import { useSession } from '../lib/useSession.js';
 import { getSavedTeams } from '../lib/savedTeams.js';
 

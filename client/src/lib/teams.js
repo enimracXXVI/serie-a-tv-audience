@@ -1,9 +1,11 @@
 import teamsData from '../data/teams.json';
 
 export const teams = teamsData;
-export const teamByName = new Map(teams.map((t) => [t.name, t]));
 
-export function enrichFixture(raw) {
+// Fixtures store home/away as the club's bundled (immutable) name text, so
+// matching must stay keyed by that even if a live Settings edit renames the
+// club for display - see useTeams.js's `staticName`.
+export function enrichFixture(raw, teamByName) {
   return {
     id: raw.id,
     matchday: raw.matchday,

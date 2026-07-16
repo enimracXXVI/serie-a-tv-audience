@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Crest from './Crest.jsx';
-import { useTeamSettings } from '../lib/useTeamSettings.js';
+import { useTeams } from '../lib/useTeams.jsx';
 
 const inputClass =
   'w-full rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9] placeholder:text-white/30';
@@ -14,14 +14,15 @@ function Field({ label, children }) {
   );
 }
 
-function TextField({ label, value, onCommit, maxLength, uppercase = false }) {
+function TextField({ label, value, onCommit, maxLength, uppercase = false, width = 'w-32' }) {
   const [draft, setDraft] = useState(value ?? '');
   return (
     <Field label={label}>
       <input
         type="text"
         maxLength={maxLength}
-        className={`${inputClass} w-32 ${uppercase ? 'uppercase' : ''}`}
+        placeholder="https://..."
+        className={`${inputClass} ${width} ${uppercase ? 'uppercase' : ''}`}
         value={draft}
         onChange={(e) => setDraft(uppercase ? e.target.value.toUpperCase() : e.target.value)}
         onBlur={() => {
@@ -107,6 +108,12 @@ function TeamSettingsRow({ team, canEdit, onSave }) {
                 />
                 <ColorField label="Colour" value={team.primary} onCommit={(v) => commit({ primary: v })} />
               </div>
+              <TextField
+                label="Crest image URL"
+                value={team.crestUrl}
+                width="w-full"
+                onCommit={(v) => commit({ crestUrl: v })}
+              />
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -153,7 +160,7 @@ function TeamSettingsRow({ team, canEdit, onSave }) {
 }
 
 export default function TeamSettingsPanel({ session }) {
-  const { teams, loading, error, saveTeam } = useTeamSettings();
+  const { teams, loading, error, saveTeam } = useTeams();
 
   async function handleSave(slug, fields) {
     try {

@@ -1,9 +1,11 @@
 import CalendarView from '../components/CalendarView.jsx';
 import { useFixtures } from '../lib/useFixtures.js';
+import { useTeams } from '../lib/useTeams.jsx';
 import { useSession } from '../lib/useSession.js';
 
 export default function HomePage() {
-  const { fixtures, loading: fixturesLoading, error: fixturesError, updateFixture } = useFixtures([]);
+  const { teams } = useTeams();
+  const { fixtures, loading: fixturesLoading, error: fixturesError, updateFixture } = useFixtures([], teams);
   const session = useSession();
 
   async function handleUpdate(id, fields) {

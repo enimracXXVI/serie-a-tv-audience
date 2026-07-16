@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchFixtures, updateFixtureRow } from './sheets.js';
 import { enrichFixture } from './teams.js';
 
-export function useFixtures(teamSlugs) {
-  const [fixtures, setFixtures] = useState([]);
+export function useFixtures(teamSlugs, teams) {
+  const [rawFixtures, setRawFixtures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const key = teamSlugs.slice().sort().join(',');
@@ -13,13 +13,7 @@ export function useFixtures(teamSlugs) {
     setLoading(true);
     fetchFixtures()
       .then((rows) => {
-        if (cancelled) return;
-        let enriched = rows.map(enrichFixture);
-        if (teamSlugs.length > 0) {
-          const wanted = new Set(teamSlugs);
-          enriched = enriched.filter((f) => wanted.has(f.home.slug) || wanted.has(f.away.slug));
-        }
-        setFixtures(enriched);
+        if (!cancelled) setRawFixtures(rows);
       })
       .catch((err) => {
         if (!cancelled) setError(err.message);
@@ -33,6 +27,20 @@ export function useFixtures(teamSlugs) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
+  // Keyed by each club's immutable bundled name, not its current (possibly
+  // renamed) display name - see teams.js's enrichFixture.
+  const teamByName = useMemo(() => new Map(teams.map((t) => [t.staticName, t])), [teams]);
+
+  const fixtures = useMemo(() => {
+    let enriched = rawFixtures.map((r) => enrichFixture(r, teamByName));
+    if (teamSlugs.length > 0) {
+      const wanted = new Set(teamSlugs);
+      enriched = enriched.filter((f) => wanted.has(f.home.slug) || wanted.has(f.away.slug));
+    }
+    return enriched;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawFixtures, teamByName]);
+
   const updateFixture = useCallback(
     async (id, fields, accessToken) => {
       if (!accessToken) throw new Error('UNAUTHENTICATED');
@@ -40,7 +48,7 @@ export function useFixtures(teamSlugs) {
       if (!current) return;
       const merged = { ...current, ...fields };
       const updated = await updateFixtureRow(merged, accessToken);
-      setFixtures((prev) => prev.map((f) => (f.id === id ? { ...f, ...fields, updatedAt: updated.updatedAt } : f)));
+      setRawFixtures((prev) => prev.map((r) => (r.id === id ? { ...r, ...fields, updatedAt: updated.updatedAt } : r)));
     },
     [fixtures]
   );

@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Crest from '../components/Crest.jsx';
 import CalendarView from '../components/CalendarView.jsx';
-import { useTeams } from '../lib/useTeams.js';
+import { useTeams } from '../lib/useTeams.jsx';
 import { useFixtures } from '../lib/useFixtures.js';
 import { useSession } from '../lib/useSession.js';
 import { themeGradient, contrastText } from '../lib/color.js';
@@ -15,7 +15,7 @@ export default function BrandedCalendarPage() {
     [slugsParam]
   );
   const { teams, loading: teamsLoading } = useTeams();
-  const { fixtures, loading: fixturesLoading, error: fixturesError, updateFixture } = useFixtures(slugs);
+  const { fixtures, loading: fixturesLoading, error: fixturesError, updateFixture } = useFixtures(slugs, teams);
   const session = useSession();
 
   const selectedTeams = useMemo(

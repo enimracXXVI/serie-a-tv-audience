@@ -3,7 +3,16 @@ import { columnIndexToLetter, buildHeaderIndex, cell } from './sheetsCommon.js';
 
 const NUMERIC_FIELDS = new Set(['matchdaySponsors', 'playerMascots', 'walkabouts']);
 const BOOLEAN_FIELDS = new Set(['sponsored']);
-const EDITABLE_FIELDS = ['name', 'short', 'primary', 'sponsored', 'matchdaySponsors', 'playerMascots', 'walkabouts'];
+const EDITABLE_FIELDS = [
+  'name',
+  'short',
+  'primary',
+  'crestUrl',
+  'sponsored',
+  'matchdaySponsors',
+  'playerMascots',
+  'walkabouts',
+];
 
 const FULL_RANGE = `${TEAMS_SHEET_NAME}!A1:Z200`;
 
