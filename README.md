@@ -92,14 +92,24 @@ no reload needed — though it's a one-way sync: someone else's browser only
 picks up your change the next time they load the app, there's no live
 push between devices.
 
-`crestUrl` replaces the generated placeholder shield with a real badge, but
-it has to be a **direct image URL** (ending in `.svg`/`.png`/etc., something
-you can paste into a new browser tab and see just the image) — Sheets'
-"Insert image in cell" feature embeds the picture as opaque binary data with
-no retrievable URL, which the API can't read, so that path won't work. The
-easiest source is Wikipedia: open the club's crest file page, right-click the
-image → **Copy image address**, and paste that. Leave it blank to keep the
-generated placeholder for that club.
+`crestUrl` replaces the generated placeholder shield with a real badge.
+Editing it from the Settings panel writes an `=IMAGE("url")` formula into the
+cell, so you'll actually see the crest rendered right there in the sheet, not
+just a link. You can also skip the app entirely and type `=IMAGE("url")`
+into that cell yourself directly in Sheets - the app reads it back out either
+way (a plain pasted URL with no formula also still works, it just won't show
+a picture in the sheet itself). Either way it needs a **direct image URL**
+(ending in `.svg`/`.png`/etc., something you can paste into a new browser tab
+and see just the image) - the easiest source is Wikipedia: open the club's
+crest file page, right-click the image → **Copy image address**. Leave it
+blank to keep the generated placeholder for that club.
+
+Note: Sheets' *other* "Insert image in cell" feature (Insert → Image → Image
+in cell, picking a file to upload) is a different, more opaque mechanism -
+Google doesn't expose a way to read that image's source back out through the
+API at all (there's no field for it, confirmed via their own open issue
+tracker), so that specific path can't work here. Stick to `=IMAGE("url")` or
+a plain URL in the cell.
 
 Renaming a club here is safe for existing fixtures: matching against the
 `fixtures` tab's `home`/`away` text is keyed internally to each club's

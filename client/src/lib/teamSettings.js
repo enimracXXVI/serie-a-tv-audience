@@ -22,6 +22,19 @@ const FULL_RANGE = `${TEAMS_SHEET_NAME}!A1:Z200`;
 let headerIndexCache = null;
 let rowIndexCache = null;
 
+// UNFORMATTED_VALUE can't compute an =IMAGE("url") formula down to a plain
+// value (it just comes back blank), so a crestUrl cell holding that formula
+// needs a second, FORMULA-rendered read to recover the URL. Plain pasted
+// URLs pass through both ways unchanged, so this also stays backward
+// compatible with just typing a link straight into the cell.
+function extractImageUrl(raw) {
+  if (typeof raw !== 'string') return raw ?? null;
+  const trimmed = raw.trim();
+  const match = trimmed.match(/^=image\(\s*"([^"]*)"/i);
+  if (match) return match[1] || null;
+  return trimmed || null;
+}
+
 export async function fetchTeamSettings() {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(
     FULL_RANGE
@@ -48,6 +61,26 @@ export async function fetchTeamSettings() {
   }
   headerIndexCache = headerIndex;
 
+  let crestFormulas = [];
+  if (headerIndex.crestUrl !== undefined && dataRows.length > 0) {
+    const letter = columnIndexToLetter(headerIndex.crestUrl);
+    const crestRange = `${TEAMS_SHEET_NAME}!${letter}2:${letter}${dataRows.length + 1}`;
+    try {
+      const crestRes = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(
+          crestRange
+        )}?key=${GOOGLE_API_KEY}&valueRenderOption=FORMULA&_=${Date.now()}`,
+        { cache: 'no-store' }
+      );
+      if (crestRes.ok) {
+        const crestData = await crestRes.json();
+        crestFormulas = (crestData.values || []).map((r) => cell(r, 0));
+      }
+    } catch {
+      // non-fatal - falls back to the plain UNFORMATTED_VALUE reading below
+    }
+  }
+
   const bySlug = {};
   const rowIndex = {};
   dataRows.forEach((row, i) => {
@@ -56,7 +89,9 @@ export async function fetchTeamSettings() {
     const obj = {};
     for (const [key, idx] of Object.entries(headerIndex)) {
       let value = cell(row, idx);
-      if (BOOLEAN_FIELDS.has(key)) {
+      if (key === 'crestUrl') {
+        value = extractImageUrl(crestFormulas[i]) ?? value;
+      } else if (BOOLEAN_FIELDS.has(key)) {
         value = value === true || value === 'TRUE';
       } else if (NUMERIC_FIELDS.has(key) && value !== null) {
         value = Number(value);
@@ -71,13 +106,33 @@ export async function fetchTeamSettings() {
   return bySlug;
 }
 
+async function postBatchUpdate(valueInputOption, data, accessToken) {
+  if (data.length === 0) return;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values:batchUpdate`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ valueInputOption, data }),
+  });
+  if (res.status === 401 || res.status === 403) throw new Error('UNAUTHENTICATED');
+  if (!res.ok) throw new Error('Failed to save team settings');
+}
+
 export async function updateTeamSettings(slug, fields, accessToken) {
   if (!headerIndexCache || !rowIndexCache?.[slug]) {
     throw new Error('Team settings have not loaded yet - reopen Settings and try again.');
   }
   const rowNumber = rowIndexCache[slug];
 
-  const data = [];
+  // crestUrl is written as an =IMAGE("url") formula (needs USER_ENTERED so
+  // Sheets parses it as a formula and actually shows the picture in the
+  // cell) - everything else is a plain literal (RAW). Sheets' batchUpdate
+  // takes one valueInputOption per call, so these need two separate posts.
+  const rawData = [];
+  const formulaData = [];
   const missing = [];
   for (const field of Object.keys(fields)) {
     if (!EDITABLE_FIELDS.includes(field)) continue;
@@ -87,30 +142,24 @@ export async function updateTeamSettings(slug, fields, accessToken) {
       continue;
     }
     const letter = columnIndexToLetter(colIdx);
-    const value = BOOLEAN_FIELDS.has(field) ? Boolean(fields[field]) : fields[field] ?? '';
-    data.push({
-      range: `${TEAMS_SHEET_NAME}!${letter}${rowNumber}:${letter}${rowNumber}`,
-      majorDimension: 'ROWS',
-      values: [[value]],
-    });
+    const range = `${TEAMS_SHEET_NAME}!${letter}${rowNumber}:${letter}${rowNumber}`;
+    if (field === 'crestUrl') {
+      const imageUrl = fields[field];
+      const value = imageUrl ? `=IMAGE("${imageUrl.replace(/"/g, '""')}")` : '';
+      formulaData.push({ range, majorDimension: 'ROWS', values: [[value]] });
+    } else {
+      const value = BOOLEAN_FIELDS.has(field) ? Boolean(fields[field]) : fields[field] ?? '';
+      rawData.push({ range, majorDimension: 'ROWS', values: [[value]] });
+    }
   }
 
-  if (data.length === 0) {
+  if (rawData.length === 0 && formulaData.length === 0) {
     throw new Error('No matching column headers found in the teams sheet - check row 1 has the expected labels');
   }
 
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values:batchUpdate`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ valueInputOption: 'RAW', data }),
-  });
+  await postBatchUpdate('RAW', rawData, accessToken);
+  await postBatchUpdate('USER_ENTERED', formulaData, accessToken);
 
-  if (res.status === 401 || res.status === 403) throw new Error('UNAUTHENTICATED');
-  if (!res.ok) throw new Error('Failed to save team settings');
   if (missing.length > 0) {
     console.warn(`Teams sheet is missing header(s) for: ${missing.join(', ')} - those fields were not saved.`);
   }
