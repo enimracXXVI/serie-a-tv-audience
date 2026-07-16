@@ -196,10 +196,48 @@ export function computeSeasonTrend(fixtures, simulcastInfo, includeSimulcast, te
   });
 }
 
-export function computeSkyShare(fixtures, teamSlug) {
-  const played = filterForTeam(fixtures, teamSlug).filter(isPlayed);
-  const onSky = played.filter((f) => f.onSky).length;
-  return { pct: played.length ? (onSky / played.length) * 100 : 0, onSky, total: played.length };
+// What's left to sell/evaluate, not just what's happened so far - a
+// sponsorship decision made mid-season cares about the remaining fixture
+// list, not only the season-to-date average. Home-only when a club is
+// focused (the LED angle: what's still coming to their own stadium);
+// league-wide across every remaining fixture otherwise.
+export function computeRemainingSchedule(fixtures, teamSlug) {
+  let remaining = fixtures.filter((f) => !isPlayed(f));
+  if (teamSlug) remaining = remaining.filter((f) => f.home.slug === teamSlug);
+  let bigMatch = 0;
+  let derby = 0;
+  let regular = 0;
+  for (const f of remaining) {
+    const { isBigMatch, isDerby } = computeMatchTags(f);
+    if (isBigMatch) bigMatch += 1;
+    if (isDerby) derby += 1;
+    if (!isBigMatch && !isDerby) regular += 1;
+  }
+  return { total: remaining.length, bigMatch, derby, regular };
+}
+
+// Which visiting opponent actually brings the audience at a club's own
+// stadium - an average hides this entirely, but it's exactly what an LED
+// package buyer cares about (a Torino-Juventus crowd is not a Torino-Lecce
+// crowd), plus the min-max range across all of that club's home games as a
+// sense of how much game-to-game variance sits behind the average.
+export function computeOpponentAudience(team, fixtures, simulcastInfo, includeSimulcast) {
+  const homePlayed = fixtures.filter((f) => f.home.slug === team.slug && isPlayed(f));
+  const byOpponent = new Map();
+  const all = [];
+  for (const f of homePlayed) {
+    const aud = effectiveAudience(f, simulcastInfo, includeSimulcast);
+    all.push(aud);
+    if (!byOpponent.has(f.away.slug)) byOpponent.set(f.away.slug, { opponent: f.away, list: [] });
+    byOpponent.get(f.away.slug).list.push(aud);
+  }
+  const rows = [...byOpponent.values()]
+    .map(({ opponent, list }) => ({ opponent, avg: avg(list), count: list.length }))
+    .sort((a, b) => b.avg - a.avg);
+  const range = all.length
+    ? { min: Math.min(...all), max: Math.max(...all), avg: avg(all), count: all.length }
+    : { min: 0, max: 0, avg: 0, count: 0 };
+  return { rows, range };
 }
 
 // Ties the Sponsors tab's per-fixture activation checkboxes directly to the

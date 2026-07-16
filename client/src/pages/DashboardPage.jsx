@@ -10,7 +10,8 @@ import {
   computeTagPremium,
   computeActivationAudience,
   computeSeasonTrend,
-  computeSkyShare,
+  computeRemainingSchedule,
+  computeOpponentAudience,
 } from '../lib/dashboardMetrics.js';
 import { isPlayed } from '../lib/standings.js';
 import AudienceBarChart from '../components/AudienceBarChart.jsx';
@@ -20,8 +21,8 @@ import AudienceByBucketChart from '../components/AudienceByBucketChart.jsx';
 import DayTimeBreakdownTable from '../components/DayTimeBreakdownTable.jsx';
 import SeasonTrendChart from '../components/SeasonTrendChart.jsx';
 import DayTimeHeatmap from '../components/DayTimeHeatmap.jsx';
-import AudienceMeter from '../components/AudienceMeter.jsx';
 import ActivationDonut from '../components/ActivationDonut.jsx';
+import OpponentAudienceChart from '../components/OpponentAudienceChart.jsx';
 
 function StatTile({ label, value, sub }) {
   return (
@@ -65,6 +66,34 @@ function TagPremiumCard({ premium }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function RemainingScheduleCard({ remaining, team }) {
+  return (
+    <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
+      <h3 className="mb-3 text-sm font-bold text-[#0f1e54]">
+        {team ? `${team.name} - remaining home fixtures` : 'Remaining fixtures - league-wide'}
+      </h3>
+      {remaining.total === 0 ? (
+        <p className="text-xs text-gray-400">Nothing left to schedule.</p>
+      ) : (
+        <div className="grid grid-cols-3 gap-3 text-center">
+          <div>
+            <p className="text-2xl font-black text-[#0f1e54]">{remaining.bigMatch}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Big matches</p>
+          </div>
+          <div>
+            <p className="text-2xl font-black text-[#0f1e54]">{remaining.derby}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Derbies</p>
+          </div>
+          <div>
+            <p className="text-2xl font-black text-[#0f1e54]">{remaining.total}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Total remaining</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -154,7 +183,11 @@ export default function DashboardPage() {
     () => computeSeasonTrend(fixtures, simulcastInfo, includeSimulcast, focusedSlug),
     [fixtures, simulcastInfo, includeSimulcast, focusedSlug]
   );
-  const skyShare = useMemo(() => computeSkyShare(fixtures, focusedSlug), [fixtures, focusedSlug]);
+  const remainingSchedule = useMemo(() => computeRemainingSchedule(fixtures, focusedSlug), [fixtures, focusedSlug]);
+  const opponentAudience = useMemo(
+    () => (focusedTeam ? computeOpponentAudience(focusedTeam, fixtures, simulcastInfo, includeSimulcast) : null),
+    [focusedTeam, fixtures, simulcastInfo, includeSimulcast]
+  );
 
   return (
     <div className="min-h-screen">
@@ -214,12 +247,10 @@ export default function DashboardPage() {
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <TagPremiumCard premium={tagPremium} />
-              <AudienceMeter
-                label={focusedTeam ? `${focusedTeam.name} games also on Sky` : 'Games also on Sky'}
-                pct={skyShare.pct}
-                sub={`${skyShare.onSky} of ${skyShare.total} played games`}
-              />
+              <RemainingScheduleCard remaining={remainingSchedule} team={focusedTeam} />
             </div>
+
+            <OpponentAudienceChart team={focusedTeam} data={opponentAudience} />
 
             <ActivationAudienceCard team={focusedTeam} activations={activationAudience} />
 
