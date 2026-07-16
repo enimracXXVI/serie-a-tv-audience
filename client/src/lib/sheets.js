@@ -1,4 +1,5 @@
 import { SPREADSHEET_ID, SHEET_NAME, GOOGLE_API_KEY } from './config.js';
+import { columnIndexToLetter, buildHeaderIndex, cell } from './sheetsCommon.js';
 
 const NUMERIC_FIELDS = new Set([
   'id',
@@ -33,32 +34,9 @@ const FULL_RANGE = `${SHEET_NAME}!A1:Z500`;
 // header lookup round-trip.
 let headerIndexCache = null;
 
-function columnIndexToLetter(index) {
-  let letter = '';
-  let n = index + 1;
-  while (n > 0) {
-    const rem = (n - 1) % 26;
-    letter = String.fromCharCode(65 + rem) + letter;
-    n = Math.floor((n - 1) / 26);
-  }
-  return letter;
-}
-
-function buildHeaderIndex(headerRow) {
-  const index = {};
-  (headerRow || []).forEach((name, i) => {
-    if (name) index[String(name).trim()] = i;
-  });
-  return index;
-}
-
 function excelSerialToISODate(serial) {
   const epoch = Date.UTC(1899, 11, 30);
   return new Date(epoch + serial * 86400000).toISOString().slice(0, 10);
-}
-
-function cell(row, index) {
-  return row[index] === undefined || row[index] === '' ? null : row[index];
 }
 
 function rowToFixture(row, headerIndex) {

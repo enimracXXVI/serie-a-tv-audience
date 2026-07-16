@@ -46,6 +46,53 @@ open the sheet directly, add these labels to row 1 if you want them:
 | O | addedTime2H | Added/injury time, second half (minutes) |
 | P | daznSimulcastAudience | Audience for DAZN's multi-game simulcast slot, when applicable |
 
+### Team settings tab (name/short/colour/sponsorship)
+
+The hamburger menu's **Settings** panel edits a second tab, named `teams`,
+that doesn't exist yet in the seeded sheet — add it yourself:
+
+1. Add a new sheet tab named exactly `teams`.
+2. Put this header row in row 1: `slug`, `name`, `short`, `primary`,
+   `sponsored`, `matchdaySponsors`, `playerMascots`, `walkabouts`.
+3. Select cell A2 and paste this block (one row per club, tab-separated —
+   copy it as-is and Sheets will split it into columns automatically):
+
+```
+atalanta	Atalanta	ATA	#1E71B8
+bologna	Bologna	BOL	#8B1D2C
+cagliari	Cagliari	CAG	#C8102E
+como	Como	COM	#0066B3
+fiorentina	Fiorentina	FIO	#482E92
+frosinone	Frosinone	FRO	#FFD400
+genoa	Genoa	GEN	#C8102E
+inter	Inter	INT	#003DA5
+juventus	Juventus	JUV	#000000
+lazio	Lazio	LAZ	#87D8F7
+lecce	Lecce	LEC	#FFD100
+milan	Milan	MIL	#FB090B
+monza	Monza	MON	#C8102E
+napoli	Napoli	NAP	#12A0D7
+parma	Parma	PAR	#FFD400
+roma	Roma	ROM	#8E1F2F
+sassuolo	Sassuolo	SAS	#00A650
+torino	Torino	TOR	#7B1E3A
+udinese	Udinese	UDI	#000000
+venezia	Venezia	VEN	#FF6600
+```
+
+`slug` is the join key back to `client/src/data/teams.json` (crest artwork
+lives at `client/public/crests/<slug>.svg`) — don't edit it. Everything else
+is fair game from the Settings panel once you're signed in: rename a club,
+change its short code or colour, and flip **We sponsor this team** on to
+reveal three counters — matchday sponsors, player mascots, and walkabouts —
+for tracking your company's in-stadium sponsorship activity at that club.
+Leave `sponsored`/the three counts blank for clubs you don't sponsor.
+
+Note: renaming a club here doesn't retroactively rewrite the `home`/`away`
+text already typed into the `fixtures` tab's rows — if you rename a club
+partway through the season, update its existing fixture rows to match too,
+or the fixtures-to-team lookup for that club's past rows will stop working.
+
 ## One-time setup
 
 ### 1. Turn on GitHub Pages

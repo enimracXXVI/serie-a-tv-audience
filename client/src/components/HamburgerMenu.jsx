@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TeamPicker from './TeamPicker.jsx';
+import TeamSettingsPanel from './TeamSettingsPanel.jsx';
 import { useTeams } from '../lib/useTeams.js';
 import { useSession } from '../lib/useSession.js';
 import { getSavedTeams } from '../lib/savedTeams.js';
@@ -29,12 +30,16 @@ function BackIcon() {
   );
 }
 
-// Menu open/closed and Teams-submenu state is mirrored into browser history
-// (via pushState + a popstate listener) so the hardware/browser back button
-// closes the menu - or steps back to the main menu from Teams - instead of
-// navigating the underlying page away.
+// How many history entries each view sits behind the closed menu - used to
+// know how many popstate levels to unwind when closing programmatically.
+const VIEW_DEPTH = { main: 1, teams: 2, settings: 2 };
+
+// Menu open/closed and submenu state is mirrored into browser history (via
+// pushState + a popstate listener) so the hardware/browser back button
+// closes the menu - or steps back to the main menu from a submenu - instead
+// of navigating the underlying page away.
 export default function HamburgerMenu() {
-  const [view, setView] = useState('closed'); // 'closed' | 'main' | 'teams'
+  const [view, setView] = useState('closed'); // 'closed' | 'main' | 'teams' | 'settings'
   const [mounted, setMounted] = useState(false);
   const pushedLevels = useRef(0);
   const session = useSession();
@@ -44,9 +49,9 @@ export default function HamburgerMenu() {
 
   useEffect(() => {
     function onPopState(e) {
-      const level = e.state?.appMenuLevel ?? 0;
-      pushedLevels.current = level;
-      setView(level === 2 ? 'teams' : level === 1 ? 'main' : 'closed');
+      const v = e.state?.appMenuView ?? 'closed';
+      pushedLevels.current = VIEW_DEPTH[v] ?? 0;
+      setView(v);
     }
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
@@ -61,16 +66,10 @@ export default function HamburgerMenu() {
     return () => cancelAnimationFrame(id);
   }, [view]);
 
-  function openMenu() {
-    window.history.pushState({ appMenuLevel: 1 }, '');
-    pushedLevels.current = 1;
-    setView('main');
-  }
-
-  function openTeams() {
-    window.history.pushState({ appMenuLevel: 2 }, '');
-    pushedLevels.current = 2;
-    setView('teams');
+  function pushView(v) {
+    window.history.pushState({ appMenuView: v }, '');
+    pushedLevels.current = VIEW_DEPTH[v] ?? 0;
+    setView(v);
   }
 
   function backToMain() {
@@ -101,7 +100,7 @@ export default function HamburgerMenu() {
   return (
     <>
       <button
-        onClick={openMenu}
+        onClick={() => pushView('main')}
         aria-label="Open menu"
         className="fixed right-4 top-4 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/30 text-white backdrop-blur-sm transition-colors hover:bg-black/45"
       >
@@ -117,7 +116,7 @@ export default function HamburgerMenu() {
             }`}
           >
             <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-              {view === 'teams' ? (
+              {view === 'teams' || view === 'settings' ? (
                 <button
                   onClick={backToMain}
                   className="flex items-center gap-1.5 text-sm font-semibold text-white/70 hover:text-white"
@@ -159,10 +158,16 @@ export default function HamburgerMenu() {
 
                   <nav className="flex flex-col gap-1">
                     <button
-                      onClick={openTeams}
+                      onClick={() => pushView('teams')}
                       className="flex items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white hover:bg-white/10"
                     >
                       Teams <span aria-hidden="true">›</span>
+                    </button>
+                    <button
+                      onClick={() => pushView('settings')}
+                      className="flex items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white hover:bg-white/10"
+                    >
+                      Settings <span aria-hidden="true">›</span>
                     </button>
                     <button className="flex cursor-default items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white/40">
                       Standings
@@ -195,6 +200,8 @@ export default function HamburgerMenu() {
                   />
                 </div>
               )}
+
+              {view === 'settings' && <TeamSettingsPanel session={session} />}
             </div>
           </div>
         </div>
