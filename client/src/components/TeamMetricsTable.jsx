@@ -5,6 +5,7 @@ const COLUMNS = [
   { key: 'team', label: 'Club', sortable: false },
   { key: 'homeAudienceAvg', label: 'Home avg', title: 'Average audience per home game (LED-only evaluation)' },
   { key: 'homeAudienceTotal', label: 'Home total', title: 'Season total audience across home games' },
+  { key: 'awayAudienceAvg', label: 'Away avg', title: 'Average audience per away game - this club\'s draw power as a visitor' },
   { key: 'totalAudienceAvg', label: 'Total avg', title: 'Average audience per game, home + away (jersey evaluation)' },
   { key: 'totalAudienceTotal', label: 'Total', title: 'Season total audience, home + away' },
   { key: 'homeAddedTimeAvg', label: 'Added time', title: 'Average stoppage-time minutes per home game' },
@@ -16,6 +17,7 @@ function formatCell(key, row) {
   switch (key) {
     case 'homeAudienceAvg':
     case 'homeAudienceTotal':
+    case 'awayAudienceAvg':
     case 'totalAudienceAvg':
     case 'totalAudienceTotal':
       return `${(Math.round(row[key] * 100) / 100).toString()}M`;

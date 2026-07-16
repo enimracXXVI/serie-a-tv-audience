@@ -63,10 +63,16 @@ function avg(arr) {
 // uses the full fixture list.
 export function computeTeamMetrics(team, fixtures, simulcastInfo, includeSimulcast) {
   const homePlayed = fixtures.filter((f) => f.home.slug === team.slug && isPlayed(f));
+  const awayPlayed = fixtures.filter((f) => f.away.slug === team.slug && isPlayed(f));
   const allPlayed = fixtures.filter((f) => (f.home.slug === team.slug || f.away.slug === team.slug) && isPlayed(f));
   const allForTeam = fixtures.filter((f) => f.home.slug === team.slug || f.away.slug === team.slug);
 
   const homeAudiences = homePlayed.map((f) => effectiveAudience(f, simulcastInfo, includeSimulcast));
+  // Not "how big an audience this club draws at home" (that's homeAudienceAvg) -
+  // this is the reverse: how big an audience shows up FOR THE HOME SIDE'S
+  // broadcast simply because this club is the visitor, averaged across every
+  // away ground they've played at. A proxy for a club's draw power as a guest.
+  const awayAudiences = awayPlayed.map((f) => effectiveAudience(f, simulcastInfo, includeSimulcast));
   const totalAudiences = allPlayed.map((f) => effectiveAudience(f, simulcastInfo, includeSimulcast));
   const homeAddedTime = homePlayed.map(addedTimeMinutes);
 
@@ -75,6 +81,9 @@ export function computeTeamMetrics(team, fixtures, simulcastInfo, includeSimulca
     homeGamesPlayed: homePlayed.length,
     homeAudienceTotal: sum(homeAudiences),
     homeAudienceAvg: avg(homeAudiences),
+    awayGamesPlayed: awayPlayed.length,
+    awayAudienceTotal: sum(awayAudiences),
+    awayAudienceAvg: avg(awayAudiences),
     totalGamesPlayed: allPlayed.length,
     totalAudienceTotal: sum(totalAudiences),
     totalAudienceAvg: avg(totalAudiences),

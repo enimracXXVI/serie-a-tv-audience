@@ -4,6 +4,7 @@ import Crest from './Crest.jsx';
 const METRICS = [
   { key: 'homeAudienceAvg', label: 'Home audience (avg/game)' },
   { key: 'homeAudienceTotal', label: 'Home audience (season total)' },
+  { key: 'awayAudienceAvg', label: 'Away audience (avg/game) - visitor draw power' },
   { key: 'totalAudienceAvg', label: 'Total audience (avg/game)' },
   { key: 'totalAudienceTotal', label: 'Total audience (season total)' },
   { key: 'homeAddedTimeAvg', label: 'Added time (avg min/home game)' },

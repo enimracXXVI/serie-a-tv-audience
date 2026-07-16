@@ -220,10 +220,15 @@ deals, not for following the season - it covers all 20 clubs (sponsored ones
 pinned to the top of the table and dotted elsewhere), not just the ones
 you've sponsored, since you need the numbers for clubs you're *considering* too.
 
-Two audience figures are tracked, for two different kinds of deal:
+Three audience figures are tracked:
 - **Home audience** - only that club's home games. This is what an LED
   perimeter-board package buys, since those boards only exist at that club's
   own stadium.
+- **Away audience** - only that club's away games - a club's own draw power
+  as a *visitor*, since some clubs pull a bigger audience than usual for
+  whichever stadium they're playing at, independent of that home club's own
+  pull. Available from the "Clubs ranked by" dropdown and as a sortable
+  column in the table, same as the other two.
 - **Total audience** - home and away combined. This is what a jersey/kit
   partnership buys, since the badge is on screen wherever the club plays.
 
