@@ -1,34 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import MatchdayGroup from './MatchdayGroup.jsx';
 import MatchdaySelector from './MatchdaySelector.jsx';
+import TeamFixtureRow from './TeamFixtureRow.jsx';
 import { closestMatchday } from '../lib/matchdays.js';
 
-export default function CalendarView({
-  fixtures,
-  onUpdate,
-  highlightSlugs = [],
-  accent = '#1fd8c9',
-  canEdit = false,
-}) {
+// A single team's full season as one flat, chronological list (unlike the
+// combined CalendarView, each matchday only ever has one fixture for a
+// single team, so grouping into per-matchday cards would just be noise).
+export default function TeamCalendarView({ fixtures, team, accent = '#1fd8c9' }) {
   const byMatchday = new Map();
   for (const f of fixtures) {
     if (!byMatchday.has(f.matchday)) byMatchday.set(f.matchday, []);
     byMatchday.get(f.matchday).push(f);
-  }
-  for (const group of byMatchday.values()) {
-    group.sort((a, b) => {
-      const dateCompare = (a.date ?? '9999').localeCompare(b.date ?? '9999');
-      if (dateCompare !== 0) return dateCompare;
-      return (a.kickoffTime ?? '99:99').localeCompare(b.kickoffTime ?? '99:99');
-    });
-    // Fixtures sharing a date+kickoff slot air as one DAZN simulcast block;
-    // only the first one in the block should collect the shared audience figure.
-    let lastKey = null;
-    for (const f of group) {
-      const key = `${f.date ?? ''}|${f.kickoffTime ?? ''}`;
-      f.isFirstInBlock = key !== lastKey;
-      lastKey = key;
-    }
   }
   const matchdays = [...byMatchday.keys()].sort((a, b) => a - b);
 
@@ -47,22 +29,20 @@ export default function CalendarView({
     return <p className="text-center text-white/40 py-12">No fixtures to show.</p>;
   }
 
-  const visibleMatchdays = selected === 'all' ? matchdays : matchdays.filter((md) => md === selected);
+  const sorted = [...fixtures].sort((a, b) => (a.date ?? '9999').localeCompare(b.date ?? '9999'));
+  const visible = selected === 'all' ? sorted : sorted.filter((f) => f.matchday === selected);
 
   return (
     <div className="flex flex-col gap-4">
       <MatchdaySelector matchdays={matchdays} selected={selected ?? matchdays[0]} onChange={setSelected} />
-      {visibleMatchdays.map((md) => (
-        <MatchdayGroup
-          key={md}
-          matchday={md}
-          fixtures={byMatchday.get(md)}
-          onUpdate={onUpdate}
-          highlightSlugs={highlightSlugs}
-          accent={accent}
-          canEdit={canEdit}
-        />
-      ))}
+      <div
+        className="divide-y divide-gray-100 overflow-hidden rounded-2xl bg-white shadow-lg shadow-black/20"
+        style={{ borderTop: `3px solid ${accent}` }}
+      >
+        {visible.map((f) => (
+          <TeamFixtureRow key={f.id} fixture={f} team={team} />
+        ))}
+      </div>
     </div>
   );
 }

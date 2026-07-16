@@ -22,6 +22,12 @@ export function enrichFixture(raw, teamByName) {
     addedTime1H: raw.addedTime1H,
     addedTime2H: raw.addedTime2H,
     daznSimulcastAudience: raw.daznSimulcastAudience,
+    homeMatchdaySponsor: raw.homeMatchdaySponsor,
+    homePlayerMascot: raw.homePlayerMascot,
+    homeWalkabout: raw.homeWalkabout,
+    awayMatchdaySponsor: raw.awayMatchdaySponsor,
+    awayPlayerMascot: raw.awayPlayerMascot,
+    awayWalkabout: raw.awayWalkabout,
     updatedAt: raw.updatedAt,
   };
 }

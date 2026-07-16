@@ -2,12 +2,14 @@ import { useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Crest from '../components/Crest.jsx';
 import CalendarView from '../components/CalendarView.jsx';
+import TeamCalendarView from '../components/TeamCalendarView.jsx';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useFixtures } from '../lib/useFixtures.js';
-import { useSession } from '../lib/useSession.js';
 import { themeGradient, contrastText } from '../lib/color.js';
 import { saveTeams } from '../lib/savedTeams.js';
 
+// Team calendars are view-only - editing (scores, audience, sponsorship
+// activity) only happens from the home page's full calendar.
 export default function BrandedCalendarPage() {
   const { teams: slugsParam } = useParams();
   const slugs = useMemo(
@@ -15,8 +17,7 @@ export default function BrandedCalendarPage() {
     [slugsParam]
   );
   const { teams, loading: teamsLoading } = useTeams();
-  const { fixtures, loading: fixturesLoading, error: fixturesError, updateFixture } = useFixtures(slugs, teams);
-  const session = useSession();
+  const { fixtures, loading: fixturesLoading, error: fixturesError } = useFixtures(slugs, teams);
 
   const selectedTeams = useMemo(
     () => slugs.map((s) => teams.find((t) => t.slug === s)).filter(Boolean),
@@ -36,15 +37,6 @@ export default function BrandedCalendarPage() {
   useEffect(() => {
     if (slugs.length > 0) saveTeams(slugs);
   }, [slugs]);
-
-  async function handleUpdate(id, fields) {
-    try {
-      await updateFixture(id, fields, session.accessToken);
-    } catch (err) {
-      if (err.message === 'UNAUTHENTICATED') session.signIn();
-      else console.error(err);
-    }
-  }
 
   return (
     <div className="min-h-screen">
@@ -104,14 +96,10 @@ export default function BrandedCalendarPage() {
           <p className="rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-200">
             {fixturesError}
           </p>
+        ) : selectedTeams.length === 1 ? (
+          <TeamCalendarView fixtures={fixtures} team={selectedTeams[0]} accent={accent} />
         ) : (
-          <CalendarView
-            fixtures={fixtures}
-            onUpdate={handleUpdate}
-            highlightSlugs={slugs}
-            accent={accent}
-            canEdit={session.signedIn}
-          />
+          <CalendarView fixtures={fixtures} highlightSlugs={slugs} accent={accent} canEdit={false} />
         )}
       </main>
     </div>

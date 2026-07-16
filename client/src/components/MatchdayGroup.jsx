@@ -5,6 +5,7 @@ const TABS = [
   { key: 'kickoff', label: 'Kickoff' },
   { key: 'result', label: 'Result' },
   { key: 'audience', label: 'Audience' },
+  { key: 'sponsors', label: 'Sponsors' },
   { key: 'all', label: 'All' },
 ];
 

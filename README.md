@@ -1,9 +1,16 @@
 # Serie A 2026/27 · TV Audience Tracker
 
 A webapp for the Serie A 2026/27 calendar (seeded from the `rawData` sheet of
-the provided workbook): browse all 380 fixtures, record results and DAZN/Sky
-audience as the season unfolds, and generate a calendar page branded with the
-colors and crests of any teams you select.
+the provided workbook): browse all 380 fixtures, record results, DAZN/Sky
+audience and sponsorship activity as the season unfolds, and generate a
+calendar page branded with the colors and crests of any teams you select.
+
+All editing happens on the home page's full calendar - the per-team and
+combined branded calendar pages (`/calendar/...`) are view-only. Picking
+exactly one team shows a different, flatter layout (one row per match: date,
+home/away, opponent, score) instead of the two-team combined view. The
+hamburger menu's Teams picker defaults to whichever clubs are marked
+`sponsored` in Settings, the first time there's no saved selection yet.
 
 ## Stack
 
@@ -45,6 +52,18 @@ open the sheet directly, add these labels to row 1 if you want them:
 | N | addedTime1H | Added/injury time, first half (minutes) |
 | O | addedTime2H | Added/injury time, second half (minutes) |
 | P | daznSimulcastAudience | Audience for DAZN's multi-game simulcast slot, when applicable |
+| Q | homeMatchdaySponsor | TRUE/FALSE — home club had a matchday sponsor activation at this match |
+| R | homePlayerMascot | TRUE/FALSE — home club had a player mascot at this match |
+| S | homeWalkabout | TRUE/FALSE — home club had a walkabout at this match |
+| T | awayMatchdaySponsor | Same three, for the away club |
+| U | awayPlayerMascot | |
+| V | awayWalkabout | |
+
+The Q-V columns are only editable from the home page's **Sponsors** tab (per
+matchday card), and only show checkboxes for whichever side of a fixture is a
+club marked `sponsored` in the `teams` tab (see below). Whatever's checked
+shows up as a small badge on that fixture everywhere it's displayed — home
+page, combined calendars, single-team calendars — regardless of sign-in.
 
 ### Team settings tab (name/short/colours/sponsorship)
 

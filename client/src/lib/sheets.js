@@ -12,7 +12,15 @@ const NUMERIC_FIELDS = new Set([
   'addedTime2H',
   'daznSimulcastAudience',
 ]);
-const BOOLEAN_FIELDS = new Set(['onSky']);
+const BOOLEAN_FIELDS = new Set([
+  'onSky',
+  'homeMatchdaySponsor',
+  'homePlayerMascot',
+  'homeWalkabout',
+  'awayMatchdaySponsor',
+  'awayPlayerMascot',
+  'awayWalkabout',
+]);
 const EDITABLE_FIELDS = [
   'date',
   'homeScore',
@@ -24,6 +32,12 @@ const EDITABLE_FIELDS = [
   'addedTime1H',
   'addedTime2H',
   'daznSimulcastAudience',
+  'homeMatchdaySponsor',
+  'homePlayerMascot',
+  'homeWalkabout',
+  'awayMatchdaySponsor',
+  'awayPlayerMascot',
+  'awayWalkabout',
 ];
 
 // Generous range: columns can be reordered/added by name (see rowToFixture),

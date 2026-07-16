@@ -74,9 +74,15 @@ function ColorField({ label, value, onCommit }) {
 
 function TeamSettingsRow({ team, canEdit, onSave }) {
   const [expanded, setExpanded] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
-  function commit(fields) {
-    onSave(team.slug, fields);
+  async function commit(fields) {
+    setSaveError(null);
+    try {
+      await onSave(team.slug, fields);
+    } catch (err) {
+      setSaveError(err.message);
+    }
   }
 
   return (
@@ -139,6 +145,11 @@ function TeamSettingsRow({ team, canEdit, onSave }) {
                   <NumberField label="Walkabouts" value={team.walkabouts} onCommit={(v) => commit({ walkabouts: v })} />
                 </div>
               )}
+              {saveError && (
+                <p className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-xs text-red-300">
+                  {saveError}
+                </p>
+              )}
             </>
           ) : (
             <div className="flex flex-col gap-1 text-xs text-white/50">
@@ -168,8 +179,11 @@ export default function TeamSettingsPanel({ session }) {
     try {
       await saveTeam(slug, fields, session.accessToken);
     } catch (err) {
-      if (err.message === 'UNAUTHENTICATED') session.signIn();
-      else console.error(err);
+      if (err.message === 'UNAUTHENTICATED') {
+        session.signIn();
+        return;
+      }
+      throw err;
     }
   }
 

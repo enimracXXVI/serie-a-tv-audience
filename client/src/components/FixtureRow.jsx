@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Crest from './Crest.jsx';
 import { DaznLogo, SkyLogo } from './BroadcastBadges.jsx';
+import SponsorBadges from './SponsorBadges.jsx';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
@@ -133,6 +134,55 @@ function AudienceFields({ fixture, onUpdate }) {
   );
 }
 
+function SponsorshipFields({ fixture, onUpdate }) {
+  const sides = [];
+  if (fixture.home.sponsored) sides.push({ prefix: 'home', label: fixture.home.name });
+  if (fixture.away.sponsored) sides.push({ prefix: 'away', label: fixture.away.name });
+
+  if (sides.length === 0) {
+    return <p className="text-xs text-gray-400">No sponsored club in this fixture.</p>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-4">
+      {sides.map(({ prefix, label }) => (
+        <div key={prefix} className="flex flex-col gap-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</span>
+          <div className="flex flex-wrap gap-3">
+            <label className="flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={Boolean(fixture[`${prefix}MatchdaySponsor`])}
+                onChange={(e) => onUpdate(fixture.id, { [`${prefix}MatchdaySponsor`]: e.target.checked })}
+                className="h-4 w-4 accent-[#1fd8c9]"
+              />
+              <span className="text-xs font-semibold text-gray-600">Matchday sponsor</span>
+            </label>
+            <label className="flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={Boolean(fixture[`${prefix}PlayerMascot`])}
+                onChange={(e) => onUpdate(fixture.id, { [`${prefix}PlayerMascot`]: e.target.checked })}
+                className="h-4 w-4 accent-[#1fd8c9]"
+              />
+              <span className="text-xs font-semibold text-gray-600">Player mascot</span>
+            </label>
+            <label className="flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={Boolean(fixture[`${prefix}Walkabout`])}
+                onChange={(e) => onUpdate(fixture.id, { [`${prefix}Walkabout`]: e.target.checked })}
+                className="h-4 w-4 accent-[#1fd8c9]"
+              />
+              <span className="text-xs font-semibold text-gray-600">Walkabout</span>
+            </label>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], canEdit, editMode }) {
   const { home, away } = fixture;
   const homeHighlighted = highlightSlugs.includes(home.slug);
@@ -157,6 +207,11 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
               <span className="hidden sm:inline">{home.name}</span>
             </span>
             <Crest team={home} size={24} />
+            <SponsorBadges
+              matchdaySponsor={fixture.homeMatchdaySponsor}
+              playerMascot={fixture.homePlayerMascot}
+              walkabout={fixture.homeWalkabout}
+            />
           </div>
 
           <div className="rounded-md px-1 py-1">
@@ -169,6 +224,11 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
               <span className="sm:hidden">{away.short ?? away.name}</span>
               <span className="hidden sm:inline">{away.name}</span>
             </span>
+            <SponsorBadges
+              matchdaySponsor={fixture.awayMatchdaySponsor}
+              playerMascot={fixture.awayPlayerMascot}
+              walkabout={fixture.awayWalkabout}
+            />
           </div>
         </div>
 
@@ -194,11 +254,13 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
           {editMode === 'kickoff' && <KickoffFields fixture={fixture} onUpdate={onUpdate} />}
           {editMode === 'result' && <ResultFields fixture={fixture} onUpdate={onUpdate} />}
           {editMode === 'audience' && <AudienceFields fixture={fixture} onUpdate={onUpdate} />}
+          {editMode === 'sponsors' && <SponsorshipFields fixture={fixture} onUpdate={onUpdate} />}
           {editMode === 'all' && (
             <>
               <KickoffFields fixture={fixture} onUpdate={onUpdate} />
               <ResultFields fixture={fixture} onUpdate={onUpdate} />
               <AudienceFields fixture={fixture} onUpdate={onUpdate} />
+              <SponsorshipFields fixture={fixture} onUpdate={onUpdate} />
             </>
           )}
         </div>

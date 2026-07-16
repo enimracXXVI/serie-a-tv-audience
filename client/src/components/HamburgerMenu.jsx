@@ -45,7 +45,22 @@ export default function HamburgerMenu() {
   const session = useSession();
   const { teams } = useTeams();
   const [selectedTeams, setSelectedTeams] = useState(() => getSavedTeams());
+  // Already had a saved selection to start with, so auto-select should never
+  // kick in this session even if the user later clears it down to none.
+  const autoSelectedRef = useRef(selectedTeams.length > 0);
   const navigate = useNavigate();
+
+  // First time there's no saved "my teams" choice yet, default to whichever
+  // clubs are marked sponsored instead of starting empty. Only happens once
+  // per session - later manual (de)selections are never overridden.
+  useEffect(() => {
+    if (autoSelectedRef.current) return;
+    const sponsoredSlugs = teams.filter((t) => t.sponsored).map((t) => t.slug);
+    if (sponsoredSlugs.length > 0) {
+      autoSelectedRef.current = true;
+      setSelectedTeams(sponsoredSlugs);
+    }
+  }, [teams, selectedTeams]);
 
   useEffect(() => {
     function onPopState(e) {
