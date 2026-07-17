@@ -256,7 +256,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
               <DayTimeHeatmap rows={audienceByDayAndTime} />
               <DayTimeBreakdownTable rows={audienceByDayAndTime} />
             </div>
@@ -266,10 +266,6 @@ export default function DashboardPage() {
               <RemainingScheduleCard remaining={remainingSchedule} team={focusedTeam} />
             </div>
 
-            <OpponentAudienceChart team={focusedTeam} data={opponentAudience} />
-
-            <ActivationAudienceCard team={focusedTeam} activations={activationAudience} />
-
             <TopGamesList
               fixtures={fixtures}
               teams={teams}
@@ -277,6 +273,13 @@ export default function DashboardPage() {
               includeSimulcast={includeSimulcast}
               focusedSlug={focusedSlug}
             />
+
+            {/* These two need a focused club to show anything meaningful,
+                so they sit at the bottom rather than competing for space
+                with the league-wide sections above. */}
+            <OpponentAudienceChart team={focusedTeam} data={opponentAudience} />
+
+            <ActivationAudienceCard team={focusedTeam} activations={activationAudience} />
           </>
         )}
       </main>

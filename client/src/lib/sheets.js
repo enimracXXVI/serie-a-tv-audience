@@ -149,11 +149,12 @@ export async function updateFixtureRow(fixture, accessToken) {
 
   if (res.status === 401 || res.status === 403) throw new Error('UNAUTHENTICATED');
   if (!res.ok) throw new Error('Failed to save to Google Sheets');
-  if (missing.length > 0) {
-    console.warn(`Sheet is missing header(s) for: ${missing.join(', ')} - those fields were not saved.`);
-  }
 
-  return { ...fixture, updatedAt };
+  // Missing headers never throw here - everything else in this save did
+  // write successfully, and the caller (which knows which of these fields
+  // it actually just tried to change) decides whether to surface a visible
+  // warning instead of leaving it a silent, invisible failure.
+  return { ...fixture, updatedAt, missingFields: missing };
 }
 
 // isBigMatch/isDerby also get written opportunistically whenever a fixture is

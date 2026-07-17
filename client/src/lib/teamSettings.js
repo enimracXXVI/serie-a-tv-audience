@@ -163,9 +163,9 @@ export async function updateTeamSettings(slug, fields, accessToken) {
   await postBatchUpdate('RAW', rawData, accessToken);
   await postBatchUpdate('USER_ENTERED', formulaData, accessToken);
 
-  if (missing.length > 0) {
-    console.warn(`Teams sheet is missing header(s) for: ${missing.join(', ')} - those fields were not saved.`);
-  }
-
-  return fields;
+  // Missing headers never throw here - everything else in this save did
+  // write successfully, and the caller (which knows which of these fields
+  // it actually just tried to change) decides whether to surface a visible
+  // warning instead of leaving it a silent, invisible failure.
+  return { ...fields, missingFields: missing };
 }

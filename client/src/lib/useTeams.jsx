@@ -36,8 +36,23 @@ export function TeamsProvider({ children }) {
 
   const saveTeam = useCallback(async (slug, fields, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
-    await updateTeamSettings(slug, fields, accessToken);
-    setOverrides((prev) => ({ ...prev, [slug]: { ...prev[slug], ...fields } }));
+    const result = await updateTeamSettings(slug, fields, accessToken);
+
+    // Only reflect locally what actually reached the sheet - a field whose
+    // column header is missing didn't save, so pretending it did (even
+    // just in this tab, until the next reload) would hide exactly the
+    // silent failure this is meant to surface.
+    const missingHere = (result.missingFields ?? []).filter((f) => f in fields);
+    const appliedFields = { ...fields };
+    for (const f of missingHere) delete appliedFields[f];
+
+    setOverrides((prev) => ({ ...prev, [slug]: { ...prev[slug], ...appliedFields } }));
+
+    if (missingHere.length > 0) {
+      throw new Error(
+        `Saved, but the teams sheet has no column header for: ${missingHere.join(', ')} - that value was not saved. Check row 1 of the teams tab for a typo.`
+      );
+    }
   }, []);
 
   return <TeamsContext.Provider value={{ teams, loading, error, saveTeam }}>{children}</TeamsContext.Provider>;

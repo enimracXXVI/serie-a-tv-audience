@@ -52,9 +52,24 @@ export function useFixtures(teamSlugs, teams) {
       // touched) so `day` can never drift out of sync with `date`.
       merged.day = computeDayOfWeek(merged.date);
       const updated = await updateFixtureRow(merged, accessToken);
+
+      // Only reflect locally what actually reached the sheet - a field
+      // whose column header is missing didn't save, so pretending it did
+      // (even just in this tab, until the next reload) would hide exactly
+      // the silent failure this is meant to surface.
+      const missingHere = (updated.missingFields ?? []).filter((f) => f in fields);
+      const appliedFields = { ...fields };
+      for (const f of missingHere) delete appliedFields[f];
+
       setRawFixtures((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, ...fields, day: merged.day, updatedAt: updated.updatedAt } : r))
+        prev.map((r) => (r.id === id ? { ...r, ...appliedFields, day: merged.day, updatedAt: updated.updatedAt } : r))
       );
+
+      if (missingHere.length > 0) {
+        throw new Error(
+          `Saved, but the fixtures sheet has no column header for: ${missingHere.join(', ')} - that value was not saved. Check row 1 of the fixtures tab for a typo.`
+        );
+      }
     },
     [fixtures]
   );

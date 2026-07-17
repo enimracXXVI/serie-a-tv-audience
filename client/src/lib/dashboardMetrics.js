@@ -193,16 +193,19 @@ export function computeTagPremium(fixtures, simulcastInfo, includeSimulcast, tea
 // track against the league baseline.
 export function computeSeasonTrend(fixtures, simulcastInfo, includeSimulcast, teamSlug) {
   const matchdays = [...new Set(fixtures.map((f) => f.matchday))].sort((a, b) => a - b);
-  return matchdays.map((matchday) => {
-    const played = fixtures.filter((f) => f.matchday === matchday && isPlayed(f));
-    const leagueAvg = avg(played.map((f) => effectiveAudience(f, simulcastInfo, includeSimulcast)));
-    let teamValue = null;
-    if (teamSlug) {
-      const game = played.find((f) => f.home.slug === teamSlug || f.away.slug === teamSlug);
-      teamValue = game ? effectiveAudience(game, simulcastInfo, includeSimulcast) : null;
-    }
-    return { matchday, leagueAvg, teamValue };
-  });
+  return matchdays
+    .map((matchday) => {
+      const played = fixtures.filter((f) => f.matchday === matchday && isPlayed(f));
+      if (played.length === 0) return null; // nothing played yet this matchday - not a real zero
+      const leagueAvg = avg(played.map((f) => effectiveAudience(f, simulcastInfo, includeSimulcast)));
+      let teamValue = null;
+      if (teamSlug) {
+        const game = played.find((f) => f.home.slug === teamSlug || f.away.slug === teamSlug);
+        teamValue = game ? effectiveAudience(game, simulcastInfo, includeSimulcast) : null;
+      }
+      return { matchday, leagueAvg, teamValue };
+    })
+    .filter(Boolean);
 }
 
 // What's left to sell/evaluate, not just what's happened so far - a

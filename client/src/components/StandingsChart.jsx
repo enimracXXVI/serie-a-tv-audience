@@ -3,14 +3,22 @@ import Crest, { useCrestSrc } from './Crest.jsx';
 import { computeStandings, computeStandingsHistory, computeRankHistory, maxPlayedMatchday } from '../lib/standings.js';
 
 const WIDTH = 780;
-const CHART_HEIGHT = 340;
 const PAD = { top: 16, right: 22, bottom: 26, left: 30 };
 const CREST_SIZE = 15;
 const MIN_GAP = CREST_SIZE + 2;
+// Approximates RankedList's own rendered height (header + one row per club)
+// so the chart fills the same vertical space instead of leaving the taller
+// of the two columns padded out with blank canvas.
+const RANKED_LIST_HEADER_HEIGHT = 16;
+const RANKED_LIST_ROW_HEIGHT = 24;
+
+function chartHeightFor(teamCount) {
+  return Math.max(240, RANKED_LIST_HEADER_HEIGHT + teamCount * RANKED_LIST_ROW_HEIGHT);
+}
 
 // Nudges same-x endpoints apart vertically so their crests don't overlap,
 // keeping each as close as possible to its true data position.
-function spreadVertically(items) {
+function spreadVertically(items, chartHeight) {
   const sorted = [...items].sort((a, b) => a.dataY - b.dataY);
   sorted.forEach((item) => {
     item.y = item.dataY;
@@ -18,7 +26,7 @@ function spreadVertically(items) {
   for (let i = 1; i < sorted.length; i++) {
     if (sorted[i].y - sorted[i - 1].y < MIN_GAP) sorted[i].y = sorted[i - 1].y + MIN_GAP;
   }
-  const bottom = CHART_HEIGHT - PAD.bottom;
+  const bottom = chartHeight - PAD.bottom;
   const overflow = sorted[sorted.length - 1]?.y - bottom;
   if (overflow > 0) {
     for (let i = sorted.length - 1; i >= 0; i--) sorted[i].y -= overflow;
@@ -57,18 +65,18 @@ function CrestMarker({ team, x, y, dataY, size, dimmed }) {
   );
 }
 
-function LineChart({ cutoff, maxMatchday, series, gridLines, yScale, formatGridLabel, hoveredSlug, setHoveredSlug }) {
+function LineChart({ chartHeight, cutoff, maxMatchday, series, gridLines, yScale, formatGridLabel, hoveredSlug, setHoveredSlug }) {
   const markers = useMemo(() => {
     const items = series.map((s) => ({ slug: s.team.slug, team: s.team, dataY: yScale(s.lastValue) }));
-    return spreadVertically(items);
-  }, [series, yScale]);
+    return spreadVertically(items, chartHeight);
+  }, [series, yScale, chartHeight]);
 
   const xScale = (md) => PAD.left + (md / maxMatchday) * (WIDTH - PAD.left - PAD.right);
   const ticks = useMemo(() => xAxisTicks(maxMatchday), [maxMatchday]);
 
   return (
     <svg
-      viewBox={`0 0 ${WIDTH} ${CHART_HEIGHT}`}
+      viewBox={`0 0 ${WIDTH} ${chartHeight}`}
       className="w-full"
       style={{ height: 'auto' }}
       role="img"
@@ -115,7 +123,7 @@ function LineChart({ cutoff, maxMatchday, series, gridLines, yScale, formatGridL
       ))}
 
       {ticks.map((md) => (
-        <text key={md} x={xScale(md)} y={CHART_HEIGHT - PAD.bottom + 14} textAnchor="middle" fontSize="9" fill="#9ca3af">
+        <text key={md} x={xScale(md)} y={chartHeight - PAD.bottom + 14} textAnchor="middle" fontSize="9" fill="#9ca3af">
           {md}
         </text>
       ))}
@@ -153,6 +161,7 @@ function RankedList({ ranked, cutoff, valueKey, hoveredSlug, setHoveredSlug }) {
 function StandingSection({ title, metric, fixtures, teams, teamCount, maxMatchday, defaultCutoff, history }) {
   const [cutoff, setCutoff] = useState(defaultCutoff);
   const [hoveredSlug, setHoveredSlug] = useState(null);
+  const chartHeight = chartHeightFor(teamCount);
 
   const ranked = useMemo(() => computeStandings(fixtures, teams, cutoff), [fixtures, teams, cutoff]);
 
@@ -189,8 +198,8 @@ function StandingSection({ title, metric, fixtures, teams, teamCount, maxMatchda
 
   const yScale =
     metric === 'points'
-      ? (pts) => CHART_HEIGHT - PAD.bottom - (pts / maxPoints) * (CHART_HEIGHT - PAD.top - PAD.bottom)
-      : (rank) => PAD.top + ((rank - 1) / Math.max(teamCount - 1, 1)) * (CHART_HEIGHT - PAD.top - PAD.bottom);
+      ? (pts) => chartHeight - PAD.bottom - (pts / maxPoints) * (chartHeight - PAD.top - PAD.bottom)
+      : (rank) => PAD.top + ((rank - 1) / Math.max(teamCount - 1, 1)) * (chartHeight - PAD.top - PAD.bottom);
 
   const gridLines =
     metric === 'points'
@@ -205,9 +214,10 @@ function StandingSection({ title, metric, fixtures, teams, teamCount, maxMatchda
         <h3 className="text-sm font-bold text-[#0f1e54]">{title}</h3>
         <span className="text-xs font-semibold text-gray-400">Matchday {cutoff}</span>
       </div>
-      <div className="flex flex-col gap-4 lg:flex-row">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         <div className="flex flex-1 flex-col gap-3">
           <LineChart
+            chartHeight={chartHeight}
             cutoff={cutoff}
             maxMatchday={maxMatchday}
             series={series}
