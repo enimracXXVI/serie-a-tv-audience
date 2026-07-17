@@ -91,6 +91,13 @@ function ResultFields({ fixture, onUpdate }) {
     <div className="flex flex-wrap items-end gap-2">
       <NumberField label="Home score" value={fixture.homeScore} onCommit={(v) => onUpdate(fixture.id, { homeScore: v })} />
       <NumberField label="Away score" value={fixture.awayScore} onCommit={(v) => onUpdate(fixture.id, { awayScore: v })} />
+    </div>
+  );
+}
+
+function AddedTimeFields({ fixture, onUpdate }) {
+  return (
+    <div className="flex flex-wrap items-end gap-2">
       <NumberField
         label="Added time 1H"
         value={fixture.addedTime1H}
@@ -261,6 +268,7 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
         <div className="mt-2 flex flex-col gap-2 rounded-lg bg-gray-50 p-2.5">
           {editMode === 'kickoff' && <KickoffFields fixture={fixture} onUpdate={onUpdate} />}
           {editMode === 'result' && <ResultFields fixture={fixture} onUpdate={onUpdate} />}
+          {editMode === 'addedTime' && <AddedTimeFields fixture={fixture} onUpdate={onUpdate} />}
           {editMode === 'audience' && <AudienceFields fixture={fixture} onUpdate={onUpdate} />}
           {editMode === 'sponsors' && (
             <SponsorshipFields fixture={fixture} onUpdate={onUpdate} sponsorCounts={sponsorCounts} />
@@ -269,6 +277,7 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
             <>
               <KickoffFields fixture={fixture} onUpdate={onUpdate} />
               <ResultFields fixture={fixture} onUpdate={onUpdate} />
+              <AddedTimeFields fixture={fixture} onUpdate={onUpdate} />
               <AudienceFields fixture={fixture} onUpdate={onUpdate} />
               <SponsorshipFields fixture={fixture} onUpdate={onUpdate} sponsorCounts={sponsorCounts} />
             </>

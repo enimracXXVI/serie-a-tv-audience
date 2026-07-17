@@ -4,6 +4,7 @@ import FixtureRow from './FixtureRow.jsx';
 const TABS = [
   { key: 'kickoff', label: 'Kickoff' },
   { key: 'result', label: 'Result' },
+  { key: 'addedTime', label: 'Added time' },
   { key: 'audience', label: 'Audience' },
   { key: 'sponsors', label: 'Sponsors' },
   { key: 'all', label: 'All' },
