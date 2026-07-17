@@ -72,14 +72,14 @@ export default function HomePage() {
       <main className="mx-auto max-w-6xl px-6 py-8">
         <div className="mb-4 flex flex-wrap items-center gap-1.5">
           <span className="rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold text-white">All teams</span>
-          {sponsoredSlugs.length > 0 && (
-            <button
-              onClick={viewAllSponsored}
-              className="rounded-full bg-[#1fd8c9]/20 px-3 py-1.5 text-xs font-bold text-[#1fd8c9] transition-colors hover:bg-[#1fd8c9]/30"
-            >
-              Sponsored teams →
-            </button>
-          )}
+          <button
+            onClick={viewAllSponsored}
+            disabled={sponsoredSlugs.length === 0}
+            title={sponsoredSlugs.length === 0 ? 'No clubs marked as sponsored yet - set that in Settings' : undefined}
+            className="rounded-full bg-[#1fd8c9]/20 px-3 py-1.5 text-xs font-bold text-[#1fd8c9] transition-colors hover:bg-[#1fd8c9]/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[#1fd8c9]/20"
+          >
+            Sponsored teams →
+          </button>
           <button
             onClick={() => setShowBuildPanel((v) => !v)}
             className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${

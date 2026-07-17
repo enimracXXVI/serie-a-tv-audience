@@ -58,7 +58,23 @@ export function getStoredSession() {
   return readStoredSession();
 }
 
+// A near-simultaneous edit in two different fields each hits the expired
+// token and calls this independently - without sharing one in-flight
+// request, that's two competing requestAccessToken() popups/silent flows
+// stepping on each other, and one edit silently never gets its token (the
+// "have to press it again" bug). Sharing a single in-flight promise means
+// every caller during that window awaits the same result instead.
+let signInPromise = null;
+
 export async function signIn() {
+  if (signInPromise) return signInPromise;
+  signInPromise = requestAccessToken().finally(() => {
+    signInPromise = null;
+  });
+  return signInPromise;
+}
+
+async function requestAccessToken() {
   await loadGis();
   return new Promise((resolve, reject) => {
     const client = window.google.accounts.oauth2.initTokenClient({
