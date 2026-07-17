@@ -8,7 +8,7 @@ const LIMITS = [5, 10, 20];
 function formatDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(`${dateStr}T00:00:00`);
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
 }
 
 export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSimulcast, focusedSlug }) {
@@ -79,9 +79,10 @@ export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSi
           {topGames.map(({ fixture, audience }, i) => (
             <li key={fixture.id} className="flex items-center gap-2 py-2 text-sm">
               <span className="w-5 shrink-0 text-right text-xs font-bold text-gray-400">{i + 1}</span>
-              <span className="w-14 shrink-0 text-[10px] text-gray-400">
-                MD{fixture.matchday} · {formatDate(fixture.date)}
-              </span>
+              <div className="flex w-20 shrink-0 flex-col items-center text-center text-[10px] leading-tight text-gray-400">
+                <span className="font-bold text-gray-500">MD{fixture.matchday}</span>
+                <span className="whitespace-nowrap">{formatDate(fixture.date)}</span>
+              </div>
               <div className="flex flex-1 items-center justify-center gap-1.5 min-w-0">
                 <Crest team={fixture.home} size={18} />
                 <span className="truncate text-xs font-semibold text-gray-700">{fixture.home.short ?? fixture.home.name}</span>

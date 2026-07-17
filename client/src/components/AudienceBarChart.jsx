@@ -12,7 +12,7 @@ const METRICS = [
 ];
 
 function formatValue(key, value) {
-  if (key === 'homeAddedTimeAvg') return `${value.toFixed(1)} min`;
+  if (key === 'homeAddedTimeAvg') return `${Math.round(value)} min`;
   return formatNumber(value);
 }
 

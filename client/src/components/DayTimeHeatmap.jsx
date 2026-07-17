@@ -1,4 +1,4 @@
-import { formatNumber } from '../lib/formatNumber.js';
+import { formatNumber, formatAbbreviated } from '../lib/formatNumber.js';
 
 const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -59,7 +59,7 @@ export default function DayTimeHeatmap({ rows }) {
                     >
                       {cell && (
                         <>
-                          <span className="text-xs font-bold">{formatNumber(cell.avg)}</span>
+                          <span className="text-xs font-bold">{formatAbbreviated(cell.avg)}</span>
                           <span className="text-[9px] opacity-70">{cell.count}g</span>
                         </>
                       )}

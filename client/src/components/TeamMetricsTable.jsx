@@ -23,7 +23,7 @@ function formatCell(key, row) {
     case 'totalAudienceTotal':
       return formatNumber(row[key]);
     case 'homeAddedTimeAvg':
-      return `${row[key].toFixed(1)}'`;
+      return `${Math.round(row[key])}'`;
     default:
       return row[key];
   }
