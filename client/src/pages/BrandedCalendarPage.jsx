@@ -64,6 +64,9 @@ export default function BrandedCalendarPage() {
     document.title = selectedTeams.length
       ? `${selectedTeams.map((t) => t.name).join(' & ')} · Serie A Calendar`
       : 'Serie A Calendar';
+    return () => {
+      document.title = 'Serie A 2026/27 · TV Audience Tracker';
+    };
   }, [selectedTeams]);
 
   return (
