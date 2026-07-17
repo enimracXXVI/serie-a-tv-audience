@@ -83,12 +83,16 @@ export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSi
                 <span className="font-bold text-gray-500">MD{fixture.matchday}</span>
                 <span className="whitespace-nowrap">{formatDate(fixture.date)}</span>
               </div>
-              <div className="flex flex-1 items-center justify-center gap-1.5 min-w-0">
-                <Crest team={fixture.home} size={18} />
-                <span className="truncate text-xs font-semibold text-gray-700">{fixture.home.short ?? fixture.home.name}</span>
-                <span className="text-[10px] text-gray-300">vs</span>
-                <span className="truncate text-xs font-semibold text-gray-700">{fixture.away.short ?? fixture.away.name}</span>
-                <Crest team={fixture.away} size={18} />
+              <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1.5 min-w-0">
+                <div className="flex items-center justify-end gap-1.5 min-w-0">
+                  <span className="truncate text-xs font-semibold text-gray-700">{fixture.home.short ?? fixture.home.name}</span>
+                  <Crest team={fixture.home} size={18} />
+                </div>
+                <span className="px-1 text-[10px] text-gray-300">vs</span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Crest team={fixture.away} size={18} />
+                  <span className="truncate text-xs font-semibold text-gray-700">{fixture.away.short ?? fixture.away.name}</span>
+                </div>
               </div>
               <span className="w-16 shrink-0 text-right text-sm font-black text-[#0f1e54]">{formatNumber(audience)}</span>
             </li>

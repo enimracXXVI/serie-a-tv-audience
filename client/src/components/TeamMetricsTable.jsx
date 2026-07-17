@@ -96,8 +96,12 @@ export default function TeamMetricsTable({ metrics, focusedSlug, onFocus }) {
             <tr
               key={row.team.slug}
               onClick={() => onFocus(row.team.slug === focusedSlug ? null : row.team.slug)}
-              className={`cursor-pointer transition-colors hover:bg-gray-50 ${
-                row.team.slug === focusedSlug ? 'bg-[#1fd8c9]/10' : row.team.sponsored ? 'bg-[#1fd8c9]/5' : ''
+              className={`cursor-pointer border-l-4 transition-colors hover:bg-gray-50 ${
+                row.team.slug === focusedSlug
+                  ? 'border-[#0f1e54] bg-[#0f1e54]/10'
+                  : row.team.sponsored
+                    ? 'border-transparent bg-[#1fd8c9]/5'
+                    : 'border-transparent'
               }`}
             >
               <td className="px-3 py-2 text-left">

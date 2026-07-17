@@ -1,6 +1,7 @@
+import { useMemo, useState } from 'react';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useFixtures } from '../lib/useFixtures.js';
-import { computeStandings } from '../lib/standings.js';
+import { computeStandings, maxPlayedMatchday } from '../lib/standings.js';
 import StandingsTable from '../components/StandingsTable.jsx';
 import StandingsChart from '../components/StandingsChart.jsx';
 
@@ -9,7 +10,12 @@ export default function StandingsPage() {
   const { fixtures, loading: fixturesLoading, error: fixturesError } = useFixtures([], teams);
 
   const loading = teamsLoading || fixturesLoading;
-  const standings = loading || fixturesError ? [] : computeStandings(fixtures, teams);
+  const maxMatchday = useMemo(() => maxPlayedMatchday(fixtures) || 1, [fixtures]);
+  // null tracks "latest matchday" live as data loads; a number means the
+  // user has dragged the slider to a specific point in the season.
+  const [tableMatchday, setTableMatchday] = useState(null);
+  const effectiveTableMatchday = Math.min(tableMatchday ?? maxMatchday, maxMatchday);
+  const standings = loading || fixturesError ? [] : computeStandings(fixtures, teams, effectiveTableMatchday);
 
   return (
     <div className="min-h-screen">
@@ -30,7 +36,12 @@ export default function StandingsPage() {
           </p>
         ) : (
           <>
-            <StandingsTable standings={standings} />
+            <StandingsTable
+              standings={standings}
+              matchday={effectiveTableMatchday}
+              maxMatchday={maxMatchday}
+              onMatchdayChange={setTableMatchday}
+            />
             <StandingsChart fixtures={fixtures} teams={teams} />
           </>
         )}

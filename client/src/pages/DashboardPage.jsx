@@ -148,11 +148,11 @@ export default function DashboardPage() {
   const leagueAvgHome = teamsWithHomeGames.length
     ? teamsWithHomeGames.reduce((a, m) => a + m.homeAudienceAvg, 0) / teamsWithHomeGames.length
     : 0;
-  const simulcastGames = useMemo(() => new Set(fixtures.filter((f) => simulcastInfo.has(f.id)).map((f) => f.id)).size, [
-    fixtures,
-    simulcastInfo,
-  ]);
-  const skyGames = playedGames.filter((f) => f.onSky).length;
+  // Every played game's audience is counted once (via the home broadcast
+  // figure), so summing each club's home total across the league gives the
+  // season total without double-counting a match from both sides.
+  const totalAudience = metrics.reduce((a, m) => a + m.homeAudienceTotal, 0);
+  const sponsoredAudience = metrics.filter((m) => m.team.sponsored).reduce((a, m) => a + m.homeAudienceTotal, 0);
 
   const focusedTeam = focusedSlug ? teams.find((t) => t.slug === focusedSlug) : null;
 
@@ -199,13 +199,11 @@ export default function DashboardPage() {
               <select
                 value={focusedSlug ?? ''}
                 onChange={(e) => setFocusedSlug(e.target.value || null)}
-                className="rounded-md border border-white/20 bg-white/10 px-2 py-1 text-xs font-semibold text-white outline-none focus:border-[#1fd8c9]"
+                className="rounded-md border border-transparent bg-white px-2 py-1 text-xs font-semibold text-[#0f1e54] outline-none focus:border-[#1fd8c9]"
               >
-                <option value="" className="text-black">
-                  All clubs
-                </option>
+                <option value="">All clubs</option>
                 {teams.map((t) => (
-                  <option key={t.slug} value={t.slug} className="text-black">
+                  <option key={t.slug} value={t.slug}>
                     {t.name}
                   </option>
                 ))}
@@ -236,8 +234,8 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <StatTile label="Games played" value={playedGames.length} sub={`of ${fixtures.length} scheduled`} />
               <StatTile label="League avg home audience" value={formatNumber(leagueAvgHome)} />
-              <StatTile label="Simulcast games" value={simulcastGames} sub="shared DAZN slots" />
-              <StatTile label="Games on Sky" value={skyGames} />
+              <StatTile label="Total audience (season)" value={formatNumber(totalAudience)} />
+              <StatTile label="Sponsored clubs' audience" value={formatNumber(sponsoredAudience)} sub="home games only" />
             </div>
 
             <AudienceBarChart metrics={metrics} focusedSlug={focusedSlug} onFocus={setFocusedSlug} />
@@ -258,8 +256,10 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <DayTimeHeatmap rows={audienceByDayAndTime} />
-            <DayTimeBreakdownTable rows={audienceByDayAndTime} />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <DayTimeHeatmap rows={audienceByDayAndTime} />
+              <DayTimeBreakdownTable rows={audienceByDayAndTime} />
+            </div>
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <TagPremiumCard premium={tagPremium} />

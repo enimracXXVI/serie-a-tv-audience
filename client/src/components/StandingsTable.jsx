@@ -1,8 +1,25 @@
 import Crest from './Crest.jsx';
 
-export default function StandingsTable({ standings }) {
+export default function StandingsTable({ standings, matchday, maxMatchday, onMatchdayChange }) {
   return (
-    <div className="overflow-x-auto rounded-2xl bg-white shadow-lg shadow-black/20">
+    <div className="rounded-2xl bg-white shadow-lg shadow-black/20">
+      <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-3 pt-3 pb-2">
+        <h3 className="text-sm font-bold text-[#0f1e54]">
+          {matchday >= maxMatchday ? 'Current standing' : `Standing at matchday ${matchday}`}
+        </h3>
+        <div className="flex flex-1 items-center gap-2 sm:max-w-xs">
+          <input
+            type="range"
+            min={1}
+            max={maxMatchday}
+            value={matchday}
+            onChange={(e) => onMatchdayChange(Number(e.target.value))}
+            className="w-full accent-[#1fd8c9]"
+          />
+          <span className="w-14 shrink-0 text-right text-xs font-semibold text-gray-400">MD {matchday}</span>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
       <table className="w-full min-w-[560px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wide text-gray-400">
@@ -46,6 +63,7 @@ export default function StandingsTable({ standings }) {
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
