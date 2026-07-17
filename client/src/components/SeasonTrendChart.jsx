@@ -1,3 +1,6 @@
+import { niceTicks } from '../lib/chartTicks.js';
+import { formatNumber } from '../lib/formatNumber.js';
+
 const WIDTH = 780;
 const HEIGHT = 220;
 const PAD = { top: 16, right: 16, bottom: 24, left: 34 };
@@ -5,7 +8,8 @@ const PAD = { top: 16, right: 16, bottom: 24, left: 34 };
 export default function SeasonTrendChart({ trend, team }) {
   const maxMatchday = trend.length ? trend[trend.length - 1].matchday : 1;
   const maxValue = Math.max(...trend.map((t) => Math.max(t.leagueAvg, t.teamValue ?? 0)), 1);
-  const yMax = Math.ceil((maxValue + 1) / 2) * 2;
+  const gridLines = niceTicks(maxValue);
+  const yMax = gridLines[gridLines.length - 1];
 
   const xScale = (md) => PAD.left + ((md - 1) / Math.max(maxMatchday - 1, 1)) * (WIDTH - PAD.left - PAD.right);
   const yScale = (v) => HEIGHT - PAD.bottom - (v / yMax) * (HEIGHT - PAD.top - PAD.bottom);
@@ -15,9 +19,6 @@ export default function SeasonTrendChart({ trend, team }) {
     .filter((t) => t.teamValue !== null)
     .map((t) => `${xScale(t.matchday)},${yScale(t.teamValue)}`)
     .join(' ');
-
-  const gridLines = [];
-  for (let v = 0; v <= yMax; v += 2) gridLines.push(v);
 
   return (
     <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
@@ -43,7 +44,7 @@ export default function SeasonTrendChart({ trend, team }) {
           ))}
           {gridLines.map((v) => (
             <text key={v} x={PAD.left - 6} y={yScale(v) + 3} textAnchor="end" fontSize="9" fill="#9ca3af">
-              {v}M
+              {formatNumber(v)}
             </text>
           ))}
           <polyline points={leaguePoints} fill="none" stroke="#94a3b8" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />

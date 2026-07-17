@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
 import { computeTopGames } from '../lib/dashboardMetrics.js';
+import { formatNumber } from '../lib/formatNumber.js';
 
 const LIMITS = [5, 10, 20];
 
@@ -88,9 +89,7 @@ export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSi
                 <span className="truncate text-xs font-semibold text-gray-700">{fixture.away.short ?? fixture.away.name}</span>
                 <Crest team={fixture.away} size={18} />
               </div>
-              <span className="w-16 shrink-0 text-right text-sm font-black text-[#0f1e54]">
-                {(Math.round(audience * 100) / 100).toString()}M
-              </span>
+              <span className="w-16 shrink-0 text-right text-sm font-black text-[#0f1e54]">{formatNumber(audience)}</span>
             </li>
           ))}
         </ol>

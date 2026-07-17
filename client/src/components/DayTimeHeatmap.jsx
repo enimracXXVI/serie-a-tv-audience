@@ -1,8 +1,6 @@
-const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+import { formatNumber } from '../lib/formatNumber.js';
 
-function formatM(value) {
-  return `${(Math.round(value * 100) / 100).toString()}M`;
-}
+const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 // Sequential, one hue (the app's teal accent), light -> dark by average
 // audience - empty combinations stay a neutral, unshaded grey so "no data"
@@ -30,7 +28,7 @@ export default function DayTimeHeatmap({ rows }) {
   const max = Math.max(...rows.map((r) => r.avg), 1);
 
   return (
-    <div className="overflow-x-auto rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
+    <div className="w-fit max-w-full overflow-x-auto rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
       <h3 className="mb-3 text-sm font-bold text-[#0f1e54]">Day + kickoff time heatmap</h3>
       <table className="border-collapse text-xs">
         <thead>
@@ -53,13 +51,15 @@ export default function DayTimeHeatmap({ rows }) {
                 return (
                   <td key={time} className="p-0.5">
                     <div
-                      title={cell ? `${day} ${time} - avg ${formatM(cell.avg)} across ${cell.count} game(s)` : `${day} ${time} - no games`}
+                      title={
+                        cell ? `${day} ${time} - avg ${formatNumber(cell.avg)} across ${cell.count} game(s)` : `${day} ${time} - no games`
+                      }
                       className="flex h-12 w-16 flex-col items-center justify-center rounded-md text-center"
                       style={{ background: style.background, color: style.color }}
                     >
                       {cell && (
                         <>
-                          <span className="text-xs font-bold">{formatM(cell.avg)}</span>
+                          <span className="text-xs font-bold">{formatNumber(cell.avg)}</span>
                           <span className="text-[9px] opacity-70">{cell.count}g</span>
                         </>
                       )}

@@ -251,7 +251,11 @@ smart-but-approximate adjustment, off by default.
 The page has a ranked bar chart (pick the metric from the dropdown) and a
 sortable full-club table, both club-level; click a club anywhere on the page
 to focus it, which narrows every section below to just that club's games
-(click again, or its row again, to go back to league-wide).
+(click again, or its row again, to go back to league-wide) - or use the
+**Focus club** dropdown in the header, which stays reachable without
+scrolling since the header is sticky. The full-club table and the day+time
+breakdown table both support sorting by more than one column - shift+click
+a second header to add it as a tiebreaker instead of replacing the sort.
 
 Below that:
 - **Season audience trend** - a line chart of average audience per matchday

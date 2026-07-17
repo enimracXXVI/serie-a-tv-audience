@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
+import { formatNumber } from '../lib/formatNumber.js';
 
 const COLUMNS = [
   { key: 'team', label: 'Club', sortable: false },
@@ -20,7 +21,7 @@ function formatCell(key, row) {
     case 'awayAudienceAvg':
     case 'totalAudienceAvg':
     case 'totalAudienceTotal':
-      return `${(Math.round(row[key] * 100) / 100).toString()}M`;
+      return formatNumber(row[key]);
     case 'homeAddedTimeAvg':
       return `${row[key].toFixed(1)}'`;
     default:
@@ -29,45 +30,65 @@ function formatCell(key, row) {
 }
 
 export default function TeamMetricsTable({ metrics, focusedSlug, onFocus }) {
-  const [sortKey, setSortKey] = useState('homeAudienceAvg');
-  const [sortDir, setSortDir] = useState('desc');
+  const [sortChain, setSortChain] = useState([{ key: 'homeAudienceAvg', dir: 'desc' }]);
+
+  function headerClick(key, event) {
+    if (key === 'team') return;
+    setSortChain((prev) => {
+      if (!event.shiftKey) {
+        if (prev.length === 1 && prev[0].key === key) {
+          return [{ key, dir: prev[0].dir === 'asc' ? 'desc' : 'asc' }];
+        }
+        return [{ key, dir: 'desc' }];
+      }
+      const idx = prev.findIndex((s) => s.key === key);
+      if (idx === -1) return [...prev, { key, dir: 'desc' }];
+      const next = [...prev];
+      next[idx] = { key, dir: next[idx].dir === 'asc' ? 'desc' : 'asc' };
+      return next;
+    });
+  }
 
   const sorted = useMemo(() => {
     const list = [...metrics];
     list.sort((a, b) => {
-      if (sortKey === 'team') return a.team.name.localeCompare(b.team.name) * (sortDir === 'asc' ? 1 : -1);
-      return (a[sortKey] - b[sortKey]) * (sortDir === 'asc' ? 1 : -1);
+      for (const { key, dir } of sortChain) {
+        const mul = dir === 'asc' ? 1 : -1;
+        const cmp = key === 'team' ? a.team.name.localeCompare(b.team.name) : a[key] - b[key];
+        if (cmp !== 0) return cmp * mul;
+      }
+      return 0;
     });
     return list;
-  }, [metrics, sortKey, sortDir]);
-
-  function toggleSort(key) {
-    if (key === sortKey) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key);
-      setSortDir('desc');
-    }
-  }
+  }, [metrics, sortChain]);
 
   return (
     <div className="overflow-x-auto rounded-2xl bg-white shadow-lg shadow-black/20">
+      <div className="px-3 pt-2 text-[10px] text-gray-400">Shift+click a column to sort by multiple columns</div>
       <table className="w-full min-w-[720px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wide text-gray-400">
-            {COLUMNS.map((col) => (
-              <th
-                key={col.key}
-                title={col.title}
-                onClick={() => col.sortable !== false && toggleSort(col.key)}
-                className={`px-3 py-2.5 text-center first:text-left ${
-                  col.sortable === false ? '' : 'cursor-pointer select-none hover:text-[#0f1e54]'
-                }`}
-              >
-                {col.label}
-                {sortKey === col.key && <span className="ml-0.5">{sortDir === 'asc' ? '▲' : '▼'}</span>}
-              </th>
-            ))}
+            {COLUMNS.map((col) => {
+              const chainIdx = sortChain.findIndex((s) => s.key === col.key);
+              return (
+                <th
+                  key={col.key}
+                  title={col.title}
+                  onClick={(e) => headerClick(col.key, e)}
+                  className={`px-3 py-2.5 text-center first:text-left ${
+                    col.sortable === false ? '' : 'cursor-pointer select-none hover:text-[#0f1e54]'
+                  }`}
+                >
+                  {col.label}
+                  {chainIdx !== -1 && (
+                    <span className="ml-0.5">
+                      {sortChain[chainIdx].dir === 'asc' ? '▲' : '▼'}
+                      {sortChain.length > 1 && <sup>{chainIdx + 1}</sup>}
+                    </span>
+                  )}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">

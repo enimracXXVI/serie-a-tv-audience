@@ -1,6 +1,4 @@
-function formatM(value) {
-  return `${(Math.round(value * 100) / 100).toString()}M`;
-}
+import { formatNumber } from '../lib/formatNumber.js';
 
 export default function AudienceByBucketChart({ title, buckets, accent = '#1fd8c9' }) {
   if (buckets.length === 0) {
@@ -24,7 +22,7 @@ export default function AudienceByBucketChart({ title, buckets, accent = '#1fd8c
             <div className="h-4 flex-1 overflow-hidden rounded-full bg-gray-100">
               <div className="h-full rounded-full" style={{ width: `${(b.avg / max) * 100}%`, background: accent }} />
             </div>
-            <span className="w-14 shrink-0 text-right text-xs font-bold text-[#0f1e54]">{formatM(b.avg)}</span>
+            <span className="w-14 shrink-0 text-right text-xs font-bold text-[#0f1e54]">{formatNumber(b.avg)}</span>
             <span className="w-12 shrink-0 text-right text-[10px] text-gray-400">{b.count}g</span>
           </div>
         ))}

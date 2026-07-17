@@ -1,8 +1,5 @@
 import Crest from './Crest.jsx';
-
-function formatM(value) {
-  return `${(Math.round(value * 100) / 100).toString()}M`;
-}
+import { formatNumber } from '../lib/formatNumber.js';
 
 // Which visiting club actually brings the crowd - an average alone hides
 // this, but it's exactly what an LED package buyer needs: a Torino-Juventus
@@ -37,7 +34,7 @@ export default function OpponentAudienceChart({ team, data }) {
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-1">
         <h3 className="text-sm font-bold text-[#0f1e54]">{team.name} - home audience by opponent</h3>
         <span className="text-[10px] text-gray-400">
-          Range: {formatM(range.min)} - {formatM(range.max)} across {range.count} home games
+          Range: {formatNumber(range.min)} - {formatNumber(range.max)} across {range.count} home games
         </span>
       </div>
       <div className="flex flex-col gap-1.5">
@@ -51,7 +48,7 @@ export default function OpponentAudienceChart({ team, data }) {
                 style={{ width: `${(r.avg / max) * 100}%`, background: r.opponent.primary || '#94a3b8' }}
               />
             </div>
-            <span className="w-16 shrink-0 text-right text-xs font-bold text-[#0f1e54]">{formatM(r.avg)}</span>
+            <span className="w-16 shrink-0 text-right text-xs font-bold text-[#0f1e54]">{formatNumber(r.avg)}</span>
             <span className="w-12 shrink-0 text-right text-[10px] text-gray-400">{r.count}g</span>
           </div>
         ))}

@@ -1,3 +1,5 @@
+import { formatNumber } from '../lib/formatNumber.js';
+
 // Fixed categorical colours matching SponsorBadges elsewhere in the app -
 // identity for these three activation types is already established there,
 // so the donut reuses it rather than inventing a new mapping. Validated
@@ -12,10 +14,6 @@ const SIZE = 160;
 const STROKE = 22;
 const RADIUS = (SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-
-function formatM(value) {
-  return `${(Math.round(value * 100) / 100).toString()}M`;
-}
 
 export default function ActivationDonut({ activations }) {
   const total = activations.reduce((a, b) => a + b.total, 0);
@@ -54,7 +52,7 @@ export default function ActivationDonut({ activations }) {
           )
         )}
         <text x={SIZE / 2} y={SIZE / 2 - 2} textAnchor="middle" fontSize="18" fontWeight="800" fill="#0f1e54">
-          {formatM(total)}
+          {formatNumber(total)}
         </text>
         <text x={SIZE / 2} y={SIZE / 2 + 16} textAnchor="middle" fontSize="9" fill="#9ca3af">
           total audience

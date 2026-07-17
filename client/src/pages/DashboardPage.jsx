@@ -23,6 +23,7 @@ import SeasonTrendChart from '../components/SeasonTrendChart.jsx';
 import DayTimeHeatmap from '../components/DayTimeHeatmap.jsx';
 import ActivationDonut from '../components/ActivationDonut.jsx';
 import OpponentAudienceChart from '../components/OpponentAudienceChart.jsx';
+import { formatNumber } from '../lib/formatNumber.js';
 
 function StatTile({ label, value, sub }) {
   return (
@@ -32,10 +33,6 @@ function StatTile({ label, value, sub }) {
       {sub && <p className="text-[10px] text-white/40">{sub}</p>}
     </div>
   );
-}
-
-function formatM(value) {
-  return `${(Math.round(value * 100) / 100).toString()}M`;
 }
 
 function TagPremiumCard({ premium }) {
@@ -61,7 +58,7 @@ function TagPremiumCard({ premium }) {
                 }}
               />
             </div>
-            <span className="w-16 shrink-0 text-right text-xs font-bold text-[#0f1e54]">{formatM(r.avg)}</span>
+            <span className="w-16 shrink-0 text-right text-xs font-bold text-[#0f1e54]">{formatNumber(r.avg)}</span>
             <span className="w-12 shrink-0 text-right text-[10px] text-gray-400">{r.count}g</span>
           </div>
         ))}
@@ -196,15 +193,34 @@ export default function DashboardPage() {
           <h1 className="text-lg font-black text-white sm:text-xl">
             Dashboard <span className="ml-1.5 text-xs font-semibold opacity-60">26/27</span>
           </h1>
-          <label className="flex items-center gap-2 text-xs font-semibold text-white/70">
-            <input
-              type="checkbox"
-              checked={includeSimulcast}
-              onChange={(e) => setIncludeSimulcast(e.target.checked)}
-              className="h-4 w-4 accent-[#1fd8c9]"
-            />
-            Include simulcast audience (split evenly across the block)
-          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-white/70">
+              Focus club
+              <select
+                value={focusedSlug ?? ''}
+                onChange={(e) => setFocusedSlug(e.target.value || null)}
+                className="rounded-md border border-white/20 bg-white/10 px-2 py-1 text-xs font-semibold text-white outline-none focus:border-[#1fd8c9]"
+              >
+                <option value="" className="text-black">
+                  All clubs
+                </option>
+                {teams.map((t) => (
+                  <option key={t.slug} value={t.slug} className="text-black">
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-xs font-semibold text-white/70">
+              <input
+                type="checkbox"
+                checked={includeSimulcast}
+                onChange={(e) => setIncludeSimulcast(e.target.checked)}
+                className="h-4 w-4 accent-[#1fd8c9]"
+              />
+              Include simulcast audience (split evenly across the block)
+            </label>
+          </div>
         </div>
       </header>
 
@@ -219,7 +235,7 @@ export default function DashboardPage() {
           <>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <StatTile label="Games played" value={playedGames.length} sub={`of ${fixtures.length} scheduled`} />
-              <StatTile label="League avg home audience" value={`${leagueAvgHome.toFixed(2)}M`} />
+              <StatTile label="League avg home audience" value={formatNumber(leagueAvgHome)} />
               <StatTile label="Simulcast games" value={simulcastGames} sub="shared DAZN slots" />
               <StatTile label="Games on Sky" value={skyGames} />
             </div>

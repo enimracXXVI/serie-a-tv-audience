@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
+import { formatNumber } from '../lib/formatNumber.js';
 
 const METRICS = [
   { key: 'homeAudienceAvg', label: 'Home audience (avg/game)' },
@@ -12,7 +13,7 @@ const METRICS = [
 
 function formatValue(key, value) {
   if (key === 'homeAddedTimeAvg') return `${value.toFixed(1)} min`;
-  return `${(Math.round(value * 100) / 100).toString()}M`;
+  return formatNumber(value);
 }
 
 export default function AudienceBarChart({ metrics, focusedSlug, onFocus }) {
