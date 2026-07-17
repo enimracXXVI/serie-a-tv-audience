@@ -119,6 +119,14 @@ function filterForTeam(fixtures, teamSlug) {
 
 const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+// 18:00 and 18:30 are the same practical broadcast slot (a club's own kickoff
+// occasionally slides by 30 minutes within it) - merge them under one label
+// so they don't fragment into two near-identical buckets.
+const KICKOFF_GROUPS = { '18:30': '18:00' };
+function normalizeKickoff(time) {
+  return KICKOFF_GROUPS[time] ?? time;
+}
+
 // Kickoff scheduling (day of week, kickoff time) is a broadcaster decision,
 // not a club one, so these are league-wide (optionally narrowed to one
 // club's own games) rather than per-team like the home/total split above.
@@ -141,8 +149,9 @@ export function computeAudienceByKickoff(fixtures, simulcastInfo, includeSimulca
   const byTime = new Map();
   for (const f of played) {
     const aud = effectiveAudience(f, simulcastInfo, includeSimulcast);
-    if (!byTime.has(f.kickoffTime)) byTime.set(f.kickoffTime, []);
-    byTime.get(f.kickoffTime).push(aud);
+    const time = normalizeKickoff(f.kickoffTime);
+    if (!byTime.has(time)) byTime.set(time, []);
+    byTime.get(time).push(aud);
   }
   return [...byTime.entries()]
     .map(([time, list]) => ({ key: time, label: time, avg: avg(list), total: sum(list), count: list.length }))
@@ -154,8 +163,9 @@ export function computeAudienceByDayAndTime(fixtures, simulcastInfo, includeSimu
   const byKey = new Map();
   for (const f of played) {
     const aud = effectiveAudience(f, simulcastInfo, includeSimulcast);
-    const key = `${f.day}|${f.kickoffTime}`;
-    if (!byKey.has(key)) byKey.set(key, { day: f.day, time: f.kickoffTime, list: [] });
+    const time = normalizeKickoff(f.kickoffTime);
+    const key = `${f.day}|${time}`;
+    if (!byKey.has(key)) byKey.set(key, { day: f.day, time, list: [] });
     byKey.get(key).list.push(aud);
   }
   return [...byKey.values()].map(({ day, time, list }) => ({

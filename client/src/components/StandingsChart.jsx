@@ -1,6 +1,32 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Crest, { useCrestSrc } from './Crest.jsx';
 import { computeStandings, computeStandingsHistory, computeRankHistory, maxPlayedMatchday } from '../lib/standings.js';
+
+// Crest artwork isn't always square (the bundled placeholders are a taller
+// shield shape, and a custom crestUrl could be anything) - fitting it into a
+// same-size box via the nested <image>'s own preserveAspectRatio should be
+// enough, but measuring the real image and sizing the box to match its
+// actual aspect ratio (like CSS object-fit: contain) leaves nothing to
+// chance and guarantees it's never stretched into an oval.
+function useNaturalAspectRatio(src) {
+  const [ratio, setRatio] = useState(null);
+  useEffect(() => {
+    setRatio(null);
+    if (!src) return undefined;
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (!cancelled && img.naturalWidth && img.naturalHeight) {
+        setRatio(img.naturalWidth / img.naturalHeight);
+      }
+    };
+    img.src = src;
+    return () => {
+      cancelled = true;
+    };
+  }, [src]);
+  return ratio;
+}
 
 const WIDTH = 780;
 const PAD = { top: 16, right: 22, bottom: 26, left: 30 };
@@ -46,18 +72,41 @@ function xAxisTicks(maxMatchday) {
   return ticks;
 }
 
-function CrestMarker({ team, x, y, dataY, size, dimmed }) {
+function CrestMarker({ team, x, y, dataY, size, dimmed, isHovered, setHoveredSlug }) {
   const { src, onError } = useCrestSrc(team);
+  const ratio = useNaturalAspectRatio(src);
   const showConnector = Math.abs(y - dataY) > 1;
+
+  let w = size;
+  let h = size;
+  if (ratio) {
+    if (ratio >= 1) h = size / ratio;
+    else w = size * ratio;
+  }
+
+  // Mouse hover highlights instantly; a tap (no hover on touch) toggles the
+  // same highlight so mobile gets an equivalent interaction.
+  function toggle() {
+    setHoveredSlug(isHovered ? null : team.slug);
+  }
+
   return (
-    <g opacity={dimmed ? 0.25 : 1}>
+    <g
+      opacity={dimmed ? 0.25 : 1}
+      onMouseEnter={() => setHoveredSlug(team.slug)}
+      onMouseLeave={() => setHoveredSlug(null)}
+      onClick={toggle}
+      style={{ cursor: 'pointer' }}
+    >
       {showConnector && <line x1={x} y1={dataY} x2={x} y2={y} stroke="#e5e7eb" strokeWidth={1} />}
+      {/* Generous invisible hit area - the crest itself is small, this makes it easy to hover/tap precisely */}
+      <circle cx={x} cy={y} r={size / 2 + 4} fill="transparent" />
       <image
         href={src}
-        x={x - size / 2}
-        y={y - size / 2}
-        width={size}
-        height={size}
+        x={x - w / 2}
+        y={y - h / 2}
+        width={w}
+        height={h}
         onError={onError}
         preserveAspectRatio="xMidYMid meet"
       />
@@ -119,6 +168,8 @@ function LineChart({ chartHeight, cutoff, maxMatchday, series, gridLines, yScale
           dataY={m.dataY}
           size={m.slug === hoveredSlug ? CREST_SIZE + 5 : CREST_SIZE}
           dimmed={hoveredSlug && hoveredSlug !== m.slug}
+          isHovered={m.slug === hoveredSlug}
+          setHoveredSlug={setHoveredSlug}
         />
       ))}
 

@@ -258,21 +258,22 @@ export default function DashboardPage() {
 
             <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
               <DayTimeHeatmap rows={audienceByDayAndTime} />
+              <div className="flex flex-col gap-4">
+                <TagPremiumCard premium={tagPremium} />
+                <RemainingScheduleCard remaining={remainingSchedule} team={focusedTeam} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
               <DayTimeBreakdownTable rows={audienceByDayAndTime} />
+              <TopGamesList
+                fixtures={fixtures}
+                teams={teams}
+                simulcastInfo={simulcastInfo}
+                includeSimulcast={includeSimulcast}
+                focusedSlug={focusedSlug}
+              />
             </div>
-
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <TagPremiumCard premium={tagPremium} />
-              <RemainingScheduleCard remaining={remainingSchedule} team={focusedTeam} />
-            </div>
-
-            <TopGamesList
-              fixtures={fixtures}
-              teams={teams}
-              simulcastInfo={simulcastInfo}
-              includeSimulcast={includeSimulcast}
-              focusedSlug={focusedSlug}
-            />
 
             {/* These two need a focused club to show anything meaningful,
                 so they sit at the bottom rather than competing for space

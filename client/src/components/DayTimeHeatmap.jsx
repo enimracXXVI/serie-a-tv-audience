@@ -28,7 +28,7 @@ export default function DayTimeHeatmap({ rows }) {
   const max = Math.max(...rows.map((r) => r.avg), 1);
 
   return (
-    <div className="w-fit max-w-full overflow-x-auto rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
+    <div className="w-full overflow-x-auto rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
       <h3 className="mb-3 text-sm font-bold text-[#0f1e54]">Day + kickoff time heatmap</h3>
       <table className="border-collapse text-xs">
         <thead>
