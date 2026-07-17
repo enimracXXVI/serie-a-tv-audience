@@ -1,44 +1,18 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import CalendarView from '../components/CalendarView.jsx';
-import TeamPicker from '../components/TeamPicker.jsx';
+import CalendarNavBar from '../components/CalendarNavBar.jsx';
 import { useFixtures } from '../lib/useFixtures.js';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useSession } from '../lib/useSession.js';
 import { syncMatchTags } from '../lib/sheets.js';
 import { callWithReauth } from '../lib/reauth.js';
-import { getSavedTeams, saveTeams } from '../lib/savedTeams.js';
 
 export default function HomePage() {
   const { teams } = useTeams();
   const { fixtures, loading: fixturesLoading, error: fixturesError, updateFixture } = useFixtures([], teams);
   const session = useSession();
-  const navigate = useNavigate();
   const [syncStatus, setSyncStatus] = useState(null); // null | 'syncing' | 'done' | error message
   const [updateError, setUpdateError] = useState(null);
-  const [showBuildPanel, setShowBuildPanel] = useState(false);
-  const [selectedTeams, setSelectedTeams] = useState(() => getSavedTeams());
-  const sponsoredSlugs = teams.filter((t) => t.sponsored).map((t) => t.slug);
-
-  function toggleTeam(slug) {
-    setSelectedTeams((prev) => {
-      const next = prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug];
-      saveTeams(next);
-      return next;
-    });
-  }
-
-  function viewTeamCalendar() {
-    if (selectedTeams.length === 0) return;
-    navigate(`/calendar/${selectedTeams.join(',')}`);
-  }
-
-  // A one-off shortcut, like the picker's "View" button - doesn't touch
-  // selectedTeams, so it never shows up pre-checked in the picker afterwards.
-  function viewAllSponsored() {
-    if (sponsoredSlugs.length === 0) return;
-    navigate(`/calendar/${sponsoredSlugs.join(',')}`);
-  }
 
   async function handleUpdate(id, fields) {
     try {
@@ -70,42 +44,7 @@ export default function HomePage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-8">
-        <div className="mb-4 flex flex-wrap items-center gap-1.5">
-          <span className="rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold text-white">All teams</span>
-          <button
-            onClick={viewAllSponsored}
-            disabled={sponsoredSlugs.length === 0}
-            title={sponsoredSlugs.length === 0 ? 'No clubs marked as sponsored yet - set that in Settings' : undefined}
-            className="rounded-full bg-[#1fd8c9]/20 px-3 py-1.5 text-xs font-bold text-[#1fd8c9] transition-colors hover:bg-[#1fd8c9]/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[#1fd8c9]/20"
-          >
-            Sponsored teams →
-          </button>
-          <button
-            onClick={() => setShowBuildPanel((v) => !v)}
-            className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
-              showBuildPanel ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
-            }`}
-          >
-            Build calendar {showBuildPanel ? '▴' : '▾'}
-          </button>
-        </div>
-
-        {showBuildPanel && (
-          <div className="mb-4 flex flex-col gap-3 rounded-2xl bg-white/5 p-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-white/70">Build a team calendar</h2>
-              {selectedTeams.length > 0 && (
-                <button
-                  onClick={viewTeamCalendar}
-                  className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-black transition-transform hover:scale-105"
-                >
-                  View ({selectedTeams.length}) →
-                </button>
-              )}
-            </div>
-            <TeamPicker teams={teams} selected={selectedTeams} onToggle={toggleTeam} />
-          </div>
-        )}
+        <CalendarNavBar teams={teams} />
 
         {session.signedIn && !fixturesLoading && !fixturesError && (
           <div className="mb-4 flex flex-wrap items-center gap-3">

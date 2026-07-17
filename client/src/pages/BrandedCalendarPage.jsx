@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Crest from '../components/Crest.jsx';
 import CalendarView from '../components/CalendarView.jsx';
 import TeamCalendarView from '../components/TeamCalendarView.jsx';
+import CalendarNavBar from '../components/CalendarNavBar.jsx';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useFixtures } from '../lib/useFixtures.js';
 import { themeGradient, contrastText } from '../lib/color.js';
@@ -103,6 +104,8 @@ export default function BrandedCalendarPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-6">
+        {!teamsLoading && <CalendarNavBar teams={teams} />}
+
         {!teamsLoading && !fixturesLoading && !fixturesError && fixtures.length > 0 && (
           <div className="mb-4 flex flex-wrap items-center gap-1.5">
             {FIXTURE_FILTERS.map((f) => (
