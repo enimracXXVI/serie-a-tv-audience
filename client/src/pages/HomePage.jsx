@@ -2,19 +2,27 @@ import { useState } from 'react';
 import CalendarView from '../components/CalendarView.jsx';
 import CalendarNavBar from '../components/CalendarNavBar.jsx';
 import AddSerieAFixtureForm from '../components/AddSerieAFixtureForm.jsx';
-import { useFixtures } from '../lib/useFixtures.js';
+import SeasonSelector from '../components/SeasonSelector.jsx';
+import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useSession } from '../lib/useSession.js';
 import { syncMatchTags } from '../lib/sheets.js';
 import { callWithReauth } from '../lib/reauth.js';
+import { CURRENT_SEASON } from '../lib/seasons.js';
 
 export default function HomePage() {
   const { teams } = useTeams();
-  const { fixtures, loading: fixturesLoading, error: fixturesError, updateFixture, createFixture } = useFixtures(
-    [],
-    teams
-  );
+  const [season, setSeason] = useState(CURRENT_SEASON);
+  const {
+    fixtures,
+    loading: fixturesLoading,
+    error: fixturesError,
+    canEdit: seasonCanEdit,
+    updateFixture,
+    createFixture,
+  } = useSeasonFixtures(season, teams);
   const session = useSession();
+  const canEdit = session.signedIn && seasonCanEdit;
   const [syncStatus, setSyncStatus] = useState(null); // null | 'syncing' | 'done' | error message
   const [updateError, setUpdateError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -45,17 +53,22 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-3">
-        <div className="mx-auto max-w-6xl">
-          <h1 className="text-lg font-black text-white sm:text-xl">
-            Serie A <span className="ml-1.5 text-xs font-semibold opacity-60">26/27</span>
-          </h1>
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 pr-36">
+          <h1 className="text-lg font-black text-white sm:text-xl">Serie A</h1>
+          <SeasonSelector season={season} onChange={setSeason} />
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-8">
         <CalendarNavBar teams={teams} />
 
-        {session.signedIn && !fixturesLoading && !fixturesError && (
+        {!seasonCanEdit && (
+          <p className="mb-4 rounded-lg bg-white/5 px-4 py-2.5 text-xs text-white/50">
+            {season.label} is a past season - view only, nothing here can be edited.
+          </p>
+        )}
+
+        {canEdit && !fixturesLoading && !fixturesError && (
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <button
               onClick={() => setShowAddForm((v) => !v)}
@@ -79,7 +92,7 @@ export default function HomePage() {
           </div>
         )}
 
-        {showAddForm && (
+        {canEdit && showAddForm && (
           <div className="mb-4">
             <AddSerieAFixtureForm teams={teams} onCreate={handleCreate} />
           </div>
@@ -98,7 +111,7 @@ export default function HomePage() {
             {fixturesError}
           </p>
         ) : (
-          <CalendarView fixtures={fixtures} onUpdate={handleUpdate} canEdit={session.signedIn} />
+          <CalendarView fixtures={fixtures} onUpdate={handleUpdate} canEdit={canEdit} />
         )}
       </main>
     </div>
