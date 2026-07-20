@@ -11,7 +11,7 @@ const inputClass =
 function formatDateShort(dateStr) {
   if (!dateStr) return null;
   const d = new Date(`${dateStr}T00:00:00`);
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
 }
 
 function ScoreDisplay({ homeScore, awayScore }) {
@@ -205,7 +205,9 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
             extra labels. */}
         <div className="flex h-14 w-10 shrink-0 flex-col items-center justify-center text-center text-[9px] leading-tight text-gray-400 sm:w-14 sm:text-[10px]">
           {dateShort && <div>{dateShort}</div>}
-          {fixture.kickoffTime && <div>{fixture.kickoffTime}</div>}
+          {(fixture.day || fixture.kickoffTime) && (
+            <div>{[fixture.day, fixture.kickoffTime].filter(Boolean).join(' ')}</div>
+          )}
           {tagStyle.labels.map((l) => (
             <div key={l.text} className={`font-black ${l.className}`}>
               {l.text}
