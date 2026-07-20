@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import CalendarView from '../components/CalendarView.jsx';
 import CalendarNavBar from '../components/CalendarNavBar.jsx';
+import AddSerieAFixtureForm from '../components/AddSerieAFixtureForm.jsx';
 import { useFixtures } from '../lib/useFixtures.js';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useSession } from '../lib/useSession.js';
@@ -9,10 +10,14 @@ import { callWithReauth } from '../lib/reauth.js';
 
 export default function HomePage() {
   const { teams } = useTeams();
-  const { fixtures, loading: fixturesLoading, error: fixturesError, updateFixture } = useFixtures([], teams);
+  const { fixtures, loading: fixturesLoading, error: fixturesError, updateFixture, createFixture } = useFixtures(
+    [],
+    teams
+  );
   const session = useSession();
   const [syncStatus, setSyncStatus] = useState(null); // null | 'syncing' | 'done' | error message
   const [updateError, setUpdateError] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   async function handleUpdate(id, fields) {
     try {
@@ -21,6 +26,10 @@ export default function HomePage() {
     } catch (err) {
       setUpdateError(err.message);
     }
+  }
+
+  async function handleCreate(fields) {
+    await callWithReauth(session, (token) => createFixture(fields, token));
   }
 
   async function handleSyncTags() {
@@ -49,6 +58,14 @@ export default function HomePage() {
         {session.signedIn && !fixturesLoading && !fixturesError && (
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <button
+              onClick={() => setShowAddForm((v) => !v)}
+              className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                showAddForm ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
+              }`}
+            >
+              Add fixture {showAddForm ? '▴' : '▾'}
+            </button>
+            <button
               onClick={handleSyncTags}
               disabled={syncStatus === 'syncing'}
               className="rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold text-white transition-colors hover:bg-white/20 disabled:opacity-50"
@@ -59,6 +76,12 @@ export default function HomePage() {
             {syncStatus && syncStatus !== 'syncing' && syncStatus !== 'done' && (
               <span className="text-xs text-red-300">{syncStatus}</span>
             )}
+          </div>
+        )}
+
+        {showAddForm && (
+          <div className="mb-4">
+            <AddSerieAFixtureForm teams={teams} onCreate={handleCreate} />
           </div>
         )}
 

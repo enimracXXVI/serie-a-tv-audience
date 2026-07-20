@@ -1,6 +1,7 @@
 import { SPREADSHEET_ID, SHEET_NAME, GOOGLE_API_KEY } from './config.js';
 import { columnIndexToLetter, buildHeaderIndex, cell } from './sheetsCommon.js';
 import { computeMatchTags } from './matchTags.js';
+import { computeDayOfWeek } from './matchdays.js';
 
 const NUMERIC_FIELDS = new Set([
   'id',
@@ -155,6 +156,54 @@ export async function updateFixtureRow(fixture, accessToken) {
   // it actually just tried to change) decides whether to surface a visible
   // warning instead of leaving it a silent, invisible failure.
   return { ...fixture, updatedAt, missingFields: missing };
+}
+
+// Adds a brand-new fixture row (a matchday added one game at a time, from
+// the app, instead of the whole-season paste-into-the-sheet setup). id is
+// computed from a fresh read right before appending so two near-simultaneous
+// creates don't collide, matching the same append pattern as sheetTab.js.
+export async function appendFixtureRow({ matchday, home, away, date, kickoffTime }, accessToken) {
+  const headerIndex = await ensureHeaderIndex();
+  const current = await fetchFixtures();
+  const nextId = current.reduce((max, f) => Math.max(max, Number(f.id) || 0), 0) + 1;
+
+  const fields = {
+    id: nextId,
+    matchday,
+    day: computeDayOfWeek(date),
+    date: date || '',
+    home,
+    away,
+    kickoffTime: kickoffTime || '',
+  };
+
+  const maxIdx = Math.max(...Object.values(headerIndex));
+  const row = new Array(maxIdx + 1).fill('');
+  const missing = [];
+  for (const [key, value] of Object.entries(fields)) {
+    const idx = headerIndex[key];
+    if (idx === undefined) {
+      missing.push(key);
+      continue;
+    }
+    row[idx] = value ?? '';
+  }
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(
+    `${SHEET_NAME}!A1`
+  )}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ range: `${SHEET_NAME}!A1`, majorDimension: 'ROWS', values: [row] }),
+  });
+  if (res.status === 401 || res.status === 403) throw new Error('UNAUTHENTICATED');
+  if (!res.ok) throw new Error('Failed to add the new fixture to Google Sheets');
+  if (missing.length > 0) {
+    throw new Error(`Added, but the fixtures sheet has no column header for: ${missing.join(', ')}.`);
+  }
+
+  return { ...fields };
 }
 
 // isBigMatch/isDerby also get written opportunistically whenever a fixture is

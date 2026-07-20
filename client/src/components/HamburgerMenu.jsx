@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TeamSettingsPanel from './TeamSettingsPanel.jsx';
+import CupTeamsPanel from './CupTeamsPanel.jsx';
+import BroadcastersPanel from './BroadcastersPanel.jsx';
 import { useSession } from '../lib/useSession.js';
 
 function HamburgerIcon() {
@@ -108,6 +110,12 @@ export default function HamburgerMenu() {
     navigate('/dashboard');
   }
 
+  function viewCupCompetitions() {
+    pushedLevels.current = 0;
+    setView('closed');
+    navigate('/cup');
+  }
+
   const open = view !== 'closed';
 
   return (
@@ -189,6 +197,12 @@ export default function HamburgerMenu() {
                       Dashboard <span aria-hidden="true">›</span>
                     </button>
                     <button
+                      onClick={viewCupCompetitions}
+                      className="flex items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white hover:bg-white/10"
+                    >
+                      Cup competitions <span aria-hidden="true">›</span>
+                    </button>
+                    <button
                       onClick={() => pushView('settings')}
                       className="flex items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white hover:bg-white/10"
                     >
@@ -198,7 +212,17 @@ export default function HamburgerMenu() {
                 </div>
               )}
 
-              {displayedView === 'settings' && <TeamSettingsPanel session={session} />}
+              {displayedView === 'settings' && (
+                <div className="flex flex-col gap-8">
+                  <TeamSettingsPanel session={session} />
+                  <div className="border-t border-white/10 pt-6">
+                    <CupTeamsPanel session={session} />
+                  </div>
+                  <div className="border-t border-white/10 pt-6">
+                    <BroadcastersPanel session={session} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

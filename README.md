@@ -186,6 +186,61 @@ Renaming a club here is safe for existing fixtures: matching against the
 original bundled name, not whatever you rename it to, so historical rows
 keep resolving correctly either way.
 
+## Adding fixtures from the app
+
+Serie A's 380 fixtures were pre-seeded into the sheet all at once at the
+start of the season - that's still the fastest way to bulk-load a whole
+schedule, and always available: paste more rows directly into the `fixtures`
+tab whenever you want. But you don't have to go to the sheet for a one-off:
+signed in on the home page, **Add fixture** (next to **Sync big match / derby
+tags**) opens a small form - matchday, home club, away club, date, kickoff
+time - that appends a single new row without leaving the app. The matchday
+number stays filled in after each add, so adding several fixtures for the
+same round is just: submit, pick the next two clubs, submit again.
+
+## Cup competitions (Coppa Italia / Champions League / Europa League / Conference League)
+
+These don't fit the Serie A schema - no round-robin, no fixed 38-matchday
+table, opponents aren't limited to the 20-club roster, and the broadcaster
+isn't DAZN/Sky - so they live in three separate tabs instead of extending
+`fixtures`/`teams`. None of these exist in the seeded sheet - add them
+yourself if you want to track cup competitions:
+
+**1. `cupTeams` tab** - the opponents you'll face in these competitions
+(a Serie B side in an early Coppa Italia round, any European club in a UEFA
+tie), added as you go rather than pre-seeded like the 20 Serie A clubs.
+Header row: `slug`, `name`, `short`, `crestUrl`, `primary`, `secondary`,
+`competition`. `competition` must be exactly one of `CoppaItalia`,
+`ChampionsLeague`, `EuropaLeague`, `ConferenceLeague`. Managed from the
+hamburger menu's **Settings** panel (grouped by competition), same
+`=IMAGE("url")`-or-plain-URL rule as the main teams tab's `crestUrl`.
+
+**2. `broadcasters` tab** - a small reusable list so a cup fixture's
+broadcaster shows a logo badge instead of a retyped name. Header row:
+`name`, `logoUrl`. Also managed from Settings.
+
+**3. `cupFixtures` tab** - the fixtures themselves. Header row: `id`,
+`competition`, `round`, `ourClub`, `opponent`, `homeAway`, `date`,
+`kickoffTime`, `ourScore`, `theirScore`, `audience`, `broadcaster`,
+`addedTime1H`, `addedTime2H`. `ourClub` is a slug from the main `teams` tab;
+`opponent` is a slug from `cupTeams`; `round` is free text (`Round of 16`,
+`Group A`, whatever your competition calls it - there's no fixed round list,
+a group stage and a knockout draw both just work); `homeAway` is `home`,
+`away`, or `neutral`. There's no sponsor/mascot/walkabout tracking here (that
+was a deliberate call - those activations are tracked per Serie A home game
+only), just audience and added time.
+
+The hamburger menu's **Cup competitions** page lists whatever's in
+`cupFixtures`, grouped by competition and round, with the same kind of
+expandable edit tabs as the main calendar (kickoff details; result, added
+time, audience and broadcaster). Signed in, **Add fixture** there opens a
+form to create a new cup fixture without touching the sheet directly - pick
+the competition, round, your club, and an opponent (or add a brand new one
+inline, right there in the form, if this is the first time you're facing
+them). Like the main fixtures tab, this only ever appends new rows - it's
+still fine to add a cup fixture by pasting a row into the sheet directly
+instead, whichever's quicker for what you're doing.
+
 ## Standing Tiebreakers
 If after all 38 games, two teams are tied on points for either first place or for 17th (the last safety spot), the outcome is decided by a single-legged play-off match. This match consists of 90 minutes of regulation time followed by penalties if necessary (no extra time). The game is to be held at a neutral venue, with the designated "home" team determined by the performance-based criteria listed below. In cases where there are at least three teams tied for one of these positions, a mini table is created using the same tiebreakers to determine which two teams will play in the decider. For ties concerning all other league positions, the following tiebreakers are applied:
 

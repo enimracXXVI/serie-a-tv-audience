@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchFixtures, updateFixtureRow } from './sheets.js';
+import { fetchFixtures, updateFixtureRow, appendFixtureRow } from './sheets.js';
 import { enrichFixture } from './teams.js';
 import { computeDayOfWeek } from './matchdays.js';
 
@@ -74,5 +74,21 @@ export function useFixtures(teamSlugs, teams) {
     [fixtures]
   );
 
-  return { fixtures, loading, error, updateFixture };
+  // home/away are stored (and matched) as each club's immutable staticName,
+  // not its current display name - see teams.js's enrichFixture.
+  const createFixture = useCallback(async ({ matchday, homeSlug, awaySlug, date, kickoffTime }, accessToken) => {
+    if (!accessToken) throw new Error('UNAUTHENTICATED');
+    const home = teams.find((t) => t.slug === homeSlug);
+    const away = teams.find((t) => t.slug === awaySlug);
+    if (!home || !away) throw new Error('Pick both a home and an away club.');
+    const created = await appendFixtureRow(
+      { matchday, home: home.staticName, away: away.staticName, date, kickoffTime },
+      accessToken
+    );
+    setRawFixtures((prev) => [...prev, created]);
+    return created.id;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teams]);
+
+  return { fixtures, loading, error, updateFixture, createFixture };
 }
