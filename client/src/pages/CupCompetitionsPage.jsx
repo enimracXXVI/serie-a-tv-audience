@@ -4,13 +4,12 @@ import { useCupData } from '../lib/useCupData.jsx';
 import { useCupFixtures } from '../lib/useCupFixtures.js';
 import { useSession } from '../lib/useSession.js';
 import { callWithReauth } from '../lib/reauth.js';
-import { CUP_COMPETITIONS } from '../lib/cupTeams.js';
 import CupFixtureRow from '../components/CupFixtureRow.jsx';
 import AddCupFixtureForm from '../components/AddCupFixtureForm.jsx';
 
 export default function CupCompetitionsPage() {
   const { teams } = useTeams();
-  const { cupTeams, broadcasters, loading: cupDataLoading, createCupTeam } = useCupData();
+  const { cupTeams, broadcasters, competitions, loading: cupDataLoading, createCupTeam } = useCupData();
   const { fixtures, loading: fixturesLoading, error: fixturesError, updateFixture, createFixture } = useCupFixtures(
     teams,
     cupTeams
@@ -75,6 +74,7 @@ export default function CupCompetitionsPage() {
           <AddCupFixtureForm
             teams={teams}
             cupTeams={cupTeams}
+            competitions={competitions}
             onCreate={handleCreate}
             onCreateOpponent={handleCreateOpponent}
           />
@@ -93,9 +93,14 @@ export default function CupCompetitionsPage() {
             No cup fixtures yet - sign in and use “Add fixture” above, or add a row directly to the cupFixtures sheet tab.
           </p>
         ) : (
-          CUP_COMPETITIONS.filter((c) => grouped.has(c.value)).map((c) => (
-            <div key={c.value} className="flex flex-col gap-3">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-white/60">{c.label}</h2>
+          competitions
+            .filter((c) => grouped.has(c.value))
+            .map((c) => (
+              <div key={c.value} className="flex flex-col gap-3">
+                <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-white/60">
+                  {c.logoUrl && <img src={c.logoUrl} alt="" className="h-4 max-w-[60px] object-contain" />}
+                  {c.label}
+                </h2>
               {[...grouped.get(c.value).entries()].map(([round, roundFixtures]) => (
                 <div key={round} className="overflow-hidden rounded-2xl shadow-lg shadow-black/20">
                   <div className="bg-[#0f1e54] px-3 py-2 text-xs font-bold uppercase tracking-wide text-white/70">{round}</div>

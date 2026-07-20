@@ -202,24 +202,42 @@ same round is just: submit, pick the next two clubs, submit again.
 
 These don't fit the Serie A schema - no round-robin, no fixed 38-matchday
 table, opponents aren't limited to the 20-club roster, and the broadcaster
-isn't DAZN/Sky - so they live in three separate tabs instead of extending
+isn't DAZN/Sky - so they live in four separate tabs instead of extending
 `fixtures`/`teams`. None of these exist in the seeded sheet - add them
 yourself if you want to track cup competitions:
 
-**1. `cupTeams` tab** - the opponents you'll face in these competitions
+**1. `competitions` tab** - which competitions exist and their logo, so a
+fixture list/form can show a badge instead of a plain text label. Header
+row: `value`, `label`, `logoUrl`. `value` is the stable key everything else
+(`cupTeams.competition`, `cupFixtures.competition`) points at - don't rename
+it once you've used it elsewhere. Paste this seed block into A2 to start
+with the four you'd expect (`logoUrl` blank, fill in from Settings):
+
+```
+CoppaItalia	Coppa Italia
+ChampionsLeague	Champions League
+EuropaLeague	Europa League
+ConferenceLeague	Conference League
+```
+
+If this tab doesn't exist yet (or is empty), the app falls back to those
+same four with no logo, so everything else below still works without it -
+add it whenever you want logos, not before. Managed from Settings, same
+`=IMAGE("url")`-or-plain-URL rule as crests.
+
+**2. `cupTeams` tab** - the opponents you'll face in these competitions
 (a Serie B side in an early Coppa Italia round, any European club in a UEFA
 tie), added as you go rather than pre-seeded like the 20 Serie A clubs.
 Header row: `slug`, `name`, `short`, `crestUrl`, `primary`, `secondary`,
-`competition`. `competition` must be exactly one of `CoppaItalia`,
-`ChampionsLeague`, `EuropaLeague`, `ConferenceLeague`. Managed from the
-hamburger menu's **Settings** panel (grouped by competition), same
+`competition` (matching a `value` from the `competitions` tab). Managed from
+the hamburger menu's **Settings** panel (grouped by competition), same
 `=IMAGE("url")`-or-plain-URL rule as the main teams tab's `crestUrl`.
 
-**2. `broadcasters` tab** - a small reusable list so a cup fixture's
+**3. `broadcasters` tab** - a small reusable list so a cup fixture's
 broadcaster shows a logo badge instead of a retyped name. Header row:
 `name`, `logoUrl`. Also managed from Settings.
 
-**3. `cupFixtures` tab** - the fixtures themselves. Header row: `id`,
+**4. `cupFixtures` tab** - the fixtures themselves. Header row: `id`,
 `competition`, `round`, `ourClub`, `opponent`, `homeAway`, `date`,
 `kickoffTime`, `ourScore`, `theirScore`, `audience`, `broadcaster`,
 `addedTime1H`, `addedTime2H`. `ourClub` is a slug from the main `teams` tab;

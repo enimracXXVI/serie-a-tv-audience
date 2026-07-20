@@ -1,12 +1,5 @@
 import { createSheetTabClient } from './sheetTab.js';
 
-export const CUP_COMPETITIONS = [
-  { value: 'CoppaItalia', label: 'Coppa Italia' },
-  { value: 'ChampionsLeague', label: 'Champions League' },
-  { value: 'EuropaLeague', label: 'Europa League' },
-  { value: 'ConferenceLeague', label: 'Conference League' },
-];
-
 // Opponents in these competitions aren't limited to the 20-club Serie A
 // roster (a Serie B side in an early Coppa Italia round, any European club
 // in a UEFA tie) - this is its own small, user-maintained roster rather than

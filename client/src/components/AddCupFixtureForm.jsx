@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { CUP_COMPETITIONS } from '../lib/cupTeams.js';
 
 const inputClass =
   'rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
@@ -17,8 +16,8 @@ function slugify(name) {
 // Sticky defaults (competition/round carry over between submissions) so
 // adding several fixtures for the same round - a full matchday's worth of
 // cup ties - doesn't mean re-picking the same competition/round every time.
-export default function AddCupFixtureForm({ teams, cupTeams, onCreate, onCreateOpponent, onDone }) {
-  const [competition, setCompetition] = useState(CUP_COMPETITIONS[0].value);
+export default function AddCupFixtureForm({ teams, cupTeams, competitions, onCreate, onCreateOpponent, onDone }) {
+  const [competition, setCompetition] = useState(competitions[0].value);
   const [round, setRound] = useState('');
   const [ourClub, setOurClub] = useState('');
   const [opponent, setOpponent] = useState('');
@@ -87,7 +86,7 @@ export default function AddCupFixtureForm({ teams, cupTeams, onCreate, onCreateO
       <h2 className="text-sm font-bold uppercase tracking-wide text-white/70">Add a fixture</h2>
       <div className="flex flex-wrap gap-2">
         <select value={competition} onChange={(e) => setCompetition(e.target.value)} className={inputClass}>
-          {CUP_COMPETITIONS.map((c) => (
+          {competitions.map((c) => (
             <option key={c.value} value={c.value}>
               {c.label}
             </option>

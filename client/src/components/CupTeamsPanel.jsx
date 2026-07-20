@@ -2,7 +2,6 @@ import { useState } from 'react';
 import Crest from './Crest.jsx';
 import { useCupData } from '../lib/useCupData.jsx';
 import { callWithReauth } from '../lib/reauth.js';
-import { CUP_COMPETITIONS } from '../lib/cupTeams.js';
 
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9] placeholder:text-white/30';
@@ -116,7 +115,7 @@ function CompetitionSection({ competition, teams, session, saveCupTeam, createCu
 }
 
 export default function CupTeamsPanel({ session }) {
-  const { cupTeams, loading, error, saveCupTeam, createCupTeam } = useCupData();
+  const { cupTeams, competitions, loading, error, saveCupTeam, createCupTeam } = useCupData();
 
   return (
     <div className="flex flex-col gap-4">
@@ -127,7 +126,7 @@ export default function CupTeamsPanel({ session }) {
       ) : error ? (
         <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">{error}</p>
       ) : (
-        CUP_COMPETITIONS.map((c) => (
+        competitions.map((c) => (
           <CompetitionSection
             key={c.value}
             competition={c}
