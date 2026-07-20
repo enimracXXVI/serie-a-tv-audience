@@ -14,6 +14,7 @@ import {
   computeOpponentAudience,
 } from '../lib/dashboardMetrics.js';
 import { isPlayed } from '../lib/standings.js';
+import { useSeasonComparison } from '../lib/useSeasonComparison.js';
 import AudienceBarChart from '../components/AudienceBarChart.jsx';
 import TeamMetricsTable from '../components/TeamMetricsTable.jsx';
 import TopGamesList from '../components/TopGamesList.jsx';
@@ -23,6 +24,7 @@ import SeasonTrendChart from '../components/SeasonTrendChart.jsx';
 import DayTimeHeatmap from '../components/DayTimeHeatmap.jsx';
 import ActivationDonut from '../components/ActivationDonut.jsx';
 import OpponentAudienceChart from '../components/OpponentAudienceChart.jsx';
+import SeasonComparisonCard from '../components/SeasonComparisonCard.jsx';
 import { formatNumber } from '../lib/formatNumber.js';
 
 function StatTile({ label, value, sub }) {
@@ -186,10 +188,12 @@ export default function DashboardPage() {
     [focusedTeam, fixtures, simulcastInfo, includeSimulcast]
   );
 
+  const { seasons: comparisonSeasons } = useSeasonComparison(teams, includeSimulcast, focusedSlug);
+
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-3">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 pr-36">
           <h1 className="text-lg font-black text-white sm:text-xl">
             Dashboard <span className="ml-1.5 text-xs font-semibold opacity-60">26/27</span>
           </h1>
@@ -237,6 +241,8 @@ export default function DashboardPage() {
               <StatTile label="Total audience (season)" value={formatNumber(totalAudience)} />
               <StatTile label="Sponsored clubs' audience" value={formatNumber(sponsoredAudience)} sub="home games only" />
             </div>
+
+            <SeasonComparisonCard seasons={comparisonSeasons} focusedTeam={focusedTeam} />
 
             <AudienceBarChart metrics={metrics} focusedSlug={focusedSlug} onFocus={setFocusedSlug} />
 

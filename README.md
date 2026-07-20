@@ -198,6 +198,50 @@ time - that appends a single new row without leaving the app. The matchday
 number stays filled in after each add, so adding several fixtures for the
 same round is just: submit, pick the next two clubs, submit again.
 
+## Past seasons
+
+The **Standings** and **Fixtures** (home) pages have a season dropdown next
+to their header, defaulting to the current, live 26/27 season. Past seasons
+are read-only archives, not sheet-editable settings - configured in
+`client/src/lib/seasons.js`, a small hardcoded list rather than another
+Settings panel, since this changes at most once a year:
+
+```js
+export const SEASONS = [
+  { label: '26/27', tab: null },
+  { label: '25/26', tab: 'fixtures_25_26' },
+  { label: '24/25', tab: 'fixtures_24_25' },
+];
+```
+
+`tab: null` means "the current season" - it reads the live, editable
+`fixtures` tab exactly like every page already does. Any other entry points
+at a separate tab with **the exact same header row as `fixtures`** (columns
+A-X above: id, matchday, day, date, home, away, homeScore, awayScore,
+daznAudience, skyAudience, kickoffTime, updatedAt, onSky, addedTime1H,
+addedTime2H, daznSimulcastAudience, homeMatchdaySponsor, homePlayerMascot,
+homeWalkabout, awayMatchdaySponsor, awayPlayerMascot, awayWalkabout,
+isBigMatch, isDerby). Neither archive tab exists yet in the seeded sheet -
+create `fixtures_25_26` and `fixtures_24_25` yourself (header row + past
+results pasted in) for last season and the one before it. Every season
+listed in `SEASONS` is shown in the dropdown regardless of whether its tab
+exists, so only add an entry once the matching tab is there with data in
+it - picking one whose tab is missing or malformed shows a load error
+instead of data.
+
+Selecting a past season switches Standings/Fixtures to show that season's
+data, view-only - no editing controls (Add fixture, Sync tags, score/audience
+edit tabs) appear, since these tabs are never written to by the app. Adding a
+future season later is the same pattern: add a tab with that header row, add
+one entry to `SEASONS`.
+
+The Dashboard doesn't get a season selector - it's an at-a-glance view of the
+*current* season - but it gains a **Season comparison** card (top of the
+page) showing total audience, league-wide average home audience, and, when a
+club is focused, that club's own home average, one bar per season, using the
+same `computeAllTeamMetrics` numbers the rest of the Dashboard already shows,
+just run once per configured season.
+
 ## Cup competitions (Coppa Italia / Champions League / Europa League / Conference League)
 
 These don't fit the Serie A schema - no round-robin, no fixed 38-matchday
