@@ -134,7 +134,8 @@ export default function CupFixtureRow({ fixture, onUpdate, canEdit, broadcasters
           <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1 sm:gap-2 min-w-0">
             <div className="flex items-center justify-end gap-1.5 min-w-0 sm:gap-2">
               <span className="truncate text-xs sm:text-sm text-right text-gray-700">
-                {fixture.home.short ?? fixture.home.name}
+                <span className="sm:hidden">{fixture.home.short ?? fixture.home.name}</span>
+                <span className="hidden sm:inline">{fixture.home.name}</span>
               </span>
               <Crest team={fixture.home} size={24} />
             </div>
@@ -145,7 +146,10 @@ export default function CupFixtureRow({ fixture, onUpdate, canEdit, broadcasters
 
             <div className="flex items-center gap-1.5 min-w-0 sm:gap-2">
               <Crest team={fixture.away} size={24} />
-              <span className="truncate text-xs sm:text-sm text-gray-700">{fixture.away.short ?? fixture.away.name}</span>
+              <span className="truncate text-xs sm:text-sm text-gray-700">
+                <span className="sm:hidden">{fixture.away.short ?? fixture.away.name}</span>
+                <span className="hidden sm:inline">{fixture.away.name}</span>
+              </span>
             </div>
           </div>
 

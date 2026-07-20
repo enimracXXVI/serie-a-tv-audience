@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
 import { useTeams } from '../lib/useTeams.jsx';
+import { usePastTeams } from '../lib/usePastTeams.jsx';
 import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
 import { useSeasonTeamAttributes } from '../lib/useSeasonTeamAttributes.jsx';
 import { teamsInFixtures } from '../lib/teams.js';
 import { makeId } from '../lib/seasonTeamAttributes.js';
 import { SEASONS } from '../lib/seasons.js';
 import { callWithReauth } from '../lib/reauth.js';
+import { syncAllSeasonsMatchTags } from '../lib/syncSeasonTags.js';
 
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9]';
@@ -124,6 +126,7 @@ function SeasonTeamRow({ season, team, roster, row, session, saveSeasonTeamAttri
 
 export default function SeasonTeamAttributesPanel({ session }) {
   const { teams } = useTeams();
+  const { byName: pastTeamsByName } = usePastTeams();
   const archiveSeasons = useMemo(() => SEASONS.filter((s) => s.tab), []);
   const [selectedLabel, setSelectedLabel] = useState(archiveSeasons[0]?.label ?? null);
   const selectedSeason = archiveSeasons.find((s) => s.label === selectedLabel) ?? archiveSeasons[0];
@@ -133,14 +136,27 @@ export default function SeasonTeamAttributesPanel({ session }) {
     teams
   );
   const { rows, loading: rowsLoading, saveSeasonTeamAttribute } = useSeasonTeamAttributes();
+  const [syncStatus, setSyncStatus] = useState(null); // null | 'syncing' | results array
 
   const roster = useMemo(() => (selectedSeason ? teamsInFixtures(fixtures) : []), [fixtures, selectedSeason]);
   const rowsByKey = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
+  const teamByName = useMemo(() => new Map(teams.map((t) => [t.staticName, t])), [teams]);
+
+  async function handleSyncAllSeasons() {
+    setSyncStatus('syncing');
+    try {
+      const results = await callWithReauth(session, (token) =>
+        syncAllSeasonsMatchTags({ teamByName, pastTeamsByName, seasonAttributeRows: rows }, token)
+      );
+      setSyncStatus(results);
+    } catch (err) {
+      setSyncStatus([{ label: 'all seasons', ok: false, error: err.message }]);
+    }
+  }
 
   if (!selectedSeason) {
     return (
       <div className="flex flex-col gap-3">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-white/70">Past-season sponsorship / big match / derby</h2>
         <p className="text-xs text-white/40">No archive seasons configured yet - see lib/seasons.js.</p>
       </div>
     );
@@ -151,7 +167,7 @@ export default function SeasonTeamAttributesPanel({ session }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-white/70">Past-season sponsorship / big match / derby</h2>
+        <span className="text-xs font-semibold uppercase tracking-wide text-white/40">Season</span>
         <select
           value={selectedSeason.label}
           onChange={(e) => setSelectedLabel(e.target.value)}
@@ -191,6 +207,32 @@ export default function SeasonTeamAttributesPanel({ session }) {
               saveSeasonTeamAttribute={saveSeasonTeamAttribute}
             />
           ))}
+        </div>
+      )}
+      {session.signedIn && (
+        <div className="flex flex-col gap-1.5 border-t border-white/10 pt-3">
+          <button
+            onClick={handleSyncAllSeasons}
+            disabled={syncStatus === 'syncing'}
+            className="self-start rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-white/20 disabled:opacity-50"
+          >
+            {syncStatus === 'syncing' ? 'Syncing…' : 'Sync big match / derby tags - all seasons'}
+          </button>
+          <p className="text-[10px] text-white/40">
+            Writes isBigMatch/isDerby to every configured season's own tab in one go - run this once after changing a
+            past season's sponsorship/big-club/derby designations above, rather than waiting for someone to happen to
+            edit one of that season's fixture rows.
+          </p>
+          {Array.isArray(syncStatus) && (
+            <p className="text-[10px]">
+              {syncStatus.map((r, i) => (
+                <span key={r.label} className={r.ok ? 'text-[#1fd8c9]' : 'text-red-300'}>
+                  {i > 0 && ' · '}
+                  {r.label}: {r.ok ? `${r.count} synced` : r.error}
+                </span>
+              ))}
+            </p>
+          )}
         </div>
       )}
     </div>

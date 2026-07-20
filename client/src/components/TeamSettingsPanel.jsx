@@ -230,7 +230,6 @@ export default function TeamSettingsPanel({ session }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-white/70">Team settings</h2>
       {!session.signedIn && (
         <p className="rounded-lg bg-white/5 px-3 py-2 text-xs text-white/50">
           Sign in to edit team names, codes, colours and sponsorship details.

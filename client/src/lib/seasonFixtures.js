@@ -17,7 +17,6 @@ const NUMERIC_FIELDS = new Set([
   'daznSimulcastAudience',
 ]);
 const BOOLEAN_FIELDS = new Set([
-  'onSky',
   'homeMatchdaySponsor',
   'homePlayerMascot',
   'homeWalkabout',

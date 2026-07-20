@@ -6,7 +6,7 @@ import SeasonSelector from '../components/SeasonSelector.jsx';
 import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useSession } from '../lib/useSession.js';
-import { syncMatchTags } from '../lib/sheets.js';
+import { useAppSettings } from '../lib/useAppSettings.jsx';
 import { callWithReauth } from '../lib/reauth.js';
 import { CURRENT_SEASON } from '../lib/seasons.js';
 
@@ -23,7 +23,7 @@ export default function HomePage() {
   } = useSeasonFixtures(season, teams);
   const session = useSession();
   const canEdit = session.signedIn && seasonCanEdit;
-  const [syncStatus, setSyncStatus] = useState(null); // null | 'syncing' | 'done' | error message
+  const { serieALogoUrl } = useAppSettings();
   const [updateError, setUpdateError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -40,21 +40,14 @@ export default function HomePage() {
     await callWithReauth(session, (token) => createFixture(fields, token));
   }
 
-  async function handleSyncTags() {
-    setSyncStatus('syncing');
-    try {
-      await callWithReauth(session, (token) => syncMatchTags(fixtures, token));
-      setSyncStatus('done');
-    } catch (err) {
-      setSyncStatus(err.message);
-    }
-  }
-
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-3">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 pr-36">
-          <h1 className="text-lg font-black text-white sm:text-xl">Serie A</h1>
+          <h1 className="flex items-center gap-2 text-lg font-black text-white sm:text-xl">
+            {serieALogoUrl && <img src={serieALogoUrl} alt="" className="h-6 w-auto object-contain sm:h-7" />}
+            Serie A
+          </h1>
           <SeasonSelector season={season} onChange={setSeason} />
         </div>
       </header>
@@ -78,17 +71,6 @@ export default function HomePage() {
             >
               Add fixture {showAddForm ? '▴' : '▾'}
             </button>
-            <button
-              onClick={handleSyncTags}
-              disabled={syncStatus === 'syncing'}
-              className="rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold text-white transition-colors hover:bg-white/20 disabled:opacity-50"
-            >
-              {syncStatus === 'syncing' ? 'Syncing…' : 'Sync big match / derby tags to sheet'}
-            </button>
-            {syncStatus === 'done' && <span className="text-xs text-[#1fd8c9]">Synced ✓</span>}
-            {syncStatus && syncStatus !== 'syncing' && syncStatus !== 'done' && (
-              <span className="text-xs text-red-300">{syncStatus}</span>
-            )}
           </div>
         )}
 

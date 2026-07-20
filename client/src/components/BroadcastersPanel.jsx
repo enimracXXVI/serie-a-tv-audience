@@ -5,7 +5,7 @@ import { callWithReauth } from '../lib/reauth.js';
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9] placeholder:text-white/30';
 
-function BroadcasterRow({ broadcaster, session, saveBroadcaster }) {
+function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain }) {
   const [logoUrl, setLogoUrl] = useState(broadcaster.logoUrl ?? '');
   const [error, setError] = useState(null);
 
@@ -19,11 +19,25 @@ function BroadcasterRow({ broadcaster, session, saveBroadcaster }) {
     }
   }
 
+  async function setMain() {
+    setError(null);
+    try {
+      await onSetMain(broadcaster.name);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-1 rounded-lg bg-white/5 px-3 py-2">
       <div className="flex items-center gap-2">
         {broadcaster.logoUrl && <img src={broadcaster.logoUrl} alt="" className="h-4 max-w-[60px] object-contain" />}
         <span className="text-sm font-semibold text-white">{broadcaster.name}</span>
+        {broadcaster.isMain && (
+          <span className="rounded-full bg-[#1fd8c9]/20 px-2 py-0.5 text-[10px] font-bold uppercase text-[#1fd8c9]">
+            Main
+          </span>
+        )}
       </div>
       <input
         type="text"
@@ -33,6 +47,11 @@ function BroadcasterRow({ broadcaster, session, saveBroadcaster }) {
         placeholder="Logo image URL"
         className={`${inputClass} w-full`}
       />
+      {session.signedIn && !broadcaster.isMain && (
+        <button onClick={setMain} className="self-start text-[10px] font-semibold text-white/50 hover:text-white">
+          Set as main broadcaster
+        </button>
+      )}
       {error && <p className="text-xs text-red-300">{error}</p>}
     </div>
   );
@@ -62,9 +81,23 @@ export default function BroadcastersPanel({ session }) {
     }
   }
 
+  async function handleSetMain(name) {
+    const prevMain = broadcasters.find((b) => b.isMain);
+    await callWithReauth(session, async (token) => {
+      if (prevMain && prevMain.name !== name) {
+        await saveBroadcaster(prevMain.name, { isMain: false }, token);
+      }
+      await saveBroadcaster(name, { isMain: true }, token);
+    });
+  }
+
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-white/70">Broadcasters</h2>
+      <p className="text-xs text-white/40">
+        Mark exactly one broadcaster as <strong>main</strong> (e.g. DAZN) - its name/logo replaces every hardcoded
+        "DAZN" label on the Serie A calendar and Dashboard. Every other broadcaster here (e.g. Sky Sport) becomes a
+        per-fixture "other broadcaster" choice - pick one when a game is also shown somewhere else, or leave it unset.
+      </p>
       {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit broadcasters.</p>}
       {loading ? (
         <p className="text-sm text-white/40">Loading…</p>
@@ -73,7 +106,13 @@ export default function BroadcastersPanel({ session }) {
       ) : (
         <div className="flex flex-col gap-1.5">
           {broadcasters.map((b) => (
-            <BroadcasterRow key={b.name} broadcaster={b} session={session} saveBroadcaster={saveBroadcaster} />
+            <BroadcasterRow
+              key={b.name}
+              broadcaster={b}
+              session={session}
+              saveBroadcaster={saveBroadcaster}
+              onSetMain={handleSetMain}
+            />
           ))}
           {session.signedIn && (
             <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2 rounded-lg bg-white/5 px-3 py-2">

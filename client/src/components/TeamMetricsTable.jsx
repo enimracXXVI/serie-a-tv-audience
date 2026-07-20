@@ -11,7 +11,7 @@ const COLUMNS = [
   { key: 'totalAudienceTotal', label: 'Total', title: 'Season total audience, home + away' },
   { key: 'homeAddedTimeAvg', label: 'Added time', title: 'Average stoppage-time minutes per home game' },
   { key: 'simulcastCount', label: 'Simulcast', title: 'Games sharing a DAZN simulcast slot' },
-  { key: 'skyCount', label: 'On Sky', title: 'Games also broadcast on Sky' },
+  { key: 'otherBroadcasterCount', label: 'Other', title: 'Games also broadcast elsewhere' },
 ];
 
 function formatCell(key, row) {

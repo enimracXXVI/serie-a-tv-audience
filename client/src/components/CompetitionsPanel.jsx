@@ -72,7 +72,6 @@ export default function CompetitionsPanel({ session }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-white/70">Competitions</h2>
       {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit competition logos.</p>}
       {loading ? (
         <p className="text-sm text-white/40">Loading…</p>

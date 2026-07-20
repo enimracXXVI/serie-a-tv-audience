@@ -45,7 +45,10 @@ export function enrichFixture(raw, teamByName, pastTeamsByName = new Map()) {
     awayScore: raw.awayScore,
     daznAudience: raw.daznAudience,
     skyAudience: raw.skyAudience,
-    onSky: raw.onSky,
+    // A broadcaster's name (matching a row in the `broadcasters` tab) if this
+    // game is also shown somewhere besides the main broadcaster, blank/null
+    // otherwise - see BroadcastersPanel for how "main" is configured.
+    otherBroadcaster: raw.otherBroadcaster || null,
     addedTime1H: raw.addedTime1H,
     addedTime2H: raw.addedTime2H,
     daznSimulcastAudience: raw.daznSimulcastAudience,

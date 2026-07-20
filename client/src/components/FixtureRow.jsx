@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import Crest from './Crest.jsx';
-import { DaznLogo, SkyLogo } from './BroadcastBadges.jsx';
+import { BroadcasterBadge } from './BroadcastBadges.jsx';
 import SponsorBadges from './SponsorBadges.jsx';
 import { matchTagStyle } from '../lib/matchTags.js';
 import { SPONSOR_TYPES } from '../lib/sponsorCounts.js';
+import { useCupData } from '../lib/useCupData.jsx';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
@@ -54,7 +55,7 @@ function NumberField({ label, value, onCommit, placeholder = '' }) {
   );
 }
 
-function KickoffFields({ fixture, onUpdate }) {
+function KickoffFields({ fixture, onUpdate, otherBroadcasterOptions }) {
   return (
     <div className="flex flex-wrap items-end gap-2">
       <Field label="Date">
@@ -73,15 +74,20 @@ function KickoffFields({ fixture, onUpdate }) {
           onChange={(e) => onUpdate(fixture.id, { kickoffTime: e.target.value || null })}
         />
       </Field>
-      <label className="flex items-center gap-2 pb-1.5">
-        <input
-          type="checkbox"
-          checked={Boolean(fixture.onSky)}
-          onChange={(e) => onUpdate(fixture.id, { onSky: e.target.checked })}
-          className="h-4 w-4 accent-[#1fd8c9]"
-        />
-        <span className="text-xs font-semibold text-gray-600">Also on Sky</span>
-      </label>
+      <Field label="Other broadcaster">
+        <select
+          value={fixture.otherBroadcaster ?? ''}
+          className={`${inputClass} w-40`}
+          onChange={(e) => onUpdate(fixture.id, { otherBroadcaster: e.target.value || null })}
+        >
+          <option value="">None</option>
+          {otherBroadcasterOptions.map((b) => (
+            <option key={b.name} value={b.name}>
+              {b.name}
+            </option>
+          ))}
+        </select>
+      </Field>
     </div>
   );
 }
@@ -114,18 +120,18 @@ function AddedTimeFields({ fixture, onUpdate }) {
   );
 }
 
-function AudienceFields({ fixture, onUpdate }) {
+function AudienceFields({ fixture, onUpdate, mainBroadcasterName }) {
   return (
     <div className="flex flex-wrap items-end gap-2">
       <NumberField
-        label="DAZN audience"
+        label={`${mainBroadcasterName} audience`}
         value={fixture.daznAudience}
         placeholder="M"
         onCommit={(v) => onUpdate(fixture.id, { daznAudience: v })}
       />
-      {fixture.onSky && (
+      {fixture.otherBroadcaster && (
         <NumberField
-          label="Sky audience"
+          label="Other broadcaster audience"
           value={fixture.skyAudience}
           placeholder="M"
           onCommit={(v) => onUpdate(fixture.id, { skyAudience: v })}
@@ -133,7 +139,7 @@ function AudienceFields({ fixture, onUpdate }) {
       )}
       {fixture.isFirstInBlock && (
         <NumberField
-          label="DAZN simulcast audience"
+          label={`${mainBroadcasterName} simulcast audience`}
           value={fixture.daznSimulcastAudience}
           placeholder="M · shared slot"
           onCommit={(v) => onUpdate(fixture.id, { daznSimulcastAudience: v })}
@@ -195,6 +201,14 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
   const dateShort = formatDateShort(fixture.date);
   const tagStyle = matchTagStyle(fixture);
 
+  const { broadcasters } = useCupData();
+  const mainBroadcaster = broadcasters.find((b) => b.isMain) ?? null;
+  const mainBroadcasterName = mainBroadcaster?.name || 'Main broadcaster';
+  const otherBroadcasterOptions = broadcasters.filter((b) => !b.isMain);
+  const otherBroadcasterRow = fixture.otherBroadcaster
+    ? broadcasters.find((b) => b.name === fixture.otherBroadcaster)
+    : null;
+
   return (
     <div className="flex items-stretch" style={{ background: tagStyle.background }}>
       <div className="w-1.5 shrink-0" style={{ background: tagStyle.bar }} />
@@ -203,8 +217,8 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
         {/* Fixed width AND height so a derby/big-match label never changes
             row height - every row is the same size whether it has 0, 1 or 2
             extra labels. */}
-        <div className="flex h-14 w-10 shrink-0 flex-col items-center justify-center text-center text-[9px] leading-tight text-gray-400 sm:w-14 sm:text-[10px]">
-          {dateShort && <div>{dateShort}</div>}
+        <div className="flex h-14 w-11 shrink-0 flex-col items-center justify-center text-center text-[8px] leading-tight text-gray-400 sm:w-14 sm:text-[10px]">
+          {dateShort && <div className="whitespace-nowrap">{dateShort}</div>}
           {(fixture.day || fixture.kickoffTime) && (
             <div>{[fixture.day, fixture.kickoffTime].filter(Boolean).join(' ')}</div>
           )}
@@ -249,38 +263,35 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
           </div>
         </div>
 
-        {/* Also fixed-width regardless of whether Sky is present, so this
-            never shifts the center block between rows. */}
+        {/* Also fixed-width regardless of whether another broadcaster is
+            present, so this never shifts the center block between rows. */}
         <div className="flex w-12 shrink-0 items-center gap-1 sm:w-24 sm:gap-2">
-          <DaznLogo height={14} />
-          {fixture.onSky && (
-            <>
-              <span className="sm:hidden">
-                <SkyLogo height={14} compact />
-              </span>
-              <span className="hidden sm:inline">
-                <SkyLogo height={12} />
-              </span>
-            </>
+          <BroadcasterBadge broadcaster={mainBroadcaster} fallbackName={mainBroadcasterName} className="h-3.5" />
+          {fixture.otherBroadcaster && (
+            <BroadcasterBadge broadcaster={otherBroadcasterRow} fallbackName={fixture.otherBroadcaster} className="h-3" />
           )}
         </div>
       </div>
 
       {canEdit && editMode && (
         <div className="mt-2 flex flex-col gap-2 rounded-lg bg-gray-50 p-2.5">
-          {editMode === 'kickoff' && <KickoffFields fixture={fixture} onUpdate={onUpdate} />}
+          {editMode === 'kickoff' && (
+            <KickoffFields fixture={fixture} onUpdate={onUpdate} otherBroadcasterOptions={otherBroadcasterOptions} />
+          )}
           {editMode === 'result' && <ResultFields fixture={fixture} onUpdate={onUpdate} />}
           {editMode === 'addedTime' && <AddedTimeFields fixture={fixture} onUpdate={onUpdate} />}
-          {editMode === 'audience' && <AudienceFields fixture={fixture} onUpdate={onUpdate} />}
+          {editMode === 'audience' && (
+            <AudienceFields fixture={fixture} onUpdate={onUpdate} mainBroadcasterName={mainBroadcasterName} />
+          )}
           {editMode === 'sponsors' && (
             <SponsorshipFields fixture={fixture} onUpdate={onUpdate} sponsorCounts={sponsorCounts} />
           )}
           {editMode === 'all' && (
             <>
-              <KickoffFields fixture={fixture} onUpdate={onUpdate} />
+              <KickoffFields fixture={fixture} onUpdate={onUpdate} otherBroadcasterOptions={otherBroadcasterOptions} />
               <ResultFields fixture={fixture} onUpdate={onUpdate} />
               <AddedTimeFields fixture={fixture} onUpdate={onUpdate} />
-              <AudienceFields fixture={fixture} onUpdate={onUpdate} />
+              <AudienceFields fixture={fixture} onUpdate={onUpdate} mainBroadcasterName={mainBroadcasterName} />
               <SponsorshipFields fixture={fixture} onUpdate={onUpdate} sponsorCounts={sponsorCounts} />
             </>
           )}
