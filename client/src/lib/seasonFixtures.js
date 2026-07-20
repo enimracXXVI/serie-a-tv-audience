@@ -33,12 +33,24 @@ function excelSerialToISODate(serial) {
   return new Date(epoch + serial * 86400000).toISOString().slice(0, 10);
 }
 
+// Typing a time like "20:45" straight into a cell makes Sheets store it as a
+// real TIME value (a fraction-of-day serial, e.g. 0.864583) rather than
+// text - UNFORMATTED_VALUE then returns that number instead of a string.
+function excelSerialToTime(serial) {
+  const totalMinutes = Math.round(serial * 24 * 60);
+  const hours = Math.floor(totalMinutes / 60) % 24;
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
 function rowToFixture(row, headerIndex) {
   const obj = {};
   for (const [key, idx] of Object.entries(headerIndex)) {
     let value = cell(row, idx);
     if (key === 'date' && typeof value === 'number') {
       value = excelSerialToISODate(value);
+    } else if (key === 'kickoffTime' && typeof value === 'number') {
+      value = excelSerialToTime(value);
     } else if (BOOLEAN_FIELDS.has(key)) {
       value = value === true || value === 'TRUE';
     } else if (NUMERIC_FIELDS.has(key) && value !== null) {
