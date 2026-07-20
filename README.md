@@ -241,6 +241,21 @@ edit tabs) appear, since these tabs are never written to by the app. Adding a
 future season later is the same pattern: add a tab with that header row, add
 one entry to `SEASONS`.
 
+The table and charts on Standings (and every per-club section on the
+Dashboard - see below) compute a past season's own club list from whoever
+actually appears in its fixtures, not from the current 20-club roster - a
+club that's been promoted or relegated since then still gets a correct
+record and shows up everywhere it should for the season it actually played
+in. It just won't have the crest/colours you've set up in Settings (those
+are a current-roster concept) - it gets a plain monogram badge and a
+neutral grey line/bar colour instead. There's no need to add a club to the
+`teams` tab just so a past season displays correctly, and doing so isn't
+recommended either - anything in `teams` is treated as part of the
+*current* Serie A season everywhere else in the app (team pickers, the
+Dashboard's Focus club dropdown for the current season, etc.), so adding a
+club there that isn't actually playing this season would incorrectly offer
+it as a current one.
+
 The Dashboard also has a season dropdown, same as Standings/Fixtures -
 switching it changes every section on the page (stat tiles, ranked bar
 chart, sortable table, season trend, scheduling patterns, top games, and
