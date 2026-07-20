@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TeamSettingsPanel from './TeamSettingsPanel.jsx';
+import PastTeamsPanel from './PastTeamsPanel.jsx';
 import CupTeamsPanel from './CupTeamsPanel.jsx';
 import BroadcastersPanel from './BroadcastersPanel.jsx';
 import CompetitionsPanel from './CompetitionsPanel.jsx';
@@ -226,6 +227,9 @@ export default function HamburgerMenu() {
               {displayedView === 'settings' && (
                 <div className="flex flex-col gap-8">
                   <TeamSettingsPanel session={session} />
+                  <div className="border-t border-white/10 pt-6">
+                    <PastTeamsPanel session={session} />
+                  </div>
                   <div className="border-t border-white/10 pt-6">
                     <CompetitionsPanel session={session} />
                   </div>
