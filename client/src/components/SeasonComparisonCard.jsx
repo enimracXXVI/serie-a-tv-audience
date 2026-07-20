@@ -38,17 +38,23 @@ export default function SeasonComparisonCard({ seasons, focusedTeam }) {
   return (
     <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
       <h3 className="mb-3 text-sm font-bold text-[#0f1e54]">Season comparison</h3>
-      <div className={`grid grid-cols-1 gap-4 ${focusedTeam ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+
+      <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-gray-400">League-wide, all clubs</p>
+      <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <ComparisonRow title="Total audience" seasons={seasons} pick={(s) => s.totalAudience} />
         <ComparisonRow title="League avg home audience" seasons={seasons} pick={(s) => s.leagueAvg} />
-        {focusedTeam && (
-          <ComparisonRow
-            title={`${focusedTeam.name} home avg audience`}
-            seasons={seasons}
-            pick={(s) => s.focusedAvg}
-          />
-        )}
       </div>
+
+      {focusedTeam && (
+        <>
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-gray-400">{focusedTeam.name}</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <ComparisonRow title="Home avg audience" seasons={seasons} pick={(s) => s.focusedAvg} />
+            <ComparisonRow title="Total audience (home + away)" seasons={seasons} pick={(s) => s.focusedTotal} />
+          </div>
+        </>
+      )}
+
       {anyError && (
         <p className="mt-3 text-[10px] text-gray-400">
           One or more archive seasons couldn&apos;t be loaded - check the Google Sheet tabs exist with the

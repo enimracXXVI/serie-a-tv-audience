@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useFixtures } from './useFixtures.js';
 import { fetchSeasonFixtures } from './seasonFixtures.js';
-import { enrichFixture } from './teams.js';
+import { enrichFixture, teamsInFixtures } from './teams.js';
 import { computeAllTeamMetrics } from './dashboardMetrics.js';
 import { SEASONS } from './seasons.js';
 
-// Summary-level, season-by-season comparison (total audience, league avg,
-// one focused club's home avg) - deliberately not a full re-run of every
-// Dashboard metric for every season, just these few headline numbers,
-// computed by calling the exact same computeAllTeamMetrics used for the
-// current season's own cards, once per season.
+// Summary-level, season-by-season comparison (league-wide total audience and
+// home avg, plus a focused club's own home avg and total audience) -
+// deliberately not a full re-run of every Dashboard metric for every season,
+// just these few headline numbers, computed by calling the exact same
+// computeAllTeamMetrics used for the current season's own cards, once per
+// season.
 export function useSeasonComparison(teams, includeSimulcast, includeSky, focusedSlug) {
   const live = useFixtures([], teams);
   const archiveSeasons = useMemo(() => SEASONS.filter((s) => s.tab), []);
@@ -54,7 +55,15 @@ export function useSeasonComparison(teams, includeSimulcast, includeSky, focused
       const error = isCurrent ? live.error : (archiveErrors[s.tab] ?? null);
 
       if (loading || error || fixtures.length === 0) {
-        return { label: s.label, loading, error, totalAudience: 0, leagueAvg: 0, focusedAvg: null };
+        return {
+          label: s.label,
+          loading,
+          error,
+          totalAudience: 0,
+          leagueAvg: 0,
+          focusedAvg: null,
+          focusedTotal: null,
+        };
       }
 
       // The current 20-club roster isn't necessarily who played that season -
@@ -63,9 +72,7 @@ export function useSeasonComparison(teams, includeSimulcast, includeSky, focused
       // metrics over every club that actually appears in ITS fixtures
       // (current roster ones keep their real team record; others use the
       // synthetic fallback teams.js's enrichFixture gives them).
-      const seasonTeams = isCurrent
-        ? teams
-        : [...new Map(fixtures.flatMap((f) => [f.home, f.away]).map((t) => [t.slug, t])).values()];
+      const seasonTeams = isCurrent ? teams : teamsInFixtures(fixtures);
 
       const metrics = computeAllTeamMetrics(seasonTeams, fixtures, includeSimulcast, includeSky);
       const withHomeGames = metrics.filter((m) => m.homeGamesPlayed > 0);
@@ -82,6 +89,7 @@ export function useSeasonComparison(teams, includeSimulcast, includeSky, focused
         totalAudience,
         leagueAvg,
         focusedAvg: focusedMetric && focusedMetric.homeGamesPlayed > 0 ? focusedMetric.homeAudienceAvg : null,
+        focusedTotal: focusedMetric && focusedMetric.totalGamesPlayed > 0 ? focusedMetric.totalAudienceTotal : null,
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

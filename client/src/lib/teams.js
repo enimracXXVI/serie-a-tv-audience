@@ -42,3 +42,11 @@ export function enrichFixture(raw, teamByName) {
     updatedAt: raw.updatedAt,
   };
 }
+
+// The current 20-club roster isn't necessarily who played in a past season -
+// promoted/relegated clubs since then would otherwise be left out of any
+// per-club computation over that season's fixtures. Derives the real club
+// list straight from the fixtures themselves instead.
+export function teamsInFixtures(fixtures) {
+  return [...new Map(fixtures.flatMap((f) => [f.home, f.away]).map((t) => [t.slug, t])).values()];
+}

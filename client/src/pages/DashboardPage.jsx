@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTeams } from '../lib/useTeams.jsx';
-import { useFixtures } from '../lib/useFixtures.js';
+import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
+import { teamsInFixtures } from '../lib/teams.js';
+import { CURRENT_SEASON } from '../lib/seasons.js';
 import {
   computeAllTeamMetrics,
   computeSimulcastInfo,
@@ -16,6 +18,7 @@ import {
 } from '../lib/dashboardMetrics.js';
 import { isPlayed } from '../lib/standings.js';
 import { useSeasonComparison } from '../lib/useSeasonComparison.js';
+import SeasonSelector from '../components/SeasonSelector.jsx';
 import AudienceBarChart from '../components/AudienceBarChart.jsx';
 import TeamMetricsTable from '../components/TeamMetricsTable.jsx';
 import TopGamesList from '../components/TopGamesList.jsx';
@@ -134,7 +137,8 @@ function ActivationAudienceCard({ team, activations }) {
 
 export default function DashboardPage() {
   const { teams, loading: teamsLoading } = useTeams();
-  const { fixtures, loading: fixturesLoading, error: fixturesError } = useFixtures([], teams);
+  const [season, setSeason] = useState(CURRENT_SEASON);
+  const { fixtures, loading: fixturesLoading, error: fixturesError } = useSeasonFixtures(season, teams);
   const [includeSimulcast, setIncludeSimulcast] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   // Defaults to on (matches prior behavior) whenever the URL doesn't say
@@ -157,10 +161,24 @@ export default function DashboardPage() {
 
   const loading = teamsLoading || fixturesLoading;
 
+  // A past season's actual clubs aren't necessarily this year's 20 - a
+  // promoted/relegated club since then still needs to show up in every
+  // section below (ranked bar chart, table, focus-club dropdown...), so
+  // derive the season's real roster from its own fixtures rather than
+  // assuming the current one played it.
+  const effectiveTeams = useMemo(() => (season.tab ? teamsInFixtures(fixtures) : teams), [season.tab, fixtures, teams]);
+
+  // Switching season can leave a focused club that didn't play in the new
+  // one - reset back to "all clubs" rather than silently focusing a club
+  // with zero games this season.
+  useEffect(() => {
+    setFocusedSlug(null);
+  }, [season.label]);
+
   const simulcastInfo = useMemo(() => computeSimulcastInfo(fixtures), [fixtures]);
   const metrics = useMemo(
-    () => (loading ? [] : computeAllTeamMetrics(teams, fixtures, includeSimulcast, includeSky)),
-    [teams, fixtures, includeSimulcast, includeSky, loading]
+    () => (loading ? [] : computeAllTeamMetrics(effectiveTeams, fixtures, includeSimulcast, includeSky)),
+    [effectiveTeams, fixtures, includeSimulcast, includeSky, loading]
   );
 
   const playedGames = useMemo(() => fixtures.filter(isPlayed), [fixtures]);
@@ -174,7 +192,7 @@ export default function DashboardPage() {
   const totalAudience = metrics.reduce((a, m) => a + m.homeAudienceTotal, 0);
   const sponsoredAudience = metrics.filter((m) => m.team.sponsored).reduce((a, m) => a + m.homeAudienceTotal, 0);
 
-  const focusedTeam = focusedSlug ? teams.find((t) => t.slug === focusedSlug) : null;
+  const focusedTeam = focusedSlug ? effectiveTeams.find((t) => t.slug === focusedSlug) : null;
 
   const audienceByDay = useMemo(
     () => computeAudienceByDay(fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug),
@@ -213,9 +231,10 @@ export default function DashboardPage() {
       <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-3">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 pr-36">
           <h1 className="text-lg font-black text-white sm:text-xl">
-            Dashboard <span className="ml-1.5 text-xs font-semibold opacity-60">26/27</span>
+            Dashboard <span className="ml-1.5 text-xs font-semibold opacity-60">{season.label}</span>
           </h1>
           <div className="flex flex-wrap items-center gap-3">
+            <SeasonSelector season={season} onChange={setSeason} />
             <label className="flex items-center gap-1.5 text-xs font-semibold text-white/70">
               Focus club
               <select
@@ -224,7 +243,7 @@ export default function DashboardPage() {
                 className="rounded-md border border-transparent bg-white px-2 py-1 text-xs font-semibold text-[#0f1e54] outline-none focus:border-[#1fd8c9]"
               >
                 <option value="">All clubs</option>
-                {teams.map((t) => (
+                {effectiveTeams.map((t) => (
                   <option key={t.slug} value={t.slug}>
                     {t.name}
                   </option>
@@ -301,7 +320,7 @@ export default function DashboardPage() {
               <DayTimeBreakdownTable rows={audienceByDayAndTime} />
               <TopGamesList
                 fixtures={fixtures}
-                teams={teams}
+                teams={effectiveTeams}
                 simulcastInfo={simulcastInfo}
                 includeSimulcast={includeSimulcast}
                 includeSky={includeSky}
