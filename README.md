@@ -240,7 +240,11 @@ The Dashboard doesn't get a season selector - it's an at-a-glance view of the
 page) showing total audience, league-wide average home audience, and, when a
 club is focused, that club's own home average, one bar per season, using the
 same `computeAllTeamMetrics` numbers the rest of the Dashboard already shows,
-just run once per configured season.
+just run once per configured season. Clubs that played that season but
+aren't in the current 20-club roster (promoted/relegated since) still count
+towards that season's totals - each archive season computes its own club
+list from whoever actually appears in its fixtures, rather than assuming the
+current roster played it too.
 
 ## Cup competitions (Coppa Italia / Champions League / Europa League / Conference League)
 
@@ -349,8 +353,12 @@ Three audience figures are tracked:
 - **Total audience** - home and away combined. This is what a jersey/kit
   partnership buys, since the badge is on screen wherever the club plays.
 
-Both are DAZN + Sky combined (Sky's figure only counts on games also marked
-`onSky`). **Added time** (average stoppage-time minutes per home game) is
+Both are DAZN + Sky combined by default (Sky's figure only counts on games
+also marked `onSky`) - uncheck **Include Sky audience** (top right of the
+page) to see DAZN-only numbers instead, useful for a season where Sky
+audience wasn't tracked or is incomplete, since a partial Sky figure would
+otherwise understate some games relative to others rather than just leaving
+them out. **Added time** (average stoppage-time minutes per home game) is
 tracked separately, unweighted by audience, for evaluating the cheaper
 LED packages that only run during stoppage time.
 

@@ -10,7 +10,7 @@ import { SEASONS } from './seasons.js';
 // Dashboard metric for every season, just these few headline numbers,
 // computed by calling the exact same computeAllTeamMetrics used for the
 // current season's own cards, once per season.
-export function useSeasonComparison(teams, includeSimulcast, focusedSlug) {
+export function useSeasonComparison(teams, includeSimulcast, includeSky, focusedSlug) {
   const live = useFixtures([], teams);
   const archiveSeasons = useMemo(() => SEASONS.filter((s) => s.tab), []);
   const [archiveRows, setArchiveRows] = useState({});
@@ -57,7 +57,17 @@ export function useSeasonComparison(teams, includeSimulcast, focusedSlug) {
         return { label: s.label, loading, error, totalAudience: 0, leagueAvg: 0, focusedAvg: null };
       }
 
-      const metrics = computeAllTeamMetrics(teams, fixtures, includeSimulcast);
+      // The current 20-club roster isn't necessarily who played that season -
+      // relegated/promoted clubs since then would otherwise be silently
+      // excluded from that season's totals. For an archive season, compute
+      // metrics over every club that actually appears in ITS fixtures
+      // (current roster ones keep their real team record; others use the
+      // synthetic fallback teams.js's enrichFixture gives them).
+      const seasonTeams = isCurrent
+        ? teams
+        : [...new Map(fixtures.flatMap((f) => [f.home, f.away]).map((t) => [t.slug, t])).values()];
+
+      const metrics = computeAllTeamMetrics(seasonTeams, fixtures, includeSimulcast, includeSky);
       const withHomeGames = metrics.filter((m) => m.homeGamesPlayed > 0);
       const totalAudience = metrics.reduce((a, m) => a + m.homeAudienceTotal, 0);
       const leagueAvg = withHomeGames.length
@@ -75,7 +85,19 @@ export function useSeasonComparison(teams, includeSimulcast, focusedSlug) {
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [live.fixtures, live.loading, live.error, archiveRows, archiveLoading, archiveErrors, teamByName, teams, includeSimulcast, focusedSlug]);
+  }, [
+    live.fixtures,
+    live.loading,
+    live.error,
+    archiveRows,
+    archiveLoading,
+    archiveErrors,
+    teamByName,
+    teams,
+    includeSimulcast,
+    includeSky,
+    focusedSlug,
+  ]);
 
   return { seasons, loading: live.loading || archiveLoading };
 }

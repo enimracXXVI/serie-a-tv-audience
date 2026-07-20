@@ -2,6 +2,17 @@ import teamsData from '../data/teams.json';
 
 export const teams = teamsData;
 
+// A past-season fixture can name a club that's no longer (or wasn't yet) in
+// the current 20-club roster - relegated/promoted since. There's no team
+// record for it, so it needs a stable synthetic slug of its own (rather than
+// staying slug-less) so per-team metrics can still group its games.
+function slugify(name) {
+  return String(name)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
 // Fixtures store home/away as the club's bundled (immutable) name text, so
 // matching must stay keyed by that even if a live Settings edit renames the
 // club for display - see useTeams.js's `staticName`.
@@ -12,8 +23,8 @@ export function enrichFixture(raw, teamByName) {
     day: raw.day,
     date: raw.date,
     kickoffTime: raw.kickoffTime,
-    home: teamByName.get(raw.home) ?? { name: raw.home },
-    away: teamByName.get(raw.away) ?? { name: raw.away },
+    home: teamByName.get(raw.home) ?? { name: raw.home, slug: slugify(raw.home), short: String(raw.home).slice(0, 3).toUpperCase() },
+    away: teamByName.get(raw.away) ?? { name: raw.away, slug: slugify(raw.away), short: String(raw.away).slice(0, 3).toUpperCase() },
     homeScore: raw.homeScore,
     awayScore: raw.awayScore,
     daznAudience: raw.daznAudience,
