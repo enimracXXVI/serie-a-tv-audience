@@ -121,6 +121,14 @@ export default function HamburgerMenu() {
 
   return (
     <>
+      {!session.signedIn && (
+        <button
+          onClick={session.signIn}
+          className="fixed right-16 top-3 z-[60] rounded-full bg-[#1fd8c9] px-3 py-2 text-xs font-bold text-[#0f1e54] hover:brightness-95"
+        >
+          Sign in
+        </button>
+      )}
       <button
         onClick={open ? closeMenu : () => pushView('main')}
         aria-label={open ? 'Close menu' : 'Open menu'}
@@ -173,7 +181,7 @@ export default function HamburgerMenu() {
                         onClick={session.signIn}
                         className="w-full rounded-md bg-[#1fd8c9] px-3 py-2 text-xs font-bold text-[#0f1e54] hover:brightness-95"
                       >
-                        Sign in with Google
+                        Sign in
                       </button>
                     )}
                   </div>
@@ -203,12 +211,14 @@ export default function HamburgerMenu() {
                     >
                       Cup competitions <span aria-hidden="true">›</span>
                     </button>
-                    <button
-                      onClick={() => pushView('settings')}
-                      className="flex items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white hover:bg-white/10"
-                    >
-                      Settings <span aria-hidden="true">›</span>
-                    </button>
+                    {session.signedIn && (
+                      <button
+                        onClick={() => pushView('settings')}
+                        className="flex items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white hover:bg-white/10"
+                      >
+                        Settings <span aria-hidden="true">›</span>
+                      </button>
+                    )}
                   </nav>
                 </div>
               )}
