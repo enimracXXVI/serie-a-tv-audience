@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useFixtures } from '../lib/useFixtures.js';
 import {
@@ -135,7 +136,23 @@ export default function DashboardPage() {
   const { teams, loading: teamsLoading } = useTeams();
   const { fixtures, loading: fixturesLoading, error: fixturesError } = useFixtures([], teams);
   const [includeSimulcast, setIncludeSimulcast] = useState(false);
-  const [includeSky, setIncludeSky] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Defaults to on (matches prior behavior) whenever the URL doesn't say
+  // otherwise - only written into the URL when turned off, so a plain
+  // /dashboard link stays clean.
+  const [includeSky, setIncludeSkyState] = useState(() => searchParams.get('sky') !== '0');
+  const setIncludeSky = (value) => {
+    setIncludeSkyState(value);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (value) next.delete('sky');
+        else next.set('sky', '0');
+        return next;
+      },
+      { replace: true }
+    );
+  };
   const [focusedSlug, setFocusedSlug] = useState(null);
 
   const loading = teamsLoading || fixturesLoading;
