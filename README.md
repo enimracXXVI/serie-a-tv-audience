@@ -241,16 +241,25 @@ edit tabs) appear, since these tabs are never written to by the app. Adding a
 future season later is the same pattern: add a tab with that header row, add
 one entry to `SEASONS`.
 
-The Dashboard doesn't get a season selector - it's an at-a-glance view of the
-*current* season - but it gains a **Season comparison** card (top of the
-page) showing total audience, league-wide average home audience, and, when a
-club is focused, that club's own home average, one bar per season, using the
-same `computeAllTeamMetrics` numbers the rest of the Dashboard already shows,
-just run once per configured season. Clubs that played that season but
-aren't in the current 20-club roster (promoted/relegated since) still count
-towards that season's totals - each archive season computes its own club
-list from whoever actually appears in its fixtures, rather than assuming the
-current roster played it too.
+The Dashboard also has a season dropdown, same as Standings/Fixtures -
+switching it changes every section on the page (stat tiles, ranked bar
+chart, sortable table, season trend, scheduling patterns, top games, and
+the **Focus club** dropdown, which lists whoever actually played that
+season) except one: the **Season comparison** card near the top always
+shows all configured seasons side by side, regardless of which one is
+currently selected elsewhere on the page - it's meant to answer "how does
+this season compare", not "show me the season I happen to have picked".
+It's split into two parts: **league-wide** totals (total audience, league
+avg home audience) that are always shown, and, only once a club is
+focused, that club's own **home avg audience** and **total audience**
+(home + away combined) across the same seasons. Both use the same
+`computeAllTeamMetrics` numbers the rest of the Dashboard already shows,
+just run once per configured season. Clubs that played a season but
+aren't in the current 20-club roster (promoted/relegated since) still
+count towards that season's totals and show up everywhere on the page -
+each archive season computes its own club list from whoever actually
+appears in its fixtures, rather than assuming the current roster played
+it too.
 
 ## Cup competitions (Coppa Italia / Champions League / Europa League / Conference League)
 
