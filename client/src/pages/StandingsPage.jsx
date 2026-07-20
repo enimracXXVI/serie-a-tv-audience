@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
+import { teamsInFixtures } from '../lib/teams.js';
 import { computeStandings, maxPlayedMatchday } from '../lib/standings.js';
 import { CURRENT_SEASON } from '../lib/seasons.js';
 import SeasonSelector from '../components/SeasonSelector.jsx';
@@ -13,6 +14,15 @@ export default function StandingsPage() {
   const { fixtures, loading: fixturesLoading, error: fixturesError } = useSeasonFixtures(season, teams);
 
   const loading = teamsLoading || fixturesLoading;
+
+  // A past season's real 20 (or however many) clubs aren't necessarily this
+  // year's roster - a promoted/relegated club since then would otherwise be
+  // missing from the table entirely, and worse, every one of ITS games would
+  // silently drop out of every other club's record too (computeStandings
+  // skips a fixture completely if either side isn't in the team list it's
+  // given). Derive the season's real roster from its own fixtures instead.
+  const effectiveTeams = useMemo(() => (season.tab ? teamsInFixtures(fixtures) : teams), [season.tab, fixtures, teams]);
+
   const maxMatchday = useMemo(() => maxPlayedMatchday(fixtures) || 1, [fixtures]);
   // null tracks "latest matchday" live as data loads; a number means the
   // user has dragged the slider to a specific point in the season.
@@ -23,7 +33,7 @@ export default function StandingsPage() {
     setTableMatchday(null);
   }, [season.label]);
   const effectiveTableMatchday = Math.min(tableMatchday ?? maxMatchday, maxMatchday);
-  const standings = loading || fixturesError ? [] : computeStandings(fixtures, teams, effectiveTableMatchday);
+  const standings = loading || fixturesError ? [] : computeStandings(fixtures, effectiveTeams, effectiveTableMatchday);
 
   return (
     <div className="min-h-screen">
@@ -49,7 +59,7 @@ export default function StandingsPage() {
               maxMatchday={maxMatchday}
               onMatchdayChange={setTableMatchday}
             />
-            <StandingsChart fixtures={fixtures} teams={teams} />
+            <StandingsChart fixtures={fixtures} teams={effectiveTeams} />
           </>
         )}
       </main>
