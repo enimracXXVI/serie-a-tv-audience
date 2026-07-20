@@ -246,15 +246,31 @@ Dashboard - see below) compute a past season's own club list from whoever
 actually appears in its fixtures, not from the current 20-club roster - a
 club that's been promoted or relegated since then still gets a correct
 record and shows up everywhere it should for the season it actually played
-in. It just won't have the crest/colours you've set up in Settings (those
-are a current-roster concept) - it gets a plain monogram badge and a
-neutral grey line/bar colour instead. There's no need to add a club to the
-`teams` tab just so a past season displays correctly, and doing so isn't
-recommended either - anything in `teams` is treated as part of the
-*current* Serie A season everywhere else in the app (team pickers, the
-Dashboard's Focus club dropdown for the current season, etc.), so adding a
-club there that isn't actually playing this season would incorrectly offer
-it as a current one.
+in. Don't add a club to the `teams` tab just to make a past season display
+correctly - anything in `teams` is treated as part of the *current* Serie A
+season everywhere else in the app (team pickers, the Dashboard's Focus
+club dropdown for the current season, etc.), so a club there that isn't
+actually playing this season would incorrectly get offered as a current
+one. Use the `pastTeams` tab instead (below) for that club's branding.
+
+### Branding for clubs not in the current roster (`pastTeams` tab)
+
+By default, a club that's not in the current 20-club roster gets a plain
+monogram badge and a neutral grey line/bar colour wherever it shows up -
+correct numbers, generic look. To give it a real crest and colours instead,
+add a `pastTeams` tab (doesn't exist in the seeded sheet - add it yourself)
+with header row: `name`, `short`, `crestUrl`, `primary`, `secondary`. `name`
+must match **exactly** how that club appears in an archive fixtures tab's
+`home`/`away` columns (this tab is keyed by name, not a slug, since name is
+the only thing available to match a fixture against). Managed from the
+hamburger menu's **Settings** panel, same `=IMAGE("url")`-or-plain-URL rule
+for `crestUrl` as the main `teams` tab.
+
+This tab is also the right place for a club that's *about* to be current -
+freshly promoted, fixtures already being added for the new season, but you
+haven't updated `teams.json` yet (see below) - it's consulted as a fallback
+for any club not found in the current roster, regardless of whether that's
+because it's no longer current or not yet current.
 
 The Dashboard also has a season dropdown, same as Standings/Fixtures -
 switching it changes every section on the page (stat tiles, ranked bar
@@ -275,6 +291,44 @@ count towards that season's totals and show up everywhere on the page -
 each archive season computes its own club list from whoever actually
 appears in its fixtures, rather than assuming the current roster played
 it too.
+
+### Rolling over to a new season (promotion/relegation)
+
+The current 20-club roster (`client/src/data/teams.json`, plus the bundled
+crest SVGs in `client/public/crests/`) is a static file, not a sheet tab -
+that's a deliberate simplicity trade-off, since it changes once a year at
+most, and everything else in the app (team pickers, current-season Focus
+club dropdowns, Settings) treats it as "this is who's playing this
+season." When a new season starts with different clubs, there's no
+self-service way around a small code change - here's the recommended
+order:
+
+1. **Before wiping the outgoing season's data**: for each of the 3
+   relegated clubs, add a row to the `pastTeams` tab (name/short/crestUrl/
+   primary/secondary - see above) if it doesn't have one already, so its
+   branding is preserved once it's no longer in `teams.json`.
+2. **Archive the just-finished season**: copy the live `fixtures` tab's
+   contents into a new tab (e.g. `fixtures_26_27`), then clear the live
+   `fixtures` tab and paste in the new season's fixture list. Add a
+   matching entry to `SEASONS` in `client/src/lib/seasons.js` (new archive
+   entry for the season that just ended, and update `CURRENT_SEASON`'s
+   label to the new one - `tab: null` always stays on whichever entry is
+   first/current).
+3. **Update the roster**: edit `teams.json` to swap the 3 relegated slugs
+   for the 3 promoted ones (colours, short code - real crest art if you
+   have it, otherwise `scripts/generate-crests.mjs` can generate a
+   placeholder shield from a club's primary/secondary colours). This step
+   needs a code change/PR, same as any other edit to a bundled file.
+4. Promoted clubs' `sponsored`/`bigClub`/`derbyRival` Settings all default
+   to unset - revisit them in Settings once the roster's updated.
+
+Steps 3-4 are the only ones that need an actual code change; steps 1-2 are
+just sheet edits, same as any other season-to-season data entry. If this
+manual step becomes a real yearly pain point, the roster itself could be
+made sheet-editable (drop the static `teams.json` base list entirely, let
+`teams` be the sole source of truth) - a bigger change than anything above,
+worth doing only if the once-a-year code change actually turns out to be
+a recurring annoyance rather than a five-minute task.
 
 ## Cup competitions (Coppa Italia / Champions League / Europa League / Conference League)
 

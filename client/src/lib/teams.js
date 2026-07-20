@@ -13,18 +13,34 @@ function slugify(name) {
     .replace(/(^-|-$)/g, '');
 }
 
+// A club not in the current roster still gets its real crest/colours if
+// it's been added to the "pastTeams" Settings tab (see usePastTeams.jsx) -
+// otherwise it falls back to a plain short-code/grey placeholder, same as
+// before that tab existed.
+function fallbackTeam(name, pastTeamsByName) {
+  const past = pastTeamsByName.get(name);
+  return {
+    name,
+    slug: slugify(name),
+    short: past?.short || String(name).slice(0, 3).toUpperCase(),
+    crestUrl: past?.crestUrl || null,
+    primary: past?.primary || null,
+    secondary: past?.secondary || null,
+  };
+}
+
 // Fixtures store home/away as the club's bundled (immutable) name text, so
 // matching must stay keyed by that even if a live Settings edit renames the
 // club for display - see useTeams.js's `staticName`.
-export function enrichFixture(raw, teamByName) {
+export function enrichFixture(raw, teamByName, pastTeamsByName = new Map()) {
   return {
     id: raw.id,
     matchday: raw.matchday,
     day: raw.day,
     date: raw.date,
     kickoffTime: raw.kickoffTime,
-    home: teamByName.get(raw.home) ?? { name: raw.home, slug: slugify(raw.home), short: String(raw.home).slice(0, 3).toUpperCase() },
-    away: teamByName.get(raw.away) ?? { name: raw.away, slug: slugify(raw.away), short: String(raw.away).slice(0, 3).toUpperCase() },
+    home: teamByName.get(raw.home) ?? fallbackTeam(raw.home, pastTeamsByName),
+    away: teamByName.get(raw.away) ?? fallbackTeam(raw.away, pastTeamsByName),
     homeScore: raw.homeScore,
     awayScore: raw.awayScore,
     daznAudience: raw.daznAudience,
