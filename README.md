@@ -272,6 +272,39 @@ haven't updated `teams.json` yet (see below) - it's consulted as a fallback
 for any club not found in the current roster, regardless of whether that's
 because it's no longer current or not yet current.
 
+### Sponsored / big-match / derby designations per past season (`seasonTeamAttributes` tab)
+
+**Sponsored**, **big club**, and **derby rival** in the main **Team
+settings** panel are global, current-season-only flags - whatever they say
+today is what they say, full stop. That's wrong for a past season: a club
+sponsored in 24/25 isn't necessarily sponsored now, or vice versa, and that
+must not silently flip to "sponsored in every season" or "never sponsored in
+the past" just because today's Settings say so.
+
+Add a `seasonTeamAttributes` tab (doesn't exist in the seeded sheet - add it
+yourself) with header row: `id`, `season`, `name`, `sponsored`, `bigClub`,
+`derbyRival`.
+
+- `id` - always `season::name` (e.g. `24/25::AS Roma`) - the app fills this
+  in for you when you save from Settings; only worth knowing if you're
+  pasting rows directly.
+- `season` - must match a label in `SEASONS` (`client/src/lib/seasons.js`),
+  e.g. `24/25`.
+- `name` - the club's fixture-matching text, same convention as `pastTeams`.
+- `sponsored`, `bigClub` - TRUE/FALSE (same tolerant parsing as `onSky` -
+  a real checkbox or plain "TRUE"/"true" text both work).
+- `derbyRival` - another club's `name` (not a slug) - whichever club counts
+  as this one's derby rival *for that season*.
+
+A club with **no row** for a given season shows as not sponsored, not a big
+club, with no derby rival for that season - there's no fallback to the live
+`teams` tab, by design. Managed from the hamburger menu's **Settings** panel
+(a new **Past-season sponsorship / big match / derby** section, below **Past-
+season clubs**): pick an archive season, and every club that actually played
+it gets an expandable row with the same three fields as the main Team
+settings panel, except scoped to that season only. The live season is never
+shown here - keep using **Team settings** for that, exactly as before.
+
 The Dashboard also has a season dropdown, same as Standings/Fixtures -
 switching it changes every section on the page (stat tiles, ranked bar
 chart, sortable table, season trend, scheduling patterns, top games, and
@@ -372,24 +405,37 @@ broadcaster shows a logo badge instead of a retyped name. Header row:
 **4. `cupFixtures` tab** - the fixtures themselves. Header row: `id`,
 `competition`, `round`, `ourClub`, `opponent`, `homeAway`, `date`,
 `kickoffTime`, `ourScore`, `theirScore`, `audience`, `broadcaster`,
-`addedTime1H`, `addedTime2H`. `ourClub` is a slug from the main `teams` tab;
-`opponent` is a slug from `cupTeams`; `round` is free text (`Round of 16`,
-`Group A`, whatever your competition calls it - there's no fixed round list,
-a group stage and a knockout draw both just work); `homeAway` is `home`,
-`away`, or `neutral`. There's no sponsor/mascot/walkabout tracking here (that
-was a deliberate call - those activations are tracked per Serie A home game
-only), just audience and added time.
+`addedTime1H`, `addedTime2H`, `season`. `ourClub` is a slug from the main
+`teams` tab; `opponent` is a slug from `cupTeams`; `round` is free text
+(`Round of 16`, `Group A`, whatever your competition calls it - there's no
+fixed round list, a group stage and a knockout draw both just work);
+`homeAway` is `home`, `away`, or `neutral`. There's no sponsor/mascot/
+walkabout tracking here (that was a deliberate call - those activations are
+tracked per Serie A home game only), just audience and added time.
 
-The hamburger menu's **Cup competitions** page lists whatever's in
-`cupFixtures`, grouped by competition and round, with the same kind of
-expandable edit tabs as the main calendar (kickoff details; result, added
-time, audience and broadcaster). Signed in, **Add fixture** there opens a
-form to create a new cup fixture without touching the sheet directly - pick
-the competition, round, your club, and an opponent (or add a brand new one
-inline, right there in the form, if this is the first time you're facing
-them). Like the main fixtures tab, this only ever appends new rows - it's
-still fine to add a cup fixture by pasting a row into the sheet directly
-instead, whichever's quicker for what you're doing.
+`season` matches a label in `SEASONS` (`client/src/lib/seasons.js`), e.g.
+`26/27` - a blank cell reads as the current season (a one-time fallback for
+rows added before this column existed; the app always writes a real label
+from now on). Unlike Serie A, cup fixtures for every season live in this one
+tab rather than one tab per season - cup volume is small enough that a
+separate archive tab per season would just be overhead.
+
+The hamburger menu's **Cup competitions** page has a season dropdown, same
+as Standings/Fixtures/Dashboard, filtering to whichever season's cup
+fixtures you're looking at, grouped by competition and round, with the same
+kind of expandable edit tabs as the main calendar (kickoff details; result,
+added time, audience and broadcaster). **Signed in, on the current season**,
+**Add fixture** opens a form to create a new cup fixture without touching
+the sheet directly - pick the competition, round, your club, and an opponent
+(or add a brand new one inline, right there in the form, if this is the
+first time you're facing them); it's still fine to add a cup fixture by
+pasting a row into the sheet directly instead, whichever's quicker for what
+you're doing. **Past cup seasons are frozen** - no Add fixture, no editing
+an existing row - same precedent as Serie A's archive tabs. Backfilling an
+already-completed cup season (a past Coppa Italia bracket, say) is a direct
+sheet paste: add rows to `cupFixtures` with that season's label filled in by
+hand, the same way Serie A archive tabs, `pastTeams`, and
+`seasonTeamAttributes` are all populated for history.
 
 ## Standing Tiebreakers
 If after all 38 games, two teams are tied on points for either first place or for 17th (the last safety spot), the outcome is decided by a single-legged play-off match. This match consists of 90 minutes of regulation time followed by penalties if necessary (no extra time). The game is to be held at a neutral venue, with the designated "home" team determined by the performance-based criteria listed below. In cases where there are at least three teams tied for one of these positions, a mini table is created using the same tiebreakers to determine which two teams will play in the decider. For ties concerning all other league positions, the following tiebreakers are applied:

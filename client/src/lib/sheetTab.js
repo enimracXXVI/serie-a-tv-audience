@@ -11,18 +11,34 @@ import { columnIndexToLetter, buildHeaderIndex, cell } from './sheetsCommon.js';
 // (like the fixtures tab's numeric id); set it false for a tab where the
 // user supplies their own key (cupTeams' slug, broadcasters' name) - appendRow
 // then requires that field and rejects a duplicate.
-export function createSheetTabClient({ sheetName, idField = 'id', autoIncrementId = true, numericFields = [] }) {
+export function createSheetTabClient({
+  sheetName,
+  idField = 'id',
+  autoIncrementId = true,
+  numericFields = [],
+  booleanFields = [],
+}) {
   const NUMERIC_FIELDS = new Set(numericFields);
+  const BOOLEAN_FIELDS = new Set(booleanFields);
   const FULL_RANGE = `${sheetName}!A1:Z500`;
 
   let headerIndexCache = null;
   let rowIndexCache = null; // id -> row number (row N+1 holds the (N)th data row, exactly like fixtures/teams)
 
+  // Manually-typed data can hold "true"/"True"/" TRUE " instead of a real
+  // checkbox or an exact-cased "TRUE" string - match leniently rather than
+  // silently treating anything but an exact match as false (same tolerance
+  // sheets.js/seasonFixtures.js already apply to onSky and friends).
+  function isTruthyCell(value) {
+    return value === true || (typeof value === 'string' && value.trim().toUpperCase() === 'TRUE');
+  }
+
   function rowToItem(row, headerIndex) {
     const obj = {};
     for (const [key, idx] of Object.entries(headerIndex)) {
       let value = cell(row, idx);
-      if (NUMERIC_FIELDS.has(key) && value !== null) value = Number(value);
+      if (BOOLEAN_FIELDS.has(key)) value = isTruthyCell(value);
+      else if (NUMERIC_FIELDS.has(key) && value !== null) value = Number(value);
       obj[key] = value;
     }
     return obj;

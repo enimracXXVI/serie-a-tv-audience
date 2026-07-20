@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useFixtures } from './useFixtures.js';
 import { fetchSeasonFixtures } from './seasonFixtures.js';
-import { enrichFixture } from './teams.js';
+import { enrichFixture, applySeasonTeamAttributes } from './teams.js';
 import { usePastTeams } from './usePastTeams.jsx';
+import { useSeasonTeamAttributes } from './useSeasonTeamAttributes.jsx';
 
 // Switches between the live, editable current season (the same data every
 // other page already reads via useFixtures) and a past season's read-only
@@ -45,10 +46,12 @@ export function useSeasonFixtures(season, teams) {
 
   const teamByName = useMemo(() => new Map(teams.map((t) => [t.staticName, t])), [teams]);
   const { byName: pastTeamsByName } = usePastTeams();
-  const enrichedArchive = useMemo(
-    () => archiveFixtures.map((r) => enrichFixture(r, teamByName, pastTeamsByName)),
-    [archiveFixtures, teamByName, pastTeamsByName]
-  );
+  const { rows: seasonAttributeRows } = useSeasonTeamAttributes();
+  const enrichedArchive = useMemo(() => {
+    const enriched = archiveFixtures.map((r) => enrichFixture(r, teamByName, pastTeamsByName));
+    if (isCurrent) return enriched;
+    return applySeasonTeamAttributes(enriched, season.label, seasonAttributeRows);
+  }, [archiveFixtures, teamByName, pastTeamsByName, isCurrent, season.label, seasonAttributeRows]);
 
   if (isCurrent) {
     return {

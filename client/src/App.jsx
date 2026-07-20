@@ -8,21 +8,24 @@ import HamburgerMenu from './components/HamburgerMenu.jsx';
 import { TeamsProvider } from './lib/useTeams.jsx';
 import { CupDataProvider } from './lib/useCupData.jsx';
 import { PastTeamsProvider } from './lib/usePastTeams.jsx';
+import { SeasonTeamAttributesProvider } from './lib/useSeasonTeamAttributes.jsx';
 
 export default function App() {
   return (
     <TeamsProvider>
       <PastTeamsProvider>
-        <CupDataProvider>
-          <HamburgerMenu />
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/calendar/:teams" element={<BrandedCalendarPage />} />
-            <Route path="/standings" element={<StandingsPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/cup" element={<CupCompetitionsPage />} />
-          </Routes>
-        </CupDataProvider>
+        <SeasonTeamAttributesProvider>
+          <CupDataProvider>
+            <HamburgerMenu />
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/calendar/:teams" element={<BrandedCalendarPage />} />
+              <Route path="/standings" element={<StandingsPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/cup" element={<CupCompetitionsPage />} />
+            </Routes>
+          </CupDataProvider>
+        </SeasonTeamAttributesProvider>
       </PastTeamsProvider>
     </TeamsProvider>
   );
