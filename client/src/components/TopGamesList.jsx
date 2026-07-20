@@ -11,7 +11,7 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
 }
 
-export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSimulcast, focusedSlug }) {
+export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSimulcast, includeSky, focusedSlug }) {
   const [limit, setLimit] = useState(10);
   const [teamFilter, setTeamFilter] = useState('');
   const [homeOnly, setHomeOnly] = useState(false);
@@ -20,12 +20,12 @@ export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSi
 
   const topGames = useMemo(
     () =>
-      computeTopGames(fixtures, simulcastInfo, includeSimulcast, {
+      computeTopGames(fixtures, simulcastInfo, includeSimulcast, includeSky, {
         teamSlug: effectiveTeamFilter || undefined,
         homeOnly,
         limit,
       }),
-    [fixtures, simulcastInfo, includeSimulcast, effectiveTeamFilter, homeOnly, limit]
+    [fixtures, simulcastInfo, includeSimulcast, includeSky, effectiveTeamFilter, homeOnly, limit]
   );
 
   return (

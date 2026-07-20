@@ -135,14 +135,15 @@ export default function DashboardPage() {
   const { teams, loading: teamsLoading } = useTeams();
   const { fixtures, loading: fixturesLoading, error: fixturesError } = useFixtures([], teams);
   const [includeSimulcast, setIncludeSimulcast] = useState(false);
+  const [includeSky, setIncludeSky] = useState(true);
   const [focusedSlug, setFocusedSlug] = useState(null);
 
   const loading = teamsLoading || fixturesLoading;
 
   const simulcastInfo = useMemo(() => computeSimulcastInfo(fixtures), [fixtures]);
   const metrics = useMemo(
-    () => (loading ? [] : computeAllTeamMetrics(teams, fixtures, includeSimulcast)),
-    [teams, fixtures, includeSimulcast, loading]
+    () => (loading ? [] : computeAllTeamMetrics(teams, fixtures, includeSimulcast, includeSky)),
+    [teams, fixtures, includeSimulcast, includeSky, loading]
   );
 
   const playedGames = useMemo(() => fixtures.filter(isPlayed), [fixtures]);
@@ -159,36 +160,36 @@ export default function DashboardPage() {
   const focusedTeam = focusedSlug ? teams.find((t) => t.slug === focusedSlug) : null;
 
   const audienceByDay = useMemo(
-    () => computeAudienceByDay(fixtures, simulcastInfo, includeSimulcast, focusedSlug),
-    [fixtures, simulcastInfo, includeSimulcast, focusedSlug]
+    () => computeAudienceByDay(fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug),
+    [fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug]
   );
   const audienceByKickoff = useMemo(
-    () => computeAudienceByKickoff(fixtures, simulcastInfo, includeSimulcast, focusedSlug),
-    [fixtures, simulcastInfo, includeSimulcast, focusedSlug]
+    () => computeAudienceByKickoff(fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug),
+    [fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug]
   );
   const audienceByDayAndTime = useMemo(
-    () => computeAudienceByDayAndTime(fixtures, simulcastInfo, includeSimulcast, focusedSlug),
-    [fixtures, simulcastInfo, includeSimulcast, focusedSlug]
+    () => computeAudienceByDayAndTime(fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug),
+    [fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug]
   );
   const tagPremium = useMemo(
-    () => computeTagPremium(fixtures, simulcastInfo, includeSimulcast, focusedSlug),
-    [fixtures, simulcastInfo, includeSimulcast, focusedSlug]
+    () => computeTagPremium(fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug),
+    [fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug]
   );
   const activationAudience = useMemo(
-    () => (focusedTeam ? computeActivationAudience(focusedTeam, fixtures, simulcastInfo, includeSimulcast) : []),
-    [focusedTeam, fixtures, simulcastInfo, includeSimulcast]
+    () => (focusedTeam ? computeActivationAudience(focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeSky) : []),
+    [focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeSky]
   );
   const seasonTrend = useMemo(
-    () => computeSeasonTrend(fixtures, simulcastInfo, includeSimulcast, focusedSlug),
-    [fixtures, simulcastInfo, includeSimulcast, focusedSlug]
+    () => computeSeasonTrend(fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug),
+    [fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug]
   );
   const remainingSchedule = useMemo(() => computeRemainingSchedule(fixtures, focusedSlug), [fixtures, focusedSlug]);
   const opponentAudience = useMemo(
-    () => (focusedTeam ? computeOpponentAudience(focusedTeam, fixtures, simulcastInfo, includeSimulcast) : null),
-    [focusedTeam, fixtures, simulcastInfo, includeSimulcast]
+    () => (focusedTeam ? computeOpponentAudience(focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeSky) : null),
+    [focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeSky]
   );
 
-  const { seasons: comparisonSeasons } = useSeasonComparison(teams, includeSimulcast, focusedSlug);
+  const { seasons: comparisonSeasons } = useSeasonComparison(teams, includeSimulcast, includeSky, focusedSlug);
 
   return (
     <div className="min-h-screen">
@@ -212,6 +213,15 @@ export default function DashboardPage() {
                   </option>
                 ))}
               </select>
+            </label>
+            <label className="flex items-center gap-2 text-xs font-semibold text-white/70">
+              <input
+                type="checkbox"
+                checked={includeSky}
+                onChange={(e) => setIncludeSky(e.target.checked)}
+                className="h-4 w-4 accent-[#1fd8c9]"
+              />
+              Include Sky audience (uncheck for DAZN only)
             </label>
             <label className="flex items-center gap-2 text-xs font-semibold text-white/70">
               <input
@@ -277,6 +287,7 @@ export default function DashboardPage() {
                 teams={teams}
                 simulcastInfo={simulcastInfo}
                 includeSimulcast={includeSimulcast}
+                includeSky={includeSky}
                 focusedSlug={focusedSlug}
               />
             </div>

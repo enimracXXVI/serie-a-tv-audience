@@ -34,9 +34,9 @@ export function computeSimulcastInfo(fixtures) {
 // With includeSimulcast on, each game in a shared slot additionally gets an
 // even share of that slot's daznSimulcastAudience (divided by block size) -
 // the "smart" adjusted view, off by default.
-export function effectiveAudience(fixture, simulcastInfo, includeSimulcast) {
+export function effectiveAudience(fixture, simulcastInfo, includeSimulcast, includeSky = true) {
   let total = Number(fixture.daznAudience) || 0;
-  if (fixture.onSky) total += Number(fixture.skyAudience) || 0;
+  if (includeSky && fixture.onSky) total += Number(fixture.skyAudience) || 0;
   if (includeSimulcast) {
     const info = simulcastInfo.get(fixture.id);
     if (info && info.simulcastAudience !== null && info.blockSize > 0) {
@@ -61,19 +61,19 @@ function avg(arr) {
 // so their evaluation metric is home games alone. Jersey/kit partnerships
 // are visible in every game the club plays, home or away, so that metric
 // uses the full fixture list.
-export function computeTeamMetrics(team, fixtures, simulcastInfo, includeSimulcast) {
+export function computeTeamMetrics(team, fixtures, simulcastInfo, includeSimulcast, includeSky = true) {
   const homePlayed = fixtures.filter((f) => f.home.slug === team.slug && isPlayed(f));
   const awayPlayed = fixtures.filter((f) => f.away.slug === team.slug && isPlayed(f));
   const allPlayed = fixtures.filter((f) => (f.home.slug === team.slug || f.away.slug === team.slug) && isPlayed(f));
   const allForTeam = fixtures.filter((f) => f.home.slug === team.slug || f.away.slug === team.slug);
 
-  const homeAudiences = homePlayed.map((f) => effectiveAudience(f, simulcastInfo, includeSimulcast));
+  const homeAudiences = homePlayed.map((f) => effectiveAudience(f, simulcastInfo, includeSimulcast, includeSky));
   // Not "how big an audience this club draws at home" (that's homeAudienceAvg) -
   // this is the reverse: how big an audience shows up FOR THE HOME SIDE'S
   // broadcast simply because this club is the visitor, averaged across every
   // away ground they've played at. A proxy for a club's draw power as a guest.
-  const awayAudiences = awayPlayed.map((f) => effectiveAudience(f, simulcastInfo, includeSimulcast));
-  const totalAudiences = allPlayed.map((f) => effectiveAudience(f, simulcastInfo, includeSimulcast));
+  const awayAudiences = awayPlayed.map((f) => effectiveAudience(f, simulcastInfo, includeSimulcast, includeSky));
+  const totalAudiences = allPlayed.map((f) => effectiveAudience(f, simulcastInfo, includeSimulcast, includeSky));
   const homeAddedTime = homePlayed.map(addedTimeMinutes);
 
   return {
@@ -94,12 +94,18 @@ export function computeTeamMetrics(team, fixtures, simulcastInfo, includeSimulca
   };
 }
 
-export function computeAllTeamMetrics(teams, fixtures, includeSimulcast) {
+export function computeAllTeamMetrics(teams, fixtures, includeSimulcast, includeSky = true) {
   const simulcastInfo = computeSimulcastInfo(fixtures);
-  return teams.map((team) => computeTeamMetrics(team, fixtures, simulcastInfo, includeSimulcast));
+  return teams.map((team) => computeTeamMetrics(team, fixtures, simulcastInfo, includeSimulcast, includeSky));
 }
 
-export function computeTopGames(fixtures, simulcastInfo, includeSimulcast, { teamSlug, homeOnly, limit = 10 } = {}) {
+export function computeTopGames(
+  fixtures,
+  simulcastInfo,
+  includeSimulcast,
+  includeSky = true,
+  { teamSlug, homeOnly, limit = 10 } = {}
+) {
   let list = fixtures.filter(isPlayed);
   if (teamSlug) {
     list = homeOnly
@@ -107,7 +113,7 @@ export function computeTopGames(fixtures, simulcastInfo, includeSimulcast, { tea
       : list.filter((f) => f.home.slug === teamSlug || f.away.slug === teamSlug);
   }
   return list
-    .map((f) => ({ fixture: f, audience: effectiveAudience(f, simulcastInfo, includeSimulcast) }))
+    .map((f) => ({ fixture: f, audience: effectiveAudience(f, simulcastInfo, includeSimulcast, includeSky) }))
     .sort((a, b) => b.audience - a.audience)
     .slice(0, limit);
 }
@@ -130,11 +136,11 @@ function normalizeKickoff(time) {
 // Kickoff scheduling (day of week, kickoff time) is a broadcaster decision,
 // not a club one, so these are league-wide (optionally narrowed to one
 // club's own games) rather than per-team like the home/total split above.
-export function computeAudienceByDay(fixtures, simulcastInfo, includeSimulcast, teamSlug) {
+export function computeAudienceByDay(fixtures, simulcastInfo, includeSimulcast, includeSky, teamSlug) {
   const played = filterForTeam(fixtures, teamSlug).filter((f) => isPlayed(f) && f.day);
   const byDay = new Map();
   for (const f of played) {
-    const aud = effectiveAudience(f, simulcastInfo, includeSimulcast);
+    const aud = effectiveAudience(f, simulcastInfo, includeSimulcast, includeSky);
     if (!byDay.has(f.day)) byDay.set(f.day, []);
     byDay.get(f.day).push(aud);
   }
@@ -144,11 +150,11 @@ export function computeAudienceByDay(fixtures, simulcastInfo, includeSimulcast, 
   });
 }
 
-export function computeAudienceByKickoff(fixtures, simulcastInfo, includeSimulcast, teamSlug) {
+export function computeAudienceByKickoff(fixtures, simulcastInfo, includeSimulcast, includeSky, teamSlug) {
   const played = filterForTeam(fixtures, teamSlug).filter((f) => isPlayed(f) && f.kickoffTime);
   const byTime = new Map();
   for (const f of played) {
-    const aud = effectiveAudience(f, simulcastInfo, includeSimulcast);
+    const aud = effectiveAudience(f, simulcastInfo, includeSimulcast, includeSky);
     const time = normalizeKickoff(f.kickoffTime);
     if (!byTime.has(time)) byTime.set(time, []);
     byTime.get(time).push(aud);
@@ -158,11 +164,11 @@ export function computeAudienceByKickoff(fixtures, simulcastInfo, includeSimulca
     .sort((a, b) => a.key.localeCompare(b.key));
 }
 
-export function computeAudienceByDayAndTime(fixtures, simulcastInfo, includeSimulcast, teamSlug) {
+export function computeAudienceByDayAndTime(fixtures, simulcastInfo, includeSimulcast, includeSky, teamSlug) {
   const played = filterForTeam(fixtures, teamSlug).filter((f) => isPlayed(f) && f.day && f.kickoffTime);
   const byKey = new Map();
   for (const f of played) {
-    const aud = effectiveAudience(f, simulcastInfo, includeSimulcast);
+    const aud = effectiveAudience(f, simulcastInfo, includeSimulcast, includeSky);
     const time = normalizeKickoff(f.kickoffTime);
     const key = `${f.day}|${time}`;
     if (!byKey.has(key)) byKey.set(key, { day: f.day, time, list: [] });
@@ -180,11 +186,11 @@ export function computeAudienceByDayAndTime(fixtures, simulcastInfo, includeSimu
 // How much of a visibility premium big matches and derbies carry over an
 // ordinary game - useful context when a package's value depends on which
 // fixtures it happens to cover.
-export function computeTagPremium(fixtures, simulcastInfo, includeSimulcast, teamSlug) {
+export function computeTagPremium(fixtures, simulcastInfo, includeSimulcast, includeSky, teamSlug) {
   const played = filterForTeam(fixtures, teamSlug).filter(isPlayed);
   const buckets = { regular: [], bigMatch: [], derby: [] };
   for (const f of played) {
-    const aud = effectiveAudience(f, simulcastInfo, includeSimulcast);
+    const aud = effectiveAudience(f, simulcastInfo, includeSimulcast, includeSky);
     const { isBigMatch, isDerby } = computeMatchTags(f);
     if (isBigMatch) buckets.bigMatch.push(aud);
     if (isDerby) buckets.derby.push(aud);
@@ -201,17 +207,17 @@ export function computeTagPremium(fixtures, simulcastInfo, includeSimulcast, tea
 // club's own game each matchday if focused - shows whether audience is
 // rising or falling as the season progresses, and how a club's own games
 // track against the league baseline.
-export function computeSeasonTrend(fixtures, simulcastInfo, includeSimulcast, teamSlug) {
+export function computeSeasonTrend(fixtures, simulcastInfo, includeSimulcast, includeSky, teamSlug) {
   const matchdays = [...new Set(fixtures.map((f) => f.matchday))].sort((a, b) => a - b);
   return matchdays
     .map((matchday) => {
       const played = fixtures.filter((f) => f.matchday === matchday && isPlayed(f));
       if (played.length === 0) return null; // nothing played yet this matchday - not a real zero
-      const leagueAvg = avg(played.map((f) => effectiveAudience(f, simulcastInfo, includeSimulcast)));
+      const leagueAvg = avg(played.map((f) => effectiveAudience(f, simulcastInfo, includeSimulcast, includeSky)));
       let teamValue = null;
       if (teamSlug) {
         const game = played.find((f) => f.home.slug === teamSlug || f.away.slug === teamSlug);
-        teamValue = game ? effectiveAudience(game, simulcastInfo, includeSimulcast) : null;
+        teamValue = game ? effectiveAudience(game, simulcastInfo, includeSimulcast, includeSky) : null;
       }
       return { matchday, leagueAvg, teamValue };
     })
@@ -243,12 +249,12 @@ export function computeRemainingSchedule(fixtures, teamSlug) {
 // package buyer cares about (a Torino-Juventus crowd is not a Torino-Lecce
 // crowd), plus the min-max range across all of that club's home games as a
 // sense of how much game-to-game variance sits behind the average.
-export function computeOpponentAudience(team, fixtures, simulcastInfo, includeSimulcast) {
+export function computeOpponentAudience(team, fixtures, simulcastInfo, includeSimulcast, includeSky = true) {
   const homePlayed = fixtures.filter((f) => f.home.slug === team.slug && isPlayed(f));
   const byOpponent = new Map();
   const all = [];
   for (const f of homePlayed) {
-    const aud = effectiveAudience(f, simulcastInfo, includeSimulcast);
+    const aud = effectiveAudience(f, simulcastInfo, includeSimulcast, includeSky);
     all.push(aud);
     if (!byOpponent.has(f.away.slug)) byOpponent.set(f.away.slug, { opponent: f.away, list: [] });
     byOpponent.get(f.away.slug).list.push(aud);
@@ -265,14 +271,14 @@ export function computeOpponentAudience(team, fixtures, simulcastInfo, includeSi
 // Ties the Sponsors tab's per-fixture activation checkboxes directly to the
 // audience they actually reached - "what did checking that box deliver?"
 // rather than just how many times it was checked.
-export function computeActivationAudience(team, fixtures, simulcastInfo, includeSimulcast) {
+export function computeActivationAudience(team, fixtures, simulcastInfo, includeSimulcast, includeSky = true) {
   const forTeam = fixtures.filter((f) => f.home.slug === team.slug || f.away.slug === team.slug);
   return SPONSOR_TYPES.map(({ fixtureKey, label }) => {
     const audiences = [];
     for (const f of forTeam) {
       if (!isPlayed(f)) continue;
       const side = f.home.slug === team.slug ? 'home' : 'away';
-      if (f[`${side}${fixtureKey}`]) audiences.push(effectiveAudience(f, simulcastInfo, includeSimulcast));
+      if (f[`${side}${fixtureKey}`]) audiences.push(effectiveAudience(f, simulcastInfo, includeSimulcast, includeSky));
     }
     return { key: fixtureKey, label, count: audiences.length, total: sum(audiences), avg: avg(audiences) };
   });
