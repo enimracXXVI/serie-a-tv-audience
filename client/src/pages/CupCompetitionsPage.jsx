@@ -4,19 +4,28 @@ import { useCupData } from '../lib/useCupData.jsx';
 import { useCupFixtures } from '../lib/useCupFixtures.js';
 import { useSession } from '../lib/useSession.js';
 import { callWithReauth } from '../lib/reauth.js';
+import { CURRENT_SEASON } from '../lib/seasons.js';
+import SeasonSelector from '../components/SeasonSelector.jsx';
 import CupFixtureRow from '../components/CupFixtureRow.jsx';
 import AddCupFixtureForm from '../components/AddCupFixtureForm.jsx';
 
 export default function CupCompetitionsPage() {
   const { teams } = useTeams();
   const { cupTeams, broadcasters, competitions, loading: cupDataLoading, createCupTeam } = useCupData();
+  const [season, setSeason] = useState(CURRENT_SEASON);
   const { fixtures, loading: fixturesLoading, error: fixturesError, updateFixture, createFixture } = useCupFixtures(
     teams,
-    cupTeams
+    cupTeams,
+    season
   );
   const session = useSession();
   const [showAddForm, setShowAddForm] = useState(false);
   const [updateError, setUpdateError] = useState(null);
+
+  // Past cup seasons are frozen once they're no longer current - same
+  // precedent as Serie A's archive tabs - backfilling an already-completed
+  // season is a direct sheet paste (see README) instead.
+  const canEdit = session.signedIn && season.label === CURRENT_SEASON.label;
 
   const loading = cupDataLoading || fixturesLoading;
 
@@ -52,25 +61,34 @@ export default function CupCompetitionsPage() {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-3">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 pr-36">
           <h1 className="text-lg font-black text-white sm:text-xl">
-            Cup competitions <span className="ml-1.5 text-xs font-semibold opacity-60">26/27</span>
+            Cup competitions <span className="ml-1.5 text-xs font-semibold opacity-60">{season.label}</span>
           </h1>
-          {session.signedIn && (
-            <button
-              onClick={() => setShowAddForm((v) => !v)}
-              className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
-                showAddForm ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
-            >
-              Add fixture {showAddForm ? '▴' : '▾'}
-            </button>
-          )}
+          <div className="flex flex-wrap items-center gap-3">
+            <SeasonSelector season={season} onChange={setSeason} />
+            {canEdit && (
+              <button
+                onClick={() => setShowAddForm((v) => !v)}
+                className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                  showAddForm ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+              >
+                Add fixture {showAddForm ? '▴' : '▾'}
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
       <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-6">
-        {showAddForm && (
+        {season.label !== CURRENT_SEASON.label && (
+          <p className="rounded-lg bg-white/5 px-4 py-2.5 text-xs text-white/50">
+            {season.label} is a past season - view only, nothing here can be edited.
+          </p>
+        )}
+
+        {canEdit && showAddForm && (
           <AddCupFixtureForm
             teams={teams}
             cupTeams={cupTeams}
@@ -110,7 +128,7 @@ export default function CupCompetitionsPage() {
                         key={f.id}
                         fixture={f}
                         onUpdate={handleUpdate}
-                        canEdit={session.signedIn}
+                        canEdit={canEdit}
                         broadcasters={broadcasters}
                       />
                     ))}

@@ -1,7 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchCupFixturesRaw, updateCupFixture, addCupFixture, enrichCupFixture } from './cupFixtures.js';
+import { CURRENT_SEASON } from './seasons.js';
 
-export function useCupFixtures(teams, cupTeams) {
+// A cup fixture predating this column reads back with a blank `season` cell
+// - treated as the current season at read time only, so an old row isn't
+// orphaned on first load. Every row the app writes from now on always gets
+// a real label (see createFixture below), so this fallback only matters once.
+function seasonLabelOf(raw) {
+  return raw.season || CURRENT_SEASON.label;
+}
+
+export function useCupFixtures(teams, cupTeams, season) {
   const [rawFixtures, setRawFixtures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,8 +36,11 @@ export function useCupFixtures(teams, cupTeams) {
   const cupTeamsBySlug = useMemo(() => new Map(cupTeams.map((t) => [t.slug, t])), [cupTeams]);
 
   const fixtures = useMemo(
-    () => rawFixtures.map((r) => enrichCupFixture(r, teamsBySlug, cupTeamsBySlug)),
-    [rawFixtures, teamsBySlug, cupTeamsBySlug]
+    () =>
+      rawFixtures
+        .filter((r) => seasonLabelOf(r) === season.label)
+        .map((r) => enrichCupFixture(r, teamsBySlug, cupTeamsBySlug)),
+    [rawFixtures, teamsBySlug, cupTeamsBySlug, season.label]
   );
 
   const updateFixture = useCallback(async (id, fields, accessToken) => {
@@ -49,10 +61,15 @@ export function useCupFixtures(teams, cupTeams) {
     }
   }, []);
 
+  // Always the live season regardless of which one is currently being
+  // viewed - past cup seasons are frozen (no create, no edit) once they're
+  // no longer current, same as Serie A's archive tabs; backfilling an
+  // already-completed cup season is a direct sheet paste (see README).
   const createFixture = useCallback(async (fields, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
-    const { id } = await addCupFixture(fields, accessToken);
-    setRawFixtures((prev) => [...prev, { ...fields, id }]);
+    const withSeason = { ...fields, season: CURRENT_SEASON.label };
+    const { id } = await addCupFixture(withSeason, accessToken);
+    setRawFixtures((prev) => [...prev, { ...withSeason, id }]);
     return id;
   }, []);
 
