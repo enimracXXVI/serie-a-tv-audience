@@ -159,7 +159,6 @@ export default function PastTeamsPanel({ session }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-white/70">Past-season clubs</h2>
       <p className="text-xs text-white/40">
         Branding for clubs not in the current 20-club roster (promoted/relegated), so their crest and colours show up
         correctly on Standings/Dashboard for a past season instead of a plain placeholder. The name must match exactly

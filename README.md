@@ -73,7 +73,7 @@ open the sheet directly, add these labels to row 1 if you want them:
 
 | Column | Label | Meaning |
 |---|---|---|
-| M | onSky | TRUE/FALSE — also broadcast on Sky (default off, DAZN-only) |
+| M | otherBroadcaster | Blank, or another broadcaster's `name` from the `broadcasters` tab (see below) — this game is also shown there, alongside the main broadcaster |
 | N | addedTime1H | Added/injury time, first half (minutes) |
 | O | addedTime2H | Added/injury time, second half (minutes) |
 | P | daznSimulcastAudience | Audience for DAZN's multi-game simulcast slot, when applicable |
@@ -92,6 +92,36 @@ anything else (including a blank cell) counts as unchecked. Handy to know
 when pasting historical data by hand rather than using the app's own
 checkboxes, e.g. into a past-season archive tab (see below).
 
+### Broadcaster naming (`broadcasters` tab, shared with cup fixtures)
+
+DAZN/Sky Sport being the official Serie A broadcasters is a fact about
+*today*, not something to hardcode - this could change in a future season.
+The `broadcasters` tab (already used for cup fixtures - see below) is now
+also the source of truth for the main Serie A calendar: header row `name`,
+`logoUrl`, `isMain`. Exactly one row should have `isMain` set to TRUE - that's
+the **main broadcaster** (e.g. DAZN today), configured from the hamburger
+menu's **Settings → Broadcasters** panel by clicking **Set as main
+broadcaster** on the row you want. Its name/logo replaces every hardcoded
+"DAZN" label across the Serie A calendar and Dashboard. Every *other* row in
+this tab becomes a per-fixture choice: column M (`otherBroadcaster`, above)
+is either blank or one of these broadcasters' `name` - picked from a dropdown
+on a fixture's **Kickoff** edit tab, exactly like a cup fixture's broadcaster
+picker. There's no fixed "second broadcaster" anymore - one game might also
+be shown on Sky, another on a different channel entirely, and a third
+nowhere else at all.
+
+**Column M was previously `onSky` (TRUE/FALSE)** - if you're updating from an
+earlier version of this app, rename that header cell to `otherBroadcaster`
+and change any existing `TRUE` cells to the specific broadcaster's `name`
+(e.g. `Sky Sport`) instead; leave `FALSE`/blank cells blank. Do this in the
+live `fixtures` tab and any archive tabs you've created. Columns I/J/P
+(`daznAudience`/`skyAudience`/`daznSimulcastAudience`) keep their internal
+names unchanged - no sheet edit needed for those - but their on-screen labels
+are now dynamic: `daznAudience` shows as "*(main broadcaster's name)* audience",
+`skyAudience` as the generic "Other broadcaster audience" (since which
+broadcaster that is can now vary fixture to fixture), and
+`daznSimulcastAudience` as "*(main broadcaster's name)* simulcast audience".
+
 The Q-V columns are only editable from the home page's **Sponsors** tab (per
 matchday card), and only show checkboxes for whichever side of a fixture is a
 club marked `sponsored` in the `teams` tab (see below). Whatever's checked
@@ -99,14 +129,27 @@ shows up as a small badge on that fixture everywhere it's displayed — home
 page, combined calendars, single-team calendars — regardless of sign-in.
 
 W-X aren't editable anywhere in the app - they're a read-only mirror of what
-the `teams` tab's `bigClub`/`derbyRival` settings compute for that fixture,
-written there so you can see/filter/reference it directly in the sheet
-instead of only inside the app. They get refreshed automatically whenever
-that fixture is edited from any of the home page's tabs, and you can also
-click **Sync big match / derby tags to sheet** (top of the home page, signed
-in) to write them for every currently-loaded fixture in one go - useful right
-after changing a club's `bigClub`/`derbyRival` in Settings, so historical
-rows update immediately instead of waiting for their next edit.
+the `teams` tab's `bigClub`/`derbyRival` settings (and, for a past season, the
+`seasonTeamAttributes` tab - see below) compute for that fixture, written
+there so you can see/filter/reference it directly in the sheet instead of
+only inside the app. They get refreshed automatically whenever that fixture
+is edited from any of the home page's tabs, and you can also click **Sync big
+match / derby tags - all seasons** in Settings' **Past-season sponsorship /
+big match / derby** panel (signed in) to write them for the live season and
+every configured archive season's own tab in one go - useful right after
+changing a club's `bigClub`/`derbyRival` (live or past-season), so historical
+rows update immediately instead of waiting for their next edit. An archive
+season whose tab doesn't exist yet is reported as failed rather than aborting
+the sync for every other season.
+
+### Settings panel layout
+
+The hamburger menu's **Settings** view has grown into several panels (team
+settings, past-season clubs, past-season sponsorship/big-match/derby, the
+Serie A logo, competitions, cup opponents, broadcasters) - each one is a
+collapsible section, collapsed by default, so opening Settings shows a short
+scannable list of section names rather than every panel's full contents at
+once. Click a section's title to expand it.
 
 ### Team settings tab (name/short/colours/sponsorship)
 
@@ -198,11 +241,11 @@ Serie A's 380 fixtures were pre-seeded into the sheet all at once at the
 start of the season - that's still the fastest way to bulk-load a whole
 schedule, and always available: paste more rows directly into the `fixtures`
 tab whenever you want. But you don't have to go to the sheet for a one-off:
-signed in on the home page, **Add fixture** (next to **Sync big match / derby
-tags**) opens a small form - matchday, home club, away club, date, kickoff
-time - that appends a single new row without leaving the app. The matchday
-number stays filled in after each add, so adding several fixtures for the
-same round is just: submit, pick the next two clubs, submit again.
+signed in on the home page, **Add fixture** opens a small form - matchday,
+home club, away club, date, kickoff time - that appends a single new row
+without leaving the app. The matchday number stays filled in after each add,
+so adding several fixtures for the same round is just: submit, pick the next
+two clubs, submit again.
 
 ## Past seasons
 
@@ -224,7 +267,7 @@ export const SEASONS = [
 `fixtures` tab exactly like every page already does. Any other entry points
 at a separate tab with **the exact same header row as `fixtures`** (columns
 A-X above: id, matchday, day, date, home, away, homeScore, awayScore,
-daznAudience, skyAudience, kickoffTime, updatedAt, onSky, addedTime1H,
+daznAudience, skyAudience, kickoffTime, updatedAt, otherBroadcaster, addedTime1H,
 addedTime2H, daznSimulcastAudience, homeMatchdaySponsor, homePlayerMascot,
 homeWalkabout, awayMatchdaySponsor, awayPlayerMascot, awayWalkabout,
 isBigMatch, isDerby). Neither archive tab exists yet in the seeded sheet -
@@ -291,7 +334,7 @@ yourself) with header row: `id`, `season`, `name`, `sponsored`, `bigClub`,
 - `season` - must match a label in `SEASONS` (`client/src/lib/seasons.js`),
   e.g. `24/25`.
 - `name` - the club's fixture-matching text, same convention as `pastTeams`.
-- `sponsored`, `bigClub` - TRUE/FALSE (same tolerant parsing as `onSky` -
+- `sponsored`, `bigClub` - TRUE/FALSE (same tolerant parsing as `isBigMatch` -
   a real checkbox or plain "TRUE"/"true" text both work).
 - `derbyRival` - another club's `name` (not a slug) - whichever club counts
   as this one's derby rival *for that season*.
@@ -363,13 +406,23 @@ made sheet-editable (drop the static `teams.json` base list entirely, let
 worth doing only if the once-a-year code change actually turns out to be
 a recurring annoyance rather than a five-minute task.
 
-## Cup competitions (Coppa Italia / Champions League / Europa League / Conference League)
+### Serie A logo (`appSettings` tab)
+
+Add an `appSettings` tab (doesn't exist in the seeded sheet - add it yourself)
+with header row: `id`, `serieALogoUrl`. There's only ever one row - the app
+manages its `id` (`global`) for you. Set the logo from Settings' **Serie A
+logo** panel; it shows up next to the page title on the Fixtures and
+Standings headers. Leave it unset to show just the plain text title, as
+before this feature.
+
+## Cups (Coppa Italia / Champions League / Europa League / Conference League)
 
 These don't fit the Serie A schema - no round-robin, no fixed 38-matchday
-table, opponents aren't limited to the 20-club roster, and the broadcaster
-isn't DAZN/Sky - so they live in four separate tabs instead of extending
-`fixtures`/`teams`. None of these exist in the seeded sheet - add them
-yourself if you want to track cup competitions:
+table, and opponents aren't limited to the 20-club roster - so they live in
+four separate tabs instead of extending `fixtures`/`teams` (the `broadcasters`
+tab is the one exception - it's shared with the main Serie A calendar, see
+above). None of these exist in the seeded sheet - add them yourself if you
+want to track cup competitions:
 
 **1. `competitions` tab** - which competitions exist and their logo, so a
 fixture list/form can show a badge instead of a plain text label. Header
@@ -400,7 +453,11 @@ the hamburger menu's **Settings** panel (grouped by competition), same
 
 **3. `broadcasters` tab** - a small reusable list so a cup fixture's
 broadcaster shows a logo badge instead of a retyped name. Header row:
-`name`, `logoUrl`. Also managed from Settings.
+`name`, `logoUrl`, `isMain`. Also managed from Settings. This tab is shared
+with the main Serie A calendar (see "Broadcaster naming" above) - `isMain`
+marks the one row that's the main/official broadcaster there; it has no
+effect on cup fixtures, where every broadcaster (including the main one) is
+just a plain dropdown choice.
 
 **4. `cupFixtures` tab** - the fixtures themselves. Header row: `id`,
 `competition`, `round`, `ourClub`, `opponent`, `homeAway`, `date`,
@@ -420,7 +477,7 @@ from now on). Unlike Serie A, cup fixtures for every season live in this one
 tab rather than one tab per season - cup volume is small enough that a
 separate archive tab per season would just be overhead.
 
-The hamburger menu's **Cup competitions** page has a season dropdown, same
+The hamburger menu's **Cups** page has a season dropdown, same
 as Standings/Fixtures/Dashboard, filtering to whichever season's cup
 fixtures you're looking at, grouped by competition and round, with the same
 kind of expandable edit tabs as the main calendar (kickoff details; result,
@@ -483,27 +540,28 @@ Three audience figures are tracked:
 - **Total audience** - home and away combined. This is what a jersey/kit
   partnership buys, since the badge is on screen wherever the club plays.
 
-Both are DAZN + Sky combined by default (Sky's figure only counts on games
-also marked `onSky`) - uncheck **Include Sky audience** (top right of the
-page) to see DAZN-only numbers instead, useful for a season where Sky
-audience wasn't tracked or is incomplete, since a partial Sky figure would
-otherwise understate some games relative to others rather than just leaving
-them out. This choice is saved in the URL (`?sky=0` when off, dropped
-entirely when on) so a reloaded or bookmarked/shared Dashboard link keeps
-showing the same numbers. **Added time** (average stoppage-time minutes per
-home game) is tracked separately, unweighted by audience, for evaluating the
-cheaper LED packages that only run during stoppage time.
+Both are main-broadcaster + other-broadcaster combined by default (the other
+broadcaster's figure only counts on games with an `otherBroadcaster` set) -
+toggle off **Include other-broadcaster audience** (top right of the page) to
+see main-broadcaster-only numbers instead, useful for a season where the
+other broadcaster's audience wasn't tracked or is incomplete, since a partial
+figure would otherwise understate some games relative to others rather than
+just leaving them out. This choice is saved in the URL (`?other=0` when off,
+dropped entirely when on) so a reloaded or bookmarked/shared Dashboard link
+keeps showing the same numbers. **Added time** (average stoppage-time minutes
+per home game) is tracked separately, unweighted by audience, for evaluating
+the cheaper LED packages that only run during stoppage time.
 
-**Simulcast handling**: when several games share an exact kickoff slot, DAZN
-airs them as one program with a single shared `daznSimulcastAudience` figure
-(see the fixtures sheet columns above) instead of - or alongside - each
-game's own `daznAudience`. Counting both as-is would double-count the same
-viewers across every game in the slot, so by default the dashboard ignores
-`daznSimulcastAudience` entirely and uses only each game's own `daznAudience`.
-Flipping on **Include simulcast audience** (top right of the page) instead
-gives each game in a shared slot an even split of that slot's shared figure
-(`daznSimulcastAudience ÷ number of games in the slot`), added on top - a
-smart-but-approximate adjustment, off by default.
+**Simulcast handling**: when several games share an exact kickoff slot, the
+main broadcaster airs them as one program with a single shared
+`daznSimulcastAudience` figure (see the fixtures sheet columns above) instead
+of - or alongside - each game's own `daznAudience`. Counting both as-is would
+double-count the same viewers across every game in the slot, so by default
+the dashboard ignores `daznSimulcastAudience` entirely and uses only each
+game's own `daznAudience`. Toggling on **Include simulcast** (top right of the
+page) instead gives each game in a shared slot an even split of that slot's
+shared figure (`daznSimulcastAudience ÷ number of games in the slot`), added
+on top - a smart-but-approximate adjustment, off by default.
 
 The page has a ranked bar chart (pick the metric from the dropdown) and a
 sortable full-club table, both club-level; click a club anywhere on the page

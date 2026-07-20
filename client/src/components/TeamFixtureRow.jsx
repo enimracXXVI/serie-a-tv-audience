@@ -1,7 +1,8 @@
 import Crest from './Crest.jsx';
-import { DaznLogo, SkyLogo } from './BroadcastBadges.jsx';
+import { BroadcasterBadge } from './BroadcastBadges.jsx';
 import SponsorBadges from './SponsorBadges.jsx';
 import { matchTagStyle } from '../lib/matchTags.js';
+import { useCupData } from '../lib/useCupData.jsx';
 
 function formatDateShort(dateStr) {
   if (!dateStr) return null;
@@ -52,6 +53,12 @@ export default function TeamFixtureRow({ fixture, team }) {
     : { matchdaySponsor: fixture.awayMatchdaySponsor, playerMascot: fixture.awayPlayerMascot, walkabout: fixture.awayWalkabout };
   const tagStyle = matchTagStyle(fixture);
 
+  const { broadcasters } = useCupData();
+  const mainBroadcaster = broadcasters.find((b) => b.isMain) ?? null;
+  const otherBroadcasterRow = fixture.otherBroadcaster
+    ? broadcasters.find((b) => b.name === fixture.otherBroadcaster)
+    : null;
+
   return (
     <div className="flex items-stretch" style={{ background: tagStyle.background }}>
       <div className="w-1.5 shrink-0" style={{ background: tagStyle.bar }} />
@@ -87,8 +94,10 @@ export default function TeamFixtureRow({ fixture, team }) {
         </div>
 
         <div className="flex w-10 shrink-0 items-center gap-1">
-          <DaznLogo height={13} />
-          {fixture.onSky && <SkyLogo height={13} compact />}
+          <BroadcasterBadge broadcaster={mainBroadcaster} fallbackName="Main broadcaster" className="h-3" />
+          {fixture.otherBroadcaster && (
+            <BroadcasterBadge broadcaster={otherBroadcasterRow} fallbackName={fixture.otherBroadcaster} className="h-3" />
+          )}
         </div>
       </div>
     </div>

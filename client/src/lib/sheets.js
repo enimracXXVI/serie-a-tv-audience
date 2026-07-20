@@ -15,7 +15,6 @@ const NUMERIC_FIELDS = new Set([
   'daznSimulcastAudience',
 ]);
 const BOOLEAN_FIELDS = new Set([
-  'onSky',
   'homeMatchdaySponsor',
   'homePlayerMascot',
   'homeWalkabout',
@@ -33,7 +32,7 @@ const EDITABLE_FIELDS = [
   'daznAudience',
   'skyAudience',
   'kickoffTime',
-  'onSky',
+  'otherBroadcaster',
   'addedTime1H',
   'addedTime2H',
   'daznSimulcastAudience',
@@ -120,14 +119,22 @@ export async function fetchFixtures() {
 
 async function ensureHeaderIndex() {
   if (headerIndexCache) return headerIndexCache;
+  headerIndexCache = await fetchHeaderIndexFor(SHEET_NAME);
+  return headerIndexCache;
+}
+
+// Sibling season archive tabs share the same header row as the live
+// `fixtures` tab, but aren't guaranteed to have columns in the exact same
+// order - a fresh lookup per tab (rather than reusing the live-only cache
+// above) keeps syncing tags to an archive tab safe even if that ever drifts.
+async function fetchHeaderIndexFor(tabName) {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(
-    `${SHEET_NAME}!1:1`
+    `${tabName}!1:1`
   )}?key=${GOOGLE_API_KEY}`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error('Failed to read sheet header row');
+  if (!res.ok) throw new Error(`Failed to read the "${tabName}" tab's header row`);
   const data = await res.json();
-  headerIndexCache = buildHeaderIndex((data.values && data.values[0]) || []);
-  return headerIndexCache;
+  return buildHeaderIndex((data.values && data.values[0]) || []);
 }
 
 export async function updateFixtureRow(fixture, accessToken) {
@@ -231,12 +238,12 @@ export async function appendFixtureRow({ matchday, home, away, date, kickoffTime
 // go, so the sheet is a complete, queryable mirror of what Settings computes
 // right after configuring bigClub/derbyRival, not just the rows someone
 // happened to edit.
-export async function syncMatchTags(fixtures, accessToken) {
-  const headerIndex = await ensureHeaderIndex();
+export async function syncMatchTags(fixtures, accessToken, sheetName = SHEET_NAME) {
+  const headerIndex = sheetName === SHEET_NAME ? await ensureHeaderIndex() : await fetchHeaderIndexFor(sheetName);
   const bigIdx = headerIndex.isBigMatch;
   const derbyIdx = headerIndex.isDerby;
   if (bigIdx === undefined && derbyIdx === undefined) {
-    throw new Error('Sheet is missing isBigMatch/isDerby column headers - see README.');
+    throw new Error(`The "${sheetName}" tab is missing isBigMatch/isDerby column headers - see README.`);
   }
 
   const data = [];
@@ -245,11 +252,11 @@ export async function syncMatchTags(fixtures, accessToken) {
     const { isBigMatch, isDerby } = computeMatchTags(fixture);
     if (bigIdx !== undefined) {
       const letter = columnIndexToLetter(bigIdx);
-      data.push({ range: `${SHEET_NAME}!${letter}${rowNumber}:${letter}${rowNumber}`, majorDimension: 'ROWS', values: [[isBigMatch]] });
+      data.push({ range: `${sheetName}!${letter}${rowNumber}:${letter}${rowNumber}`, majorDimension: 'ROWS', values: [[isBigMatch]] });
     }
     if (derbyIdx !== undefined) {
       const letter = columnIndexToLetter(derbyIdx);
-      data.push({ range: `${SHEET_NAME}!${letter}${rowNumber}:${letter}${rowNumber}`, majorDimension: 'ROWS', values: [[isDerby]] });
+      data.push({ range: `${sheetName}!${letter}${rowNumber}:${letter}${rowNumber}`, majorDimension: 'ROWS', values: [[isDerby]] });
     }
   }
 

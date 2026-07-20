@@ -4,12 +4,14 @@ import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
 import { teamsInFixtures } from '../lib/teams.js';
 import { computeStandings, maxPlayedMatchday } from '../lib/standings.js';
 import { CURRENT_SEASON } from '../lib/seasons.js';
+import { useAppSettings } from '../lib/useAppSettings.jsx';
 import SeasonSelector from '../components/SeasonSelector.jsx';
 import StandingsTable from '../components/StandingsTable.jsx';
 import StandingsChart from '../components/StandingsChart.jsx';
 
 export default function StandingsPage() {
   const { teams, loading: teamsLoading } = useTeams();
+  const { serieALogoUrl } = useAppSettings();
   const [season, setSeason] = useState(CURRENT_SEASON);
   const { fixtures, loading: fixturesLoading, error: fixturesError } = useSeasonFixtures(season, teams);
 
@@ -39,7 +41,10 @@ export default function StandingsPage() {
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-3">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 pr-36">
-          <h1 className="text-lg font-black text-white sm:text-xl">Standings</h1>
+          <h1 className="flex items-center gap-2 text-lg font-black text-white sm:text-xl">
+            {serieALogoUrl && <img src={serieALogoUrl} alt="" className="h-6 w-auto object-contain sm:h-7" />}
+            Standings
+          </h1>
           <SeasonSelector season={season} onChange={setSeason} />
         </div>
       </header>

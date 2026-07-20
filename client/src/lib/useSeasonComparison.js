@@ -13,7 +13,7 @@ import { SEASONS } from './seasons.js';
 // just these few headline numbers, computed by calling the exact same
 // computeAllTeamMetrics used for the current season's own cards, once per
 // season.
-export function useSeasonComparison(teams, includeSimulcast, includeSky, focusedSlug) {
+export function useSeasonComparison(teams, includeSimulcast, includeOther, focusedSlug) {
   const live = useFixtures([], teams);
   const archiveSeasons = useMemo(() => SEASONS.filter((s) => s.tab), []);
   const [archiveRows, setArchiveRows] = useState({});
@@ -82,7 +82,7 @@ export function useSeasonComparison(teams, includeSimulcast, includeSky, focused
       // synthetic fallback teams.js's enrichFixture gives them).
       const seasonTeams = isCurrent ? teams : teamsInFixtures(fixtures);
 
-      const metrics = computeAllTeamMetrics(seasonTeams, fixtures, includeSimulcast, includeSky);
+      const metrics = computeAllTeamMetrics(seasonTeams, fixtures, includeSimulcast, includeOther);
       const withHomeGames = metrics.filter((m) => m.homeGamesPlayed > 0);
       const totalAudience = metrics.reduce((a, m) => a + m.homeAudienceTotal, 0);
       const leagueAvg = withHomeGames.length
@@ -113,7 +113,7 @@ export function useSeasonComparison(teams, includeSimulcast, includeSky, focused
     seasonAttributeRows,
     teams,
     includeSimulcast,
-    includeSky,
+    includeOther,
     focusedSlug,
   ]);
 

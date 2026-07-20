@@ -29,7 +29,9 @@ import DayTimeHeatmap from '../components/DayTimeHeatmap.jsx';
 import ActivationDonut from '../components/ActivationDonut.jsx';
 import OpponentAudienceChart from '../components/OpponentAudienceChart.jsx';
 import SeasonComparisonCard from '../components/SeasonComparisonCard.jsx';
+import ToggleSwitch from '../components/ToggleSwitch.jsx';
 import { formatNumber } from '../lib/formatNumber.js';
+import { useCupData } from '../lib/useCupData.jsx';
 
 function StatTile({ label, value, sub }) {
   return (
@@ -137,6 +139,8 @@ function ActivationAudienceCard({ team, activations }) {
 
 export default function DashboardPage() {
   const { teams, loading: teamsLoading } = useTeams();
+  const { broadcasters } = useCupData();
+  const mainBroadcasterName = broadcasters.find((b) => b.isMain)?.name || 'main broadcaster';
   const [season, setSeason] = useState(CURRENT_SEASON);
   const { fixtures, loading: fixturesLoading, error: fixturesError } = useSeasonFixtures(season, teams);
   const [includeSimulcast, setIncludeSimulcast] = useState(false);
@@ -144,14 +148,14 @@ export default function DashboardPage() {
   // Defaults to on (matches prior behavior) whenever the URL doesn't say
   // otherwise - only written into the URL when turned off, so a plain
   // /dashboard link stays clean.
-  const [includeSky, setIncludeSkyState] = useState(() => searchParams.get('sky') !== '0');
-  const setIncludeSky = (value) => {
-    setIncludeSkyState(value);
+  const [includeOther, setIncludeOtherState] = useState(() => searchParams.get('other') !== '0');
+  const setIncludeOther = (value) => {
+    setIncludeOtherState(value);
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
-        if (value) next.delete('sky');
-        else next.set('sky', '0');
+        if (value) next.delete('other');
+        else next.set('other', '0');
         return next;
       },
       { replace: true }
@@ -177,8 +181,8 @@ export default function DashboardPage() {
 
   const simulcastInfo = useMemo(() => computeSimulcastInfo(fixtures), [fixtures]);
   const metrics = useMemo(
-    () => (loading ? [] : computeAllTeamMetrics(effectiveTeams, fixtures, includeSimulcast, includeSky)),
-    [effectiveTeams, fixtures, includeSimulcast, includeSky, loading]
+    () => (loading ? [] : computeAllTeamMetrics(effectiveTeams, fixtures, includeSimulcast, includeOther)),
+    [effectiveTeams, fixtures, includeSimulcast, includeOther, loading]
   );
 
   const playedGames = useMemo(() => fixtures.filter(isPlayed), [fixtures]);
@@ -195,36 +199,36 @@ export default function DashboardPage() {
   const focusedTeam = focusedSlug ? effectiveTeams.find((t) => t.slug === focusedSlug) : null;
 
   const audienceByDay = useMemo(
-    () => computeAudienceByDay(fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug),
-    [fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug]
+    () => computeAudienceByDay(fixtures, simulcastInfo, includeSimulcast, includeOther, focusedSlug),
+    [fixtures, simulcastInfo, includeSimulcast, includeOther, focusedSlug]
   );
   const audienceByKickoff = useMemo(
-    () => computeAudienceByKickoff(fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug),
-    [fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug]
+    () => computeAudienceByKickoff(fixtures, simulcastInfo, includeSimulcast, includeOther, focusedSlug),
+    [fixtures, simulcastInfo, includeSimulcast, includeOther, focusedSlug]
   );
   const audienceByDayAndTime = useMemo(
-    () => computeAudienceByDayAndTime(fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug),
-    [fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug]
+    () => computeAudienceByDayAndTime(fixtures, simulcastInfo, includeSimulcast, includeOther, focusedSlug),
+    [fixtures, simulcastInfo, includeSimulcast, includeOther, focusedSlug]
   );
   const tagPremium = useMemo(
-    () => computeTagPremium(fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug),
-    [fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug]
+    () => computeTagPremium(fixtures, simulcastInfo, includeSimulcast, includeOther, focusedSlug),
+    [fixtures, simulcastInfo, includeSimulcast, includeOther, focusedSlug]
   );
   const activationAudience = useMemo(
-    () => (focusedTeam ? computeActivationAudience(focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeSky) : []),
-    [focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeSky]
+    () => (focusedTeam ? computeActivationAudience(focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeOther) : []),
+    [focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeOther]
   );
   const seasonTrend = useMemo(
-    () => computeSeasonTrend(fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug),
-    [fixtures, simulcastInfo, includeSimulcast, includeSky, focusedSlug]
+    () => computeSeasonTrend(fixtures, simulcastInfo, includeSimulcast, includeOther, focusedSlug),
+    [fixtures, simulcastInfo, includeSimulcast, includeOther, focusedSlug]
   );
   const remainingSchedule = useMemo(() => computeRemainingSchedule(fixtures, focusedSlug), [fixtures, focusedSlug]);
   const opponentAudience = useMemo(
-    () => (focusedTeam ? computeOpponentAudience(focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeSky) : null),
-    [focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeSky]
+    () => (focusedTeam ? computeOpponentAudience(focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeOther) : null),
+    [focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeOther]
   );
 
-  const { seasons: comparisonSeasons } = useSeasonComparison(teams, includeSimulcast, includeSky, focusedSlug);
+  const { seasons: comparisonSeasons } = useSeasonComparison(teams, includeSimulcast, includeOther, focusedSlug);
 
   return (
     <div className="min-h-screen">
@@ -250,24 +254,18 @@ export default function DashboardPage() {
                 ))}
               </select>
             </label>
-            <label className="flex items-center gap-2 text-xs font-semibold text-white/70">
-              <input
-                type="checkbox"
-                checked={includeSky}
-                onChange={(e) => setIncludeSky(e.target.checked)}
-                className="h-4 w-4 accent-[#1fd8c9]"
-              />
-              Include Sky audience (uncheck for DAZN only)
-            </label>
-            <label className="flex items-center gap-2 text-xs font-semibold text-white/70">
-              <input
-                type="checkbox"
-                checked={includeSimulcast}
-                onChange={(e) => setIncludeSimulcast(e.target.checked)}
-                className="h-4 w-4 accent-[#1fd8c9]"
-              />
-              Include simulcast audience (split evenly across the block)
-            </label>
+            <ToggleSwitch
+              checked={includeOther}
+              onChange={setIncludeOther}
+              label="Include other-broadcaster audience"
+              title={`Uncheck for ${mainBroadcasterName}-only numbers`}
+            />
+            <ToggleSwitch
+              checked={includeSimulcast}
+              onChange={setIncludeSimulcast}
+              label="Include simulcast"
+              title="Split each shared simulcast slot's audience evenly across its games"
+            />
           </div>
         </div>
       </header>
@@ -323,7 +321,7 @@ export default function DashboardPage() {
                 teams={effectiveTeams}
                 simulcastInfo={simulcastInfo}
                 includeSimulcast={includeSimulcast}
-                includeSky={includeSky}
+                includeOther={includeOther}
                 focusedSlug={focusedSlug}
               />
             </div>

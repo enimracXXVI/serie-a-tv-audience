@@ -6,6 +6,8 @@ import SeasonTeamAttributesPanel from './SeasonTeamAttributesPanel.jsx';
 import CupTeamsPanel from './CupTeamsPanel.jsx';
 import BroadcastersPanel from './BroadcastersPanel.jsx';
 import CompetitionsPanel from './CompetitionsPanel.jsx';
+import AppSettingsPanel from './AppSettingsPanel.jsx';
+import CollapsibleSection from './CollapsibleSection.jsx';
 import { useSession } from '../lib/useSession.js';
 
 function HamburgerIcon() {
@@ -211,7 +213,7 @@ export default function HamburgerMenu() {
                       onClick={viewCupCompetitions}
                       className="flex items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white hover:bg-white/10"
                     >
-                      Cup competitions <span aria-hidden="true">›</span>
+                      Cups <span aria-hidden="true">›</span>
                     </button>
                     {session.signedIn && (
                       <button
@@ -226,22 +228,39 @@ export default function HamburgerMenu() {
               )}
 
               {displayedView === 'settings' && (
-                <div className="flex flex-col gap-8">
-                  <TeamSettingsPanel session={session} />
+                <div className="flex flex-col gap-6">
+                  <CollapsibleSection title="Team settings">
+                    <TeamSettingsPanel session={session} />
+                  </CollapsibleSection>
                   <div className="border-t border-white/10 pt-6">
-                    <PastTeamsPanel session={session} />
+                    <CollapsibleSection title="Past-season clubs">
+                      <PastTeamsPanel session={session} />
+                    </CollapsibleSection>
                   </div>
                   <div className="border-t border-white/10 pt-6">
-                    <SeasonTeamAttributesPanel session={session} />
+                    <CollapsibleSection title="Past-season sponsorship / big match / derby">
+                      <SeasonTeamAttributesPanel session={session} />
+                    </CollapsibleSection>
                   </div>
                   <div className="border-t border-white/10 pt-6">
-                    <CompetitionsPanel session={session} />
+                    <CollapsibleSection title="Serie A logo">
+                      <AppSettingsPanel session={session} />
+                    </CollapsibleSection>
                   </div>
                   <div className="border-t border-white/10 pt-6">
-                    <CupTeamsPanel session={session} />
+                    <CollapsibleSection title="Competitions">
+                      <CompetitionsPanel session={session} />
+                    </CollapsibleSection>
                   </div>
                   <div className="border-t border-white/10 pt-6">
-                    <BroadcastersPanel session={session} />
+                    <CollapsibleSection title="Cup competition teams">
+                      <CupTeamsPanel session={session} />
+                    </CollapsibleSection>
+                  </div>
+                  <div className="border-t border-white/10 pt-6">
+                    <CollapsibleSection title="Broadcasters">
+                      <BroadcastersPanel session={session} />
+                    </CollapsibleSection>
                   </div>
                 </div>
               )}

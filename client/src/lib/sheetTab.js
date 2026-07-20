@@ -28,7 +28,7 @@ export function createSheetTabClient({
   // Manually-typed data can hold "true"/"True"/" TRUE " instead of a real
   // checkbox or an exact-cased "TRUE" string - match leniently rather than
   // silently treating anything but an exact match as false (same tolerance
-  // sheets.js/seasonFixtures.js already apply to onSky and friends).
+  // sheets.js/seasonFixtures.js already apply to isBigMatch and friends).
   function isTruthyCell(value) {
     return value === true || (typeof value === 'string' && value.trim().toUpperCase() === 'TRUE');
   }
