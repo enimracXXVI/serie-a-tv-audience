@@ -70,6 +70,13 @@ function excelSerialToTime(serial) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
+// Manually-typed data can hold "true"/"True"/" TRUE " instead of a real
+// checkbox or an exact-cased "TRUE" string - match leniently rather than
+// silently treating anything but an exact match as false.
+function isTruthyCell(value) {
+  return value === true || (typeof value === 'string' && value.trim().toUpperCase() === 'TRUE');
+}
+
 function rowToFixture(row, headerIndex) {
   const obj = {};
   for (const [key, idx] of Object.entries(headerIndex)) {
@@ -79,7 +86,7 @@ function rowToFixture(row, headerIndex) {
     } else if (key === 'kickoffTime' && typeof value === 'number') {
       value = excelSerialToTime(value);
     } else if (BOOLEAN_FIELDS.has(key)) {
-      value = value === true || value === 'TRUE';
+      value = isTruthyCell(value);
     } else if (NUMERIC_FIELDS.has(key) && value !== null) {
       value = Number(value);
     }

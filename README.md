@@ -86,6 +86,12 @@ open the sheet directly, add these labels to row 1 if you want them:
 | W | isBigMatch | TRUE/FALSE — both clubs in this fixture are marked `bigClub` |
 | X | isDerby | TRUE/FALSE — the two clubs in this fixture are each other's `derbyRival` |
 
+These TRUE/FALSE columns accept a real checkbox cell or plain text - "TRUE",
+"true", or "True" (with or without stray whitespace) all count as checked;
+anything else (including a blank cell) counts as unchecked. Handy to know
+when pasting historical data by hand rather than using the app's own
+checkboxes, e.g. into a past-season archive tab (see below).
+
 The Q-V columns are only editable from the home page's **Sponsors** tab (per
 matchday card), and only show checkboxes for whichever side of a fixture is a
 club marked `sponsored` in the `teams` tab (see below). Whatever's checked
@@ -358,9 +364,11 @@ also marked `onSky`) - uncheck **Include Sky audience** (top right of the
 page) to see DAZN-only numbers instead, useful for a season where Sky
 audience wasn't tracked or is incomplete, since a partial Sky figure would
 otherwise understate some games relative to others rather than just leaving
-them out. **Added time** (average stoppage-time minutes per home game) is
-tracked separately, unweighted by audience, for evaluating the cheaper
-LED packages that only run during stoppage time.
+them out. This choice is saved in the URL (`?sky=0` when off, dropped
+entirely when on) so a reloaded or bookmarked/shared Dashboard link keeps
+showing the same numbers. **Added time** (average stoppage-time minutes per
+home game) is tracked separately, unweighted by audience, for evaluating the
+cheaper LED packages that only run during stoppage time.
 
 **Simulcast handling**: when several games share an exact kickoff slot, DAZN
 airs them as one program with a single shared `daznSimulcastAudience` figure
