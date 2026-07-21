@@ -462,13 +462,14 @@ just a plain dropdown choice.
 **4. `cupFixtures` tab** - the fixtures themselves. Header row: `id`,
 `competition`, `round`, `ourClub`, `opponent`, `homeAway`, `date`,
 `kickoffTime`, `ourScore`, `theirScore`, `audience`, `broadcaster`,
-`addedTime1H`, `addedTime2H`, `season`. `ourClub` is a slug from the main
-`teams` tab; `opponent` is a slug from `cupTeams`; `round` is free text
-(`Round of 16`, `Group A`, whatever your competition calls it - there's no
-fixed round list, a group stage and a knockout draw both just work);
-`homeAway` is `home`, `away`, or `neutral`. There's no sponsor/mascot/
-walkabout tracking here (that was a deliberate call - those activations are
-tracked per Serie A home game only), just audience and added time.
+`addedTime1H`, `addedTime2H`, `season`, `etOurScore`, `etTheirScore`,
+`penOurScore`, `penTheirScore`. `ourClub` is a slug from the main `teams`
+tab; `opponent` is a slug from `cupTeams`; `round` is free text (`Round of
+16`, `Group A`, whatever your competition calls it - there's no fixed round
+list, a group stage and a knockout draw both just work); `homeAway` is
+`home`, `away`, or `neutral`. There's no sponsor/mascot/walkabout tracking
+here (that was a deliberate call - those activations are tracked per Serie A
+home game only), just audience and added time.
 
 `season` matches a label in `SEASONS` (`client/src/lib/seasons.js`), e.g.
 `26/27` - a blank cell reads as the current season (a one-time fallback for
@@ -476,6 +477,24 @@ rows added before this column existed; the app always writes a real label
 from now on). Unlike Serie A, cup fixtures for every season live in this one
 tab rather than one tab per season - cup volume is small enough that a
 separate archive tab per season would just be overhead.
+
+**Two-legged ties**: add both legs as two ordinary rows (same `competition`,
+`round`, `season`, `ourClub` and `opponent` - `homeAway` flipped between
+them) - the app groups them automatically and shows an aggregate score once
+both are played. There's no separate "tie" field to fill in; grouping is
+purely by those matching columns, so keep `round`'s spelling identical on
+both legs.
+
+**Extra time / penalties**: `etOurScore`/`etTheirScore` are optional - fill
+them in only if a match (a single-leg round, a final, or the second leg of a
+tie that's level on aggregate) went to extra time; they're that match's real
+final score (already including the 90 minutes' goals, not added on top of
+`ourScore`/`theirScore`), and take over from the regular-time score for
+display and for a tie's aggregate once filled in. `penOurScore`/
+`penTheirScore` are the shootout score if it still came down to penalties -
+these never change a scoreline, just who goes through when the score above
+is level. All four are blank/unused on the vast majority of rows that never
+needed them.
 
 The hamburger menu's **Cups** page has a season dropdown, same
 as Standings/Fixtures/Dashboard, filtering to whichever season's cup

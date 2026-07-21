@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Crest from './Crest.jsx';
+import { resolveCupFixtureOutcome } from '../lib/cupFixtures.js';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
@@ -41,14 +42,18 @@ function NumberField({ label, value, onCommit, placeholder = '' }) {
 
 // leftScore/rightScore mean whatever's shown in the home/away display
 // columns, not "our"/"their" - those get resolved by the caller from
-// homeAway, since "our" club isn't always on the left.
-function ScoreDisplay({ leftScore, rightScore }) {
+// homeAway, since "our" club isn't always on the left. note is an optional
+// small caption underneath (AET, penalty shootout result).
+function ScoreDisplay({ leftScore, rightScore, note }) {
   const played = leftScore !== null && leftScore !== undefined && rightScore !== null && rightScore !== undefined;
   return (
-    <div className="flex items-center gap-1 text-sm font-bold text-[#0f1e54]">
-      <span className="w-6 text-center">{played ? leftScore : '-'}</span>
-      <span className="text-gray-300 text-xs">-</span>
-      <span className="w-6 text-center">{played ? rightScore : '-'}</span>
+    <div className="flex flex-col items-center">
+      <div className="flex items-center gap-1 text-sm font-bold text-[#0f1e54]">
+        <span className="w-6 text-center">{played ? leftScore : '-'}</span>
+        <span className="text-gray-300 text-xs">-</span>
+        <span className="w-6 text-center">{played ? rightScore : '-'}</span>
+      </div>
+      {note && <span className="text-[9px] font-semibold uppercase tracking-wide text-gray-400">{note}</span>}
     </div>
   );
 }
@@ -92,6 +97,30 @@ function ResultFields({ fixture, onUpdate, broadcasters }) {
     <div className="flex flex-wrap items-end gap-2">
       <NumberField label="Our score" value={fixture.ourScore} onCommit={(v) => onUpdate(fixture.id, { ourScore: v })} />
       <NumberField label="Their score" value={fixture.theirScore} onCommit={(v) => onUpdate(fixture.id, { theirScore: v })} />
+      <NumberField
+        label="ET score (us)"
+        value={fixture.etOurScore}
+        placeholder="if extra time"
+        onCommit={(v) => onUpdate(fixture.id, { etOurScore: v })}
+      />
+      <NumberField
+        label="ET score (them)"
+        value={fixture.etTheirScore}
+        placeholder="if extra time"
+        onCommit={(v) => onUpdate(fixture.id, { etTheirScore: v })}
+      />
+      <NumberField
+        label="Pens (us)"
+        value={fixture.penOurScore}
+        placeholder="if shootout"
+        onCommit={(v) => onUpdate(fixture.id, { penOurScore: v })}
+      />
+      <NumberField
+        label="Pens (them)"
+        value={fixture.penTheirScore}
+        placeholder="if shootout"
+        onCommit={(v) => onUpdate(fixture.id, { penTheirScore: v })}
+      />
       <NumberField label="Added time 1H" value={fixture.addedTime1H} placeholder="min" onCommit={(v) => onUpdate(fixture.id, { addedTime1H: v })} />
       <NumberField label="Added time 2H" value={fixture.addedTime2H} placeholder="min" onCommit={(v) => onUpdate(fixture.id, { addedTime2H: v })} />
       <NumberField label="Audience" value={fixture.audience} placeholder="viewers" onCommit={(v) => onUpdate(fixture.id, { audience: v })} />
@@ -118,8 +147,14 @@ export default function CupFixtureRow({ fixture, onUpdate, canEdit, broadcasters
   const dateShort = formatDateShort(fixture.date);
   const broadcaster = broadcasters.find((b) => b.name === fixture.broadcaster);
   const isHome = fixture.homeAway !== 'away';
-  const leftScore = isHome ? fixture.ourScore : fixture.theirScore;
-  const rightScore = isHome ? fixture.theirScore : fixture.ourScore;
+  const outcome = resolveCupFixtureOutcome(fixture);
+  const leftScore = isHome ? outcome.ourScore : outcome.theirScore;
+  const rightScore = isHome ? outcome.theirScore : outcome.ourScore;
+  const scoreNote = outcome.wentToPens
+    ? `pens ${isHome ? outcome.penOurScore : outcome.penTheirScore}-${isHome ? outcome.penTheirScore : outcome.penOurScore}`
+    : outcome.wentToEt
+      ? 'AET'
+      : null;
 
   return (
     <div className="flex items-stretch bg-white">
@@ -141,7 +176,7 @@ export default function CupFixtureRow({ fixture, onUpdate, canEdit, broadcasters
             </div>
 
             <div className="rounded-md px-1 py-1">
-              <ScoreDisplay leftScore={leftScore} rightScore={rightScore} />
+              <ScoreDisplay leftScore={leftScore} rightScore={rightScore} note={scoreNote} />
             </div>
 
             <div className="flex items-center gap-1.5 min-w-0 sm:gap-2">

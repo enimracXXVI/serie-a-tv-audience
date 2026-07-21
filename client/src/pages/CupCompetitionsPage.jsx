@@ -7,7 +7,9 @@ import { callWithReauth } from '../lib/reauth.js';
 import { CURRENT_SEASON } from '../lib/seasons.js';
 import SeasonSelector from '../components/SeasonSelector.jsx';
 import CupFixtureRow from '../components/CupFixtureRow.jsx';
+import CupTieGroup from '../components/CupTieGroup.jsx';
 import AddCupFixtureForm from '../components/AddCupFixtureForm.jsx';
+import { groupIntoTies, tieKeyFor } from '../lib/cupFixtures.js';
 
 export default function CupCompetitionsPage() {
   const { teams } = useTeams();
@@ -123,15 +125,27 @@ export default function CupCompetitionsPage() {
                 <div key={round} className="overflow-hidden rounded-2xl shadow-lg shadow-black/20">
                   <div className="bg-[#0f1e54] px-3 py-2 text-xs font-bold uppercase tracking-wide text-white/70">{round}</div>
                   <div className="flex flex-col divide-y divide-gray-100">
-                    {roundFixtures.map((f) => (
-                      <CupFixtureRow
-                        key={f.id}
-                        fixture={f}
-                        onUpdate={handleUpdate}
-                        canEdit={canEdit}
-                        broadcasters={broadcasters}
-                      />
-                    ))}
+                    {groupIntoTies(roundFixtures).map((legs) =>
+                      legs.length === 2 ? (
+                        <CupTieGroup
+                          key={tieKeyFor(legs[0])}
+                          legs={legs}
+                          onUpdate={handleUpdate}
+                          canEdit={canEdit}
+                          broadcasters={broadcasters}
+                        />
+                      ) : (
+                        legs.map((f) => (
+                          <CupFixtureRow
+                            key={f.id}
+                            fixture={f}
+                            onUpdate={handleUpdate}
+                            canEdit={canEdit}
+                            broadcasters={broadcasters}
+                          />
+                        ))
+                      )
+                    )}
                   </div>
                 </div>
               ))}
