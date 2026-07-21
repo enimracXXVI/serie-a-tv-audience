@@ -582,7 +582,12 @@ Below that:
   time (Serie A's own broadcaster picks these, so it's league-wide by
   default), plus a **heatmap** of every day+kickoff combination actually
   used so far (darker = higher average audience) with a sortable table
-  underneath for the exact numbers.
+  underneath for the exact numbers. Days are the heatmap's columns (there
+  are at most 7, so they always fit without scrolling) and kickoff times are
+  the rows (an unbounded axis - a season could use a handful of slots or
+  many - so it grows down the page instead of forcing a wide table).
+  Kickoff times are shown exactly as scheduled, never merged into
+  neighbouring slots.
 - **Big match / derby audience premium** - average audience for regular
   games vs. big matches vs. derbies, so you can see the uplift a game's
   billing carries independent of which two clubs are playing.
@@ -601,6 +606,10 @@ Below that:
   checked.
 - **Top games by audience** - filter by club, home-only, and how many to
   show.
+
+Every card on the page has a small camera button in its top-right corner -
+click it to download just that card as a PNG (2x resolution), e.g. to drop
+into a sponsorship deck without a manual screen-crop.
 
 ## One-time setup
 

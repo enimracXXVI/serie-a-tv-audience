@@ -163,6 +163,13 @@ export function createSheetTabClient({
       throw new Error(`Added, but the "${sheetName}" tab has no column header for: ${missing.join(', ')}.`);
     }
 
+    // `current` (from the fetchAll above) reflects every row before this
+    // append, so the new one lands right after all of them - without this,
+    // rowIndexCache wouldn't know this row's number until the next fetchAll,
+    // and editing another field on it in the same session (before a reload)
+    // would fail with "data has not loaded yet" even though it just saved.
+    rowIndexCache[allFields[idField]] = current.length + 2;
+
     return { id: allFields[idField], item: allFields };
   }
 

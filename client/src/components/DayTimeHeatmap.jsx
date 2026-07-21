@@ -22,6 +22,11 @@ export default function DayTimeHeatmap({ rows }) {
     );
   }
 
+  // Days are a fixed, known set (at most 7) - safe as columns, always fits
+  // without horizontal scrolling. Kickoff times aren't bounded the same way
+  // (a season can use a handful, or many, distinct slots), so they're rows -
+  // an unbounded axis grows down the page instead of forcing a wide,
+  // horizontally-scrolling table.
   const days = DAY_ORDER.filter((d) => rows.some((r) => r.day === d));
   const times = [...new Set(rows.map((r) => r.time))].sort((a, b) => a.localeCompare(b));
   const byKey = new Map(rows.map((r) => [`${r.day}|${r.time}`, r]));
@@ -34,22 +39,22 @@ export default function DayTimeHeatmap({ rows }) {
         <thead>
           <tr>
             <th className="w-12" />
-            {times.map((t) => (
-              <th key={t} className="px-1 pb-1 text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                {t}
+            {days.map((day) => (
+              <th key={day} className="px-1 pb-1 text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                {day}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {days.map((day) => (
-            <tr key={day}>
-              <td className="pr-2 text-right text-[10px] font-bold uppercase tracking-wide text-gray-400">{day}</td>
-              {times.map((time) => {
+          {times.map((time) => (
+            <tr key={time}>
+              <td className="pr-2 text-right text-[10px] font-bold uppercase tracking-wide text-gray-400">{time}</td>
+              {days.map((day) => {
                 const cell = byKey.get(`${day}|${time}`) ?? null;
                 const style = cellStyle(cell?.avg ?? null, max);
                 return (
-                  <td key={time} className="p-0.5">
+                  <td key={day} className="p-0.5">
                     <div
                       title={
                         cell ? `${day} ${time} - avg ${formatNumber(cell.avg)} across ${cell.count} game(s)` : `${day} ${time} - no games`
