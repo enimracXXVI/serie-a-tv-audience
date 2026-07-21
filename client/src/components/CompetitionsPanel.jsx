@@ -114,6 +114,7 @@ export default function CompetitionsPanel({ session }) {
   const [newLogoURL, setNewLogoURL] = useState('');
   const [newScope, setNewScope] = useState('national');
   const [createError, setCreateError] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   async function handleAdd(e) {
     e.preventDefault();
@@ -151,29 +152,41 @@ export default function CompetitionsPanel({ session }) {
             <CompetitionRow key={c.slug} competition={c} session={session} saveCompetition={saveCompetition} />
           ))}
           {session.signedIn && (
-            <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2 rounded-lg bg-white/5 px-3 py-2">
-              <input
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="New competition name"
-                className={`${inputClass} w-48`}
-              />
-              <input
-                type="text"
-                value={newLogoURL}
-                onChange={(e) => setNewLogoURL(e.target.value)}
-                placeholder="Logo image URL (optional)"
-                className={`${inputClass} w-56`}
-              />
-              <select value={newScope} onChange={(e) => setNewScope(e.target.value)} className={inputClass}>
-                <option value="national">National</option>
-                <option value="european">European</option>
-              </select>
-              <button type="submit" className="rounded-md bg-[#1fd8c9] px-3 py-1.5 text-xs font-bold text-[#0f1e54] hover:brightness-95">
-                Add
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => setShowAddForm((v) => !v)}
+                className={`self-start rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                  showAddForm ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+              >
+                Add competition {showAddForm ? '▴' : '▾'}
               </button>
-            </form>
+              {showAddForm && (
+                <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2 rounded-lg bg-white/5 px-3 py-2">
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder="New competition name"
+                    className={`${inputClass} w-48`}
+                  />
+                  <input
+                    type="text"
+                    value={newLogoURL}
+                    onChange={(e) => setNewLogoURL(e.target.value)}
+                    placeholder="Logo image URL (optional)"
+                    className={`${inputClass} w-56`}
+                  />
+                  <select value={newScope} onChange={(e) => setNewScope(e.target.value)} className={inputClass}>
+                    <option value="national">National</option>
+                    <option value="european">European</option>
+                  </select>
+                  <button type="submit" className="rounded-md bg-[#1fd8c9] px-3 py-1.5 text-xs font-bold text-[#0f1e54] hover:brightness-95">
+                    Add
+                  </button>
+                </form>
+              )}
+            </div>
           )}
           {createError && <p className="text-xs text-red-300">{createError}</p>}
         </div>

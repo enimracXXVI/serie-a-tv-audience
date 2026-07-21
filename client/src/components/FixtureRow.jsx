@@ -277,7 +277,7 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
             />
             {home.sponsored && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fd8c9]" />}
             <span
-              className={`truncate text-xs sm:text-sm text-right ${homeHighlighted ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}
+              className={`truncate text-xs sm:text-sm text-right ${homeHighlighted || home.sponsored ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}
             >
               <span className="sm:hidden">{home.short ?? home.name}</span>
               <span className="hidden sm:inline">{home.name}</span>
@@ -291,7 +291,7 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
 
           <div className="flex items-center gap-1.5 min-w-0 sm:gap-2">
             <Crest team={away} size={20} />
-            <span className={`truncate text-xs sm:text-sm ${awayHighlighted ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}>
+            <span className={`truncate text-xs sm:text-sm ${awayHighlighted || away.sponsored ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}>
               <span className="sm:hidden">{away.short ?? away.name}</span>
               <span className="hidden sm:inline">{away.name}</span>
             </span>

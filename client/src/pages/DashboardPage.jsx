@@ -371,11 +371,11 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div id="dash-heatmap" className="scroll-mt-20 grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+            <div id="dash-heatmap" className="scroll-mt-20 grid grid-cols-1 gap-4 lg:grid-cols-2">
               <ScreenshotableCard filename="dashboard-day-kickoff-heatmap">
                 <DayTimeHeatmap rows={audienceByDayAndTime} />
               </ScreenshotableCard>
-              <div className="flex flex-col gap-4">
+              <div className="flex h-full flex-col gap-4">
                 <ScreenshotableCard filename="dashboard-tag-premium">
                   <TagPremiumCard premium={tagPremium} />
                 </ScreenshotableCard>
@@ -385,7 +385,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div id="dash-games" className="scroll-mt-20 grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+            <div id="dash-games" className="scroll-mt-20 grid grid-cols-1 gap-4 lg:grid-cols-2">
               <ScreenshotableCard filename="dashboard-day-kickoff-breakdown">
                 <DayTimeBreakdownTable rows={audienceByDayAndTime} />
               </ScreenshotableCard>

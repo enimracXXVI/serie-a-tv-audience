@@ -145,7 +145,7 @@ export default function HamburgerMenu() {
             onClick={closeMenu}
           />
           <div
-            className={`relative flex h-full w-full flex-col bg-[#0f1e54] shadow-2xl transition-transform duration-300 ease-out sm:w-96 ${
+            className={`relative flex h-full w-full flex-col bg-[#0f1e54] shadow-2xl transition-transform duration-300 ease-out sm:w-[34rem] ${
               mounted ? 'translate-x-0' : 'translate-x-full'
             }`}
           >

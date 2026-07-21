@@ -22,12 +22,15 @@ export default function DayTimeHeatmap({ rows }) {
     );
   }
 
-  // Days are a fixed, known set (at most 7) - safe as columns, always fits
-  // without horizontal scrolling. Kickoff times aren't bounded the same way
-  // (a season can use a handful, or many, distinct slots), so they're rows -
-  // an unbounded axis grows down the page instead of forcing a wide,
-  // horizontally-scrolling table.
-  const days = DAY_ORDER.filter((d) => rows.some((r) => r.day === d));
+  // Always all 7 days, regardless of which ones actually appear in `rows` -
+  // a team focus (or a short/early season) can leave a day with zero games,
+  // and dropping that column entirely would shift every other day sideways
+  // depending on who's focused, which is more confusing than just showing an
+  // empty column. Kickoff times aren't bounded the same way (a season can
+  // use a handful, or many, distinct slots), so they're rows instead of
+  // columns - an unbounded axis grows down the page rather than forcing a
+  // wide, horizontally-scrolling table.
+  const days = DAY_ORDER;
   const times = [...new Set(rows.map((r) => r.time))].sort((a, b) => a.localeCompare(b));
   const byKey = new Map(rows.map((r) => [`${r.day}|${r.time}`, r]));
   const max = Math.max(...rows.map((r) => r.avg), 1);

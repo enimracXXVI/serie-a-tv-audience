@@ -95,9 +95,9 @@ export function useFixtures(teamSlugs, teams) {
       if (!teams.some((t) => t.slug === homeSlug) || !teams.some((t) => t.slug === awaySlug)) {
         throw new Error('Pick both a home and an away club.');
       }
+      // day and updatedAt are stamped by appendFixtureRow itself now.
       const fields = {
         matchday,
-        day: computeDayOfWeek(date),
         home: homeSlug,
         away: awaySlug,
         date: date || '',

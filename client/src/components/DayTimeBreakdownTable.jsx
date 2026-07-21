@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { formatNumber } from '../lib/formatNumber.js';
 
 const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const LIMITS = [10, 20];
 
 function compareValue(key, a, b) {
   if (key === 'day') return DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day);
@@ -19,6 +20,7 @@ const COLUMNS = [
 
 export default function DayTimeBreakdownTable({ rows }) {
   const [sortChain, setSortChain] = useState([{ key: 'avg', dir: 'desc' }]);
+  const [limit, setLimit] = useState(10);
 
   function headerClick(key, event) {
     setSortChain((prev) => {
@@ -49,11 +51,36 @@ export default function DayTimeBreakdownTable({ rows }) {
     return list;
   }, [rows, sortChain]);
 
+  const visible = limit === null ? sorted : sorted.slice(0, limit);
+
   return (
     <div className="overflow-x-auto rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-bold text-[#0f1e54]">Day + kickoff time breakdown</h3>
-        <span className="text-[10px] text-gray-400">Shift+click a column to sort by multiple columns</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] text-gray-400">Shift+click a column to sort by multiple columns</span>
+          <div className="flex gap-1">
+            {LIMITS.map((n) => (
+              <button
+                key={n}
+                onClick={() => setLimit(n)}
+                className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                  limit === n ? 'bg-[#0f1e54] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                Top {n}
+              </button>
+            ))}
+            <button
+              onClick={() => setLimit(null)}
+              className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                limit === null ? 'bg-[#0f1e54] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}
+            >
+              Show all
+            </button>
+          </div>
+        </div>
       </div>
       {rows.length === 0 ? (
         <p className="text-xs text-gray-400">No played games with this data yet.</p>
@@ -82,7 +109,7 @@ export default function DayTimeBreakdownTable({ rows }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {sorted.map((row) => (
+            {visible.map((row) => (
               <tr key={`${row.day}|${row.time}`}>
                 <td className="px-2 py-2 text-left font-semibold text-gray-700">{row.day}</td>
                 <td className="px-2 py-2 text-center text-gray-600">{row.time}</td>
