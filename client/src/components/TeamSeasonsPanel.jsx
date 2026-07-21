@@ -159,7 +159,7 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
               <div className="flex flex-wrap items-end gap-2 border-t border-white/10 pt-3">
                 <label className="flex flex-col gap-1">
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">
-                    LED minutes in {season}
+                    LED minutes per home fixture in {season}
                   </span>
                   <input
                     type="number"
@@ -214,7 +214,7 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
               ) : (
                 <span>Not sponsored</span>
               )}
-              <span>LED minutes: {ledMinutes || '-'}</span>
+              <span>LED minutes per home fixture: {ledMinutes || '-'}</span>
               <span>Added time exclusive: {addedTimeLed ? 'Yes' : 'No'}</span>
               <span>LED during penalties: {penaltyLed ? 'Yes' : 'No'}</span>
             </div>

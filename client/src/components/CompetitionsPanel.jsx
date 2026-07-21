@@ -10,14 +10,14 @@ const inputClass =
 // gets a simplified block here - just the logo, no scope selector (scope
 // only matters for filtering cup-fixture opponents, which Serie A never is).
 function SerieARow({ competition, session, saveCompetition }) {
-  const [logoUrl, setLogoUrl] = useState(competition?.logoUrl ?? '');
+  const [logoURL, setLogoURL] = useState(competition?.logoURL ?? '');
   const [error, setError] = useState(null);
 
   async function commit() {
-    if (logoUrl === (competition?.logoUrl ?? '')) return;
+    if (logoURL === (competition?.logoURL ?? '')) return;
     setError(null);
     try {
-      await callWithReauth(session, (token) => saveCompetition(SERIE_A_VALUE, { logoUrl }, token));
+      await callWithReauth(session, (token) => saveCompetition(SERIE_A_VALUE, { logoURL }, token));
     } catch (err) {
       setError(err.message);
     }
@@ -28,14 +28,14 @@ function SerieARow({ competition, session, saveCompetition }) {
   return (
     <div className="flex flex-col gap-1.5 rounded-lg bg-white/5 px-3 py-2">
       <div className="flex items-center gap-2">
-        {competition.logoUrl && <img src={competition.logoUrl} alt="" className="h-5 max-w-[80px] object-contain" />}
+        {competition.logoURL && <img src={competition.logoURL} alt="" className="h-5 max-w-[80px] object-contain" />}
         <span className="text-sm font-semibold text-white">Serie A</span>
       </div>
       <input
         type="text"
-        value={logoUrl}
+        value={logoURL}
         disabled={!session.signedIn}
-        onChange={(e) => setLogoUrl(e.target.value)}
+        onChange={(e) => setLogoURL(e.target.value)}
         onBlur={commit}
         placeholder="Logo image URL"
         className={`${inputClass} w-full`}
@@ -54,14 +54,14 @@ function slugify(name) {
 }
 
 function CompetitionRow({ competition, session, saveCompetition }) {
-  const [logoUrl, setLogoUrl] = useState(competition.logoUrl ?? '');
+  const [logoURL, setLogoURL] = useState(competition.logoURL ?? '');
   const [error, setError] = useState(null);
 
-  async function commitLogoUrl() {
-    if (logoUrl === (competition.logoUrl ?? '')) return;
+  async function commitLogoURL() {
+    if (logoURL === (competition.logoURL ?? '')) return;
     setError(null);
     try {
-      await callWithReauth(session, (token) => saveCompetition(competition.value, { logoUrl }, token));
+      await callWithReauth(session, (token) => saveCompetition(competition.slug, { logoURL }, token));
     } catch (err) {
       setError(err.message);
     }
@@ -70,7 +70,7 @@ function CompetitionRow({ competition, session, saveCompetition }) {
   async function commitScope(scope) {
     setError(null);
     try {
-      await callWithReauth(session, (token) => saveCompetition(competition.value, { scope }, token));
+      await callWithReauth(session, (token) => saveCompetition(competition.slug, { scope }, token));
     } catch (err) {
       setError(err.message);
     }
@@ -79,14 +79,14 @@ function CompetitionRow({ competition, session, saveCompetition }) {
   return (
     <div className="flex flex-col gap-1.5 rounded-lg bg-white/5 px-3 py-2">
       <div className="flex items-center gap-2">
-        {competition.logoUrl && <img src={competition.logoUrl} alt="" className="h-5 max-w-[80px] object-contain" />}
-        <span className="text-sm font-semibold text-white">{competition.label}</span>
+        {competition.logoURL && <img src={competition.logoURL} alt="" className="h-5 max-w-[80px] object-contain" />}
+        <span className="text-sm font-semibold text-white">{competition.name}</span>
       </div>
       <input
         type="text"
-        value={logoUrl}
-        onChange={(e) => setLogoUrl(e.target.value)}
-        onBlur={commitLogoUrl}
+        value={logoURL}
+        onChange={(e) => setLogoURL(e.target.value)}
+        onBlur={commitLogoURL}
         placeholder="Logo image URL"
         className={`${inputClass} w-full`}
       />
@@ -108,29 +108,29 @@ function CompetitionRow({ competition, session, saveCompetition }) {
 
 export default function CompetitionsPanel({ session }) {
   const { competitions, loading, error, saveCompetition, createCompetition } = useCupData();
-  const serieA = competitions.find((c) => c.value === SERIE_A_VALUE);
-  const cupCompetitions = competitions.filter((c) => c.value !== SERIE_A_VALUE);
-  const [newLabel, setNewLabel] = useState('');
-  const [newLogoUrl, setNewLogoUrl] = useState('');
+  const serieA = competitions.find((c) => c.slug === SERIE_A_VALUE);
+  const cupCompetitions = competitions.filter((c) => c.slug !== SERIE_A_VALUE);
+  const [newName, setNewName] = useState('');
+  const [newLogoURL, setNewLogoURL] = useState('');
   const [newScope, setNewScope] = useState('national');
   const [createError, setCreateError] = useState(null);
 
   async function handleAdd(e) {
     e.preventDefault();
     setCreateError(null);
-    if (!newLabel.trim()) {
+    if (!newName.trim()) {
       setCreateError('Enter a competition name.');
       return;
     }
     try {
       await callWithReauth(session, (token) =>
         createCompetition(
-          { value: slugify(newLabel), label: newLabel.trim(), logoUrl: newLogoUrl.trim(), scope: newScope },
+          { slug: slugify(newName), name: newName.trim(), logoURL: newLogoURL.trim(), scope: newScope },
           token
         )
       );
-      setNewLabel('');
-      setNewLogoUrl('');
+      setNewName('');
+      setNewLogoURL('');
       setNewScope('national');
     } catch (err) {
       setCreateError(err.message);
@@ -148,21 +148,21 @@ export default function CompetitionsPanel({ session }) {
         <div className="flex flex-col gap-1.5">
           <SerieARow competition={serieA} session={session} saveCompetition={saveCompetition} />
           {cupCompetitions.map((c) => (
-            <CompetitionRow key={c.value} competition={c} session={session} saveCompetition={saveCompetition} />
+            <CompetitionRow key={c.slug} competition={c} session={session} saveCompetition={saveCompetition} />
           ))}
           {session.signedIn && (
             <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2 rounded-lg bg-white/5 px-3 py-2">
               <input
                 type="text"
-                value={newLabel}
-                onChange={(e) => setNewLabel(e.target.value)}
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
                 placeholder="New competition name"
                 className={`${inputClass} w-48`}
               />
               <input
                 type="text"
-                value={newLogoUrl}
-                onChange={(e) => setNewLogoUrl(e.target.value)}
+                value={newLogoURL}
+                onChange={(e) => setNewLogoURL(e.target.value)}
                 placeholder="Logo image URL (optional)"
                 className={`${inputClass} w-56`}
               />

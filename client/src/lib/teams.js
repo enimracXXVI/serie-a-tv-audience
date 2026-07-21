@@ -61,8 +61,8 @@ export function enrichFixture(raw, clubsBySlug, clubsByName) {
     awayMatchdaySponsor: raw.awayMatchdaySponsor,
     awayPlayerMascot: raw.awayPlayerMascot,
     awayWalkabout: raw.awayWalkabout,
-    // LED perimeter-board tracking, Serie A rows only (see FixtureRow's LED
-    // tab) - blank/null on any cup row, same as every field below.
+    // LED perimeter-board tracking - Serie A and Coppa Italia (up to the
+    // semifinals) home games (see FixtureRow's/CupFixtureRow's LED tab).
     extraLedMinutes: raw.extraLedMinutes,
     penaltyTaken: raw.penaltyTaken,
     // Cup-only fields (see cupFixtures.js) - undefined/blank on a Serie A
@@ -131,8 +131,9 @@ export function overrideTeamAttributes(roster, seasonLabel, attributeRows) {
           playerMascots: row?.playerMascots ?? null,
           walkabouts: row?.walkabouts ?? null,
           // LED perimeter-board deal, this club's home games only that
-          // season - ledMinutes is a minutes total (not a boolean), so
-          // "no deal" is null/blank, not zero.
+          // season - ledMinutes is the contracted minutes per home fixture
+          // (not a season total, and not a boolean), so "no deal" is
+          // null/blank, not zero.
           ledMinutes: row?.ledMinutes ?? null,
           addedTimeLed: Boolean(row?.addedTimeLed),
           penaltyLed: Boolean(row?.penaltyLed),

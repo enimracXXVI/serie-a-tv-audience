@@ -19,8 +19,11 @@ const NUMERIC_FIELDS = new Set([
   'etAwayScore',
   'penHomeScore',
   'penAwayScore',
-  // LED perimeter-board tracking, Serie A rows only (same "home game only"
-  // scope as the matchday sponsor/mascot/walkabout fields below).
+  // LED perimeter-board tracking, home games only (same "home game only"
+  // scope as the matchday sponsor/mascot/walkabout fields below) - Serie A
+  // plus Coppa Italia up to the semifinals (its final is a neutral-venue
+  // match, so it's excluded the same way any neutralVenue row is - see
+  // CupFixtureRow's cupFixtureHasLed).
   'extraLedMinutes',
 ]);
 const BOOLEAN_FIELDS = new Set([
@@ -65,7 +68,8 @@ const EDITABLE_FIELDS = [
   'etAwayScore',
   'penHomeScore',
   'penAwayScore',
-  // LED perimeter-board tracking, Serie A rows only.
+  // LED perimeter-board tracking, home games only - Serie A plus Coppa
+  // Italia up to the semifinals (see the NUMERIC_FIELDS comment above).
   'extraLedMinutes',
   'penaltyTaken',
 ];

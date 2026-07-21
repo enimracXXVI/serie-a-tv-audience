@@ -198,6 +198,44 @@ function AudienceFields({ fixture, onUpdate }) {
   );
 }
 
+// LED perimeter-board tracking extends to Coppa Italia (unlike the other
+// cups) up to the semifinals - the final is excluded because it's played at
+// a neutral venue, where the "home" club doesn't actually own the ground its
+// perimeter boards would be on. `neutralVenue` already captures exactly that
+// distinction, so this gates on it directly rather than matching round text.
+function cupFixtureHasLed(fixture) {
+  return fixture.competition === 'CoppaItalia' && !fixture.neutralVenue;
+}
+
+function LedFields({ fixture, onUpdate }) {
+  const { home } = fixture;
+  const hasLedDeal = Boolean(home.ledMinutes || home.addedTimeLed || home.penaltyLed);
+  if (!hasLedDeal) {
+    return <p className="text-xs text-gray-400">No LED deal for {home.name} this season.</p>;
+  }
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <NumberField
+        label="Extra LED minutes"
+        value={fixture.extraLedMinutes}
+        placeholder="min"
+        onCommit={(v) => onUpdate(fixture.id, { extraLedMinutes: v })}
+      />
+      {home.penaltyLed && (
+        <label className="flex items-center gap-2 pb-1.5">
+          <input
+            type="checkbox"
+            checked={Boolean(fixture.penaltyTaken)}
+            onChange={(e) => onUpdate(fixture.id, { penaltyTaken: e.target.checked })}
+            className="h-4 w-4 accent-[#1fd8c9]"
+          />
+          <span className="text-xs font-semibold text-gray-600">Penalty taken</span>
+        </label>
+      )}
+    </div>
+  );
+}
+
 export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, editMode, broadcasters }) {
   const dateShort = formatDateShort(fixture.date);
   const broadcaster = resolveBroadcaster(fixture.broadcaster, broadcasters);
@@ -271,12 +309,17 @@ export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, ed
             {editMode === 'result' && <ResultFields fixture={fixture} onUpdate={onUpdate} />}
             {editMode === 'addedTime' && <AddedTimeFields fixture={fixture} onUpdate={onUpdate} />}
             {editMode === 'audience' && <AudienceFields fixture={fixture} onUpdate={onUpdate} />}
+            {editMode === 'led' && cupFixtureHasLed(fixture) && <LedFields fixture={fixture} onUpdate={onUpdate} />}
+            {editMode === 'led' && !cupFixtureHasLed(fixture) && (
+              <p className="text-xs text-gray-400">LED tracking only applies to Coppa Italia, up to the semifinals.</p>
+            )}
             {editMode === 'all' && (
               <>
                 <KickoffFields fixture={fixture} onUpdate={onUpdate} broadcasters={broadcasters} />
                 <ResultFields fixture={fixture} onUpdate={onUpdate} />
                 <AddedTimeFields fixture={fixture} onUpdate={onUpdate} />
                 <AudienceFields fixture={fixture} onUpdate={onUpdate} />
+                {cupFixtureHasLed(fixture) && <LedFields fixture={fixture} onUpdate={onUpdate} />}
               </>
             )}
             {onDelete && (
