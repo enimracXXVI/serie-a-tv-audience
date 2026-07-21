@@ -445,10 +445,11 @@ a recurring annoyance rather than a five-minute task.
 
 Add an `appSettings` tab (doesn't exist in the seeded sheet - add it yourself)
 with header row: `id`, `serieALogoUrl`. There's only ever one row - the app
-manages its `id` (`global`) for you. Set the logo from Settings' **Serie A
-logo** panel; it shows up next to the page title on the Fixtures and
-Standings headers. Leave it unset to show just the plain text title, as
-before this feature.
+manages its `id` (`global`) for you. Set the logo from the top of Settings'
+**Competitions** section (it's the same kind of "one logo" setting as every
+competition listed below it, so it lives there rather than its own section);
+it shows up next to the page title on the Fixtures and Standings headers.
+Leave it unset to show just the plain text title, as before this feature.
 
 ## Cups (Coppa Italia / Champions League / Europa League / Conference League)
 

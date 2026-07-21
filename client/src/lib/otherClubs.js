@@ -8,12 +8,13 @@ import { createSheetTabClient } from './sheetTab.js';
 // immutable text a fixture's home/away column stores, since that's the
 // only thing available to match against when enriching a fixture.
 //
-// `slug` is optional - leave it blank and it's synthesized from the name
-// (see teams.js's resolveClubByName/fallbackTeam), same as before this
-// field existed. Filling it in yourself is only worth doing if you want a
-// specific value (matching a bundled crest SVG's filename, say, or getting
-// ahead of a future merge of this tab with `teams`) - most rows never need
-// it.
+// `slug` is written automatically (derived from the name) whenever a club is
+// added through the app, so it's never actually blank in a row this app
+// created itself - a row hand-typed straight into the sheet can still leave
+// it blank, which falls back to the same derivation at read time (see
+// teams.js's resolveClubByName/fallbackTeam). Since it's meant to be a
+// stable key (ahead of a future merge of this tab with `teams`), only
+// override it if you specifically need a different value.
 //
 // `scope` is 'national' or 'european' - national covers both a past
 // Serie A club and a domestic cup opponent (Coppa Italia), european

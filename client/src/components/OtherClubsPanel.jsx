@@ -173,6 +173,7 @@ function AddClubForm({ session, createOtherClub }) {
         createOtherClub(
           {
             name: trimmed,
+            slug: slugify(trimmed),
             short: trimmed.slice(0, 3).toUpperCase(),
             crestUrl: crestUrl.trim(),
             primary: '#0f1e54',

@@ -94,8 +94,11 @@ export function useFixtures(teamSlugs, teams) {
 
   const deleteFixture = useCallback(async (id, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
-    await deleteFixtureRow(id, accessToken);
-    setRawFixtures((prev) => prev.filter((r) => r.id !== id));
+    // Deleting actually shifts every row below it up by one - the response
+    // is the freshly refetched, post-delete list, not just this row removed
+    // from what was already loaded.
+    const rows = await deleteFixtureRow(id, accessToken);
+    setRawFixtures(rows);
   }, []);
 
   return { fixtures, loading, error, updateFixture, createFixture, deleteFixture };

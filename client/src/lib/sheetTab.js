@@ -1,5 +1,5 @@
 import { SPREADSHEET_ID, GOOGLE_API_KEY } from './config.js';
-import { columnIndexToLetter, buildHeaderIndex, cell } from './sheetsCommon.js';
+import { columnIndexToLetter, buildHeaderIndex, cell, getSheetId } from './sheetsCommon.js';
 
 // A reusable Google Sheets tab client (fetch all rows by header name, update
 // a row by id, append a new row) - the same shape as the hand-written
@@ -173,30 +173,32 @@ export function createSheetTabClient({
     return { id: allFields[idField], item: allFields };
   }
 
-  // Clears the row's cells rather than actually removing the sheet row -
-  // deleteDimension would shift every row below it, invalidating every
-  // other cached row number until the next fetchAll (a real risk of writing
-  // to the wrong row in between). A cleared row already reads back as
-  // nothing (fetchAll skips a row once its id cell is blank), so this is a
-  // real delete from the app's point of view with none of that risk, at the
-  // cost of leaving a blank row in the sheet.
+  // Actually removes the sheet row (rather than just clearing its cells) -
+  // deleteDimension shifts every row below it up by one, which would
+  // silently invalidate every other cached row number if left alone. Rather
+  // than accept that risk, this refetches the whole tab right after so
+  // rowIndexCache (and whatever the caller displays) is rebuilt from the
+  // sheet's real, post-delete layout - the cost is one extra read per
+  // delete, in exchange for never leaving a blank row behind.
   async function deleteRow(id, accessToken) {
     if (!headerIndexCache || rowIndexCache?.[id] === undefined) {
       throw new Error(`"${sheetName}" data has not loaded yet - reload the page and try again.`);
     }
     const rowNumber = rowIndexCache[id];
-    const lastLetter = columnIndexToLetter(Math.max(...Object.values(headerIndexCache)));
-    const range = `${sheetName}!A${rowNumber}:${lastLetter}${rowNumber}`;
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(
-      range
-    )}:clear`;
+    const sheetId = await getSheetId(sheetName, accessToken);
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}:batchUpdate`;
     const res = await fetch(url, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requests: [
+          { deleteDimension: { range: { sheetId, dimension: 'ROWS', startIndex: rowNumber - 1, endIndex: rowNumber } } },
+        ],
+      }),
     });
     if (res.status === 401 || res.status === 403) throw new Error('UNAUTHENTICATED');
     if (!res.ok) throw new Error(`Failed to delete from the "${sheetName}" tab`);
-    delete rowIndexCache[id];
+    return fetchAll();
   }
 
   return { fetchAll, updateRow, appendRow, deleteRow };

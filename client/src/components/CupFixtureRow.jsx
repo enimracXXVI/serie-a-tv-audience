@@ -35,16 +35,10 @@ function finalWinnerSlug(fixture, outcome) {
 
 function TrophyIcon() {
   return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="shrink-0 text-amber-500" aria-hidden="true">
-      <path d="M8 4h8v4a4 4 0 0 1-8 0V4Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-      <path d="M8 5H5a3 3 0 0 0 3 5M16 5h3a3 3 0 0 1-3 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path
-        d="M12 12v3M9 19h6M10 19v-2.5a2 2 0 0 1 4 0V19"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="shrink-0 text-amber-500" aria-hidden="true">
+      <path d="M7 4h10v4.2a5 5 0 0 1-4 4.9V16h2.5a1.3 1.3 0 0 1 0 2.6h-7A1.3 1.3 0 0 1 8.5 16H11v-2.9a5 5 0 0 1-4-4.9V4Z" />
+      <path d="M5 5H3v2.2A3.8 3.8 0 0 0 6 11a7 7 0 0 1-1-4.8V5Z" />
+      <path d="M19 5h2v2.2A3.8 3.8 0 0 1 18 11a7 7 0 0 0 1-4.8V5Z" />
     </svg>
   );
 }
@@ -263,8 +257,10 @@ export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, ed
             </div>
           </div>
 
-          <div className="flex w-16 shrink-0 items-center justify-end gap-1 overflow-hidden">
-            {broadcaster?.logoUrl && <img src={broadcaster.logoUrl} alt={broadcaster.name} className="h-3.5 max-w-full object-contain" />}
+          <div className="flex w-14 shrink-0 items-center justify-end overflow-hidden">
+            {broadcaster?.logoUrl && (
+              <img src={broadcaster.logoUrl} alt={broadcaster.name} className="h-3.5 w-full max-w-full object-contain" />
+            )}
           </div>
         </div>
 
@@ -274,6 +270,14 @@ export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, ed
             {editMode === 'result' && <ResultFields fixture={fixture} onUpdate={onUpdate} />}
             {editMode === 'addedTime' && <AddedTimeFields fixture={fixture} onUpdate={onUpdate} />}
             {editMode === 'audience' && <AudienceFields fixture={fixture} onUpdate={onUpdate} />}
+            {editMode === 'all' && (
+              <>
+                <KickoffFields fixture={fixture} onUpdate={onUpdate} broadcasters={broadcasters} />
+                <ResultFields fixture={fixture} onUpdate={onUpdate} />
+                <AddedTimeFields fixture={fixture} onUpdate={onUpdate} />
+                <AudienceFields fixture={fixture} onUpdate={onUpdate} />
+              </>
+            )}
             {onDelete && (
               <button
                 onClick={handleDelete}

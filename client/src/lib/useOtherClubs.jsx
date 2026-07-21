@@ -53,8 +53,11 @@ export function OtherClubsProvider({ children }) {
 
   const removeOtherClub = useCallback(async (name, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
-    await deleteOtherClub(name, accessToken);
-    setOtherClubs((prev) => prev.filter((t) => t.name !== name));
+    // Deleting actually shifts every row below it up by one - the response
+    // is the freshly refetched, post-delete list, not just this row removed
+    // from what was already loaded.
+    const rows = await deleteOtherClub(name, accessToken);
+    setOtherClubs(rows);
   }, []);
 
   return (
