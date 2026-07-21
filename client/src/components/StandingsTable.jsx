@@ -3,7 +3,7 @@ import Crest from './Crest.jsx';
 export default function StandingsTable({ standings, matchday, maxMatchday, onMatchdayChange }) {
   return (
     <div className="rounded-2xl bg-white shadow-lg shadow-black/20">
-      <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-3 pt-3 pb-2">
+      <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-3 pt-2 pb-1.5">
         <h3 className="text-sm font-bold text-[#0f1e54]">
           {matchday >= maxMatchday ? 'Current standing' : `Standing at matchday ${matchday}`}
         </h3>
@@ -23,16 +23,16 @@ export default function StandingsTable({ standings, matchday, maxMatchday, onMat
       <table className="w-full min-w-[560px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wide text-gray-400">
-            <th className="px-3 py-2.5 text-left">#</th>
-            <th className="px-2 py-2.5 text-left">Club</th>
-            <th className="px-2 py-2.5 text-center">P</th>
-            <th className="px-2 py-2.5 text-center">W</th>
-            <th className="px-2 py-2.5 text-center">D</th>
-            <th className="px-2 py-2.5 text-center">L</th>
-            <th className="px-2 py-2.5 text-center">GF</th>
-            <th className="px-2 py-2.5 text-center">GA</th>
-            <th className="px-2 py-2.5 text-center">GD</th>
-            <th className="px-3 py-2.5 text-center">Pts</th>
+            <th className="px-3 py-1.5 text-left">#</th>
+            <th className="px-2 py-1.5 text-left">Club</th>
+            <th className="px-2 py-1.5 text-center">P</th>
+            <th className="px-2 py-1.5 text-center">W</th>
+            <th className="px-2 py-1.5 text-center">D</th>
+            <th className="px-2 py-1.5 text-center">L</th>
+            <th className="px-2 py-1.5 text-center">GF</th>
+            <th className="px-2 py-1.5 text-center">GA</th>
+            <th className="px-2 py-1.5 text-center">GD</th>
+            <th className="px-3 py-1.5 text-center">Pts</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
@@ -40,24 +40,24 @@ export default function StandingsTable({ standings, matchday, maxMatchday, onMat
             const gd = row.goalsFor - row.goalsAgainst;
             return (
               <tr key={row.slug} className={row.team.sponsored ? 'bg-[#1fd8c9]/5' : undefined}>
-                <td className="px-3 py-2 text-left font-bold text-gray-400">{i + 1}</td>
-                <td className="px-2 py-2 text-left">
-                  <div className="flex items-center gap-2">
-                    <Crest team={row.team} size={20} />
+                <td className="px-3 py-1 text-left font-bold text-gray-400">{i + 1}</td>
+                <td className="px-2 py-1 text-left">
+                  <div className="flex items-center gap-1.5">
+                    <Crest team={row.team} size={17} />
                     <span className="truncate font-semibold text-[#0f1e54]">{row.team.name}</span>
                     {row.team.sponsored && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fd8c9]" />}
                   </div>
                 </td>
-                <td className="px-2 py-2 text-center text-gray-600">{row.played}</td>
-                <td className="px-2 py-2 text-center text-gray-600">{row.won}</td>
-                <td className="px-2 py-2 text-center text-gray-600">{row.drawn}</td>
-                <td className="px-2 py-2 text-center text-gray-600">{row.lost}</td>
-                <td className="px-2 py-2 text-center text-gray-600">{row.goalsFor}</td>
-                <td className="px-2 py-2 text-center text-gray-600">{row.goalsAgainst}</td>
-                <td className="px-2 py-2 text-center text-gray-600">
+                <td className="px-2 py-1 text-center text-gray-600">{row.played}</td>
+                <td className="px-2 py-1 text-center text-gray-600">{row.won}</td>
+                <td className="px-2 py-1 text-center text-gray-600">{row.drawn}</td>
+                <td className="px-2 py-1 text-center text-gray-600">{row.lost}</td>
+                <td className="px-2 py-1 text-center text-gray-600">{row.goalsFor}</td>
+                <td className="px-2 py-1 text-center text-gray-600">{row.goalsAgainst}</td>
+                <td className="px-2 py-1 text-center text-gray-600">
                   {gd > 0 ? `+${gd}` : gd}
                 </td>
-                <td className="px-3 py-2 text-center text-base font-black text-[#0f1e54]">{row.points}</td>
+                <td className="px-3 py-1 text-center text-sm font-black text-[#0f1e54]">{row.points}</td>
               </tr>
             );
           })}
