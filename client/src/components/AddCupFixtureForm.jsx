@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import { competitionScope } from '../lib/competitions.js';
 
 const inputClass =
   'rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
 
 const NEW_CLUB = '__new__';
 
-function ClubSelect({ label, value, onChange, teams, pastTeams, cupOpponents }) {
+function ClubSelect({ label, value, onChange, teams, opponents }) {
   return (
     <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
       <option value="">{label}</option>
@@ -18,18 +19,9 @@ function ClubSelect({ label, value, onChange, teams, pastTeams, cupOpponents }) 
           ))}
         </optgroup>
       )}
-      {pastTeams.length > 0 && (
-        <optgroup label="Past Serie A clubs">
-          {pastTeams.map((t) => (
-            <option key={t.name} value={t.name}>
-              {t.name}
-            </option>
-          ))}
-        </optgroup>
-      )}
-      {cupOpponents.length > 0 && (
+      {opponents.length > 0 && (
         <optgroup label="Other clubs">
-          {cupOpponents.map((t) => (
+          {opponents.map((t) => (
             <option key={t.name} value={t.name}>
               {t.name}
             </option>
@@ -45,11 +37,11 @@ function ClubSelect({ label, value, onChange, teams, pastTeams, cupOpponents }) 
 // adding several fixtures for the same round - a full matchday's worth of
 // cup ties - doesn't mean re-picking the same competition/round every time.
 // Home and away are both picked from the exact same combined list (any
-// Serie A club, sponsored or not, plus any other club already added for
-// this competition) - there's no "your club" side, so two of your own
-// sponsored clubs can meet each other just as easily as either meeting a
-// club you've never heard of.
-export default function AddCupFixtureForm({ teams, pastTeams = [], cupTeams, competitions, onCreate, onCreateOpponent, onDone }) {
+// Serie A club, sponsored or not, plus any otherClubs club whose scope
+// matches the selected competition) - there's no "your club" side, so two
+// of your own sponsored clubs can meet each other just as easily as either
+// meeting a club you've never heard of.
+export default function AddCupFixtureForm({ teams, otherClubs = [], competitions, onCreate, onCreateOpponent, onDone }) {
   const [competition, setCompetition] = useState(competitions[0].value);
   const [round, setRound] = useState('');
   const [home, setHome] = useState('');
@@ -64,7 +56,8 @@ export default function AddCupFixtureForm({ teams, pastTeams = [], cupTeams, com
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  const cupOpponents = cupTeams.filter((t) => t.competition === competition);
+  const scope = competitionScope(competitions.find((c) => c.value === competition));
+  const opponents = otherClubs.filter((t) => (t.scope === 'european' ? 'european' : 'national') === scope);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -89,7 +82,7 @@ export default function AddCupFixtureForm({ teams, pastTeams = [], cupTeams, com
           crestUrl: newHomeClubCrestUrl.trim(),
           primary: '#0f1e54',
           secondary: '#ffffff',
-          competition,
+          scope,
         });
       }
       let awayName = away;
@@ -102,7 +95,7 @@ export default function AddCupFixtureForm({ teams, pastTeams = [], cupTeams, com
           crestUrl: newAwayClubCrestUrl.trim(),
           primary: '#0f1e54',
           secondary: '#ffffff',
-          competition,
+          scope,
         });
       }
       if (homeName === awayName) {
@@ -153,14 +146,7 @@ export default function AddCupFixtureForm({ teams, pastTeams = [], cupTeams, com
           placeholder="Round (e.g. Round of 16)"
           className={`${inputClass} w-48`}
         />
-        <ClubSelect
-          label="Home club…"
-          value={home}
-          onChange={setHome}
-          teams={teams}
-          pastTeams={pastTeams}
-          cupOpponents={cupOpponents}
-        />
+        <ClubSelect label="Home club…" value={home} onChange={setHome} teams={teams} opponents={opponents} />
         {home === NEW_CLUB && (
           <>
             <input
@@ -179,14 +165,7 @@ export default function AddCupFixtureForm({ teams, pastTeams = [], cupTeams, com
             />
           </>
         )}
-        <ClubSelect
-          label="Away club…"
-          value={away}
-          onChange={setAway}
-          teams={teams}
-          pastTeams={pastTeams}
-          cupOpponents={cupOpponents}
-        />
+        <ClubSelect label="Away club…" value={away} onChange={setAway} teams={teams} opponents={opponents} />
         {away === NEW_CLUB && (
           <>
             <input

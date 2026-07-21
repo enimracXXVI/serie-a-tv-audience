@@ -20,7 +20,7 @@ export function SeasonTeamAttributesProvider({ children }) {
       })
       .catch(() => {
         // Tab doesn't exist yet - not a real error, just nothing to override
-        // with until it's created (same as pastTeams/competitions).
+        // with until it's created (same as otherClubs/competitions).
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useFixtures } from './useFixtures.js';
 import { fetchSeasonFixtures } from './seasonFixtures.js';
 import { enrichFixture, teamsInFixtures, applySeasonTeamAttributes } from './teams.js';
-import { usePastTeams } from './usePastTeams.jsx';
+import { useOtherClubs } from './useOtherClubs.jsx';
 import { useSeasonTeamAttributes } from './useSeasonTeamAttributes.jsx';
 import { computeAllTeamMetrics } from './dashboardMetrics.js';
 import { SEASONS } from './seasons.js';
@@ -46,7 +46,7 @@ export function useSeasonComparison(teams, includeSimulcast, includeOther, focus
   }, [archiveSeasons]);
 
   const teamByName = useMemo(() => new Map(teams.map((t) => [t.staticName, t])), [teams]);
-  const { byName: pastTeamsByName } = usePastTeams();
+  const { byName: otherClubsByName } = useOtherClubs();
   const { rows: seasonAttributeRows } = useSeasonTeamAttributes();
 
   const seasons = useMemo(() => {
@@ -55,7 +55,7 @@ export function useSeasonComparison(teams, includeSimulcast, includeOther, focus
       const fixtures = isCurrent
         ? live.fixtures
         : applySeasonTeamAttributes(
-            (archiveRows[s.tab] ?? []).map((r) => enrichFixture(r, teamByName, pastTeamsByName)),
+            (archiveRows[s.tab] ?? []).map((r) => enrichFixture(r, teamByName, otherClubsByName)),
             s.label,
             seasonAttributeRows
           );
@@ -109,7 +109,7 @@ export function useSeasonComparison(teams, includeSimulcast, includeOther, focus
     archiveLoading,
     archiveErrors,
     teamByName,
-    pastTeamsByName,
+    otherClubsByName,
     seasonAttributeRows,
     teams,
     includeSimulcast,

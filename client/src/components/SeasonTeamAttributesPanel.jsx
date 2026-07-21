@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
 import { useTeams } from '../lib/useTeams.jsx';
-import { usePastTeams } from '../lib/usePastTeams.jsx';
+import { useOtherClubs } from '../lib/useOtherClubs.jsx';
 import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
 import { useSeasonTeamAttributes } from '../lib/useSeasonTeamAttributes.jsx';
 import { teamsInFixtures } from '../lib/teams.js';
@@ -126,7 +126,7 @@ function SeasonTeamRow({ season, team, roster, row, session, saveSeasonTeamAttri
 
 export default function SeasonTeamAttributesPanel({ session }) {
   const { teams } = useTeams();
-  const { byName: pastTeamsByName } = usePastTeams();
+  const { byName: otherClubsByName } = useOtherClubs();
   const archiveSeasons = useMemo(() => SEASONS.filter((s) => s.tab), []);
   const [selectedLabel, setSelectedLabel] = useState(archiveSeasons[0]?.label ?? null);
   const selectedSeason = archiveSeasons.find((s) => s.label === selectedLabel) ?? archiveSeasons[0];
@@ -146,7 +146,7 @@ export default function SeasonTeamAttributesPanel({ session }) {
     setSyncStatus('syncing');
     try {
       const results = await callWithReauth(session, (token) =>
-        syncAllSeasonsMatchTags({ teamByName, pastTeamsByName, seasonAttributeRows: rows }, token)
+        syncAllSeasonsMatchTags({ teamByName, otherClubsByName, seasonAttributeRows: rows }, token)
       );
       setSyncStatus(results);
     } catch (err) {

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useCupData } from '../lib/useCupData.jsx';
+import { competitionScope } from '../lib/competitions.js';
 import { callWithReauth } from '../lib/reauth.js';
 
 const inputClass =
@@ -17,7 +18,7 @@ function CompetitionRow({ competition, session, saveCompetition }) {
   const [logoUrl, setLogoUrl] = useState(competition.logoUrl ?? '');
   const [error, setError] = useState(null);
 
-  async function commit() {
+  async function commitLogoUrl() {
     if (logoUrl === (competition.logoUrl ?? '')) return;
     setError(null);
     try {
@@ -27,8 +28,17 @@ function CompetitionRow({ competition, session, saveCompetition }) {
     }
   }
 
+  async function commitScope(scope) {
+    setError(null);
+    try {
+      await callWithReauth(session, (token) => saveCompetition(competition.value, { scope }, token));
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   return (
-    <div className="flex flex-col gap-1 rounded-lg bg-white/5 px-3 py-2">
+    <div className="flex flex-col gap-1.5 rounded-lg bg-white/5 px-3 py-2">
       <div className="flex items-center gap-2">
         {competition.logoUrl && <img src={competition.logoUrl} alt="" className="h-5 max-w-[80px] object-contain" />}
         <span className="text-sm font-semibold text-white">{competition.label}</span>
@@ -37,10 +47,21 @@ function CompetitionRow({ competition, session, saveCompetition }) {
         type="text"
         value={logoUrl}
         onChange={(e) => setLogoUrl(e.target.value)}
-        onBlur={commit}
+        onBlur={commitLogoUrl}
         placeholder="Logo image URL"
         className={`${inputClass} w-full`}
       />
+      <label className="flex items-center gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Scope</span>
+        <select
+          value={competitionScope(competition)}
+          onChange={(e) => commitScope(e.target.value)}
+          className={`${inputClass} w-32`}
+        >
+          <option value="national">National</option>
+          <option value="european">European</option>
+        </select>
+      </label>
       {error && <p className="text-xs text-red-300">{error}</p>}
     </div>
   );
@@ -50,6 +71,7 @@ export default function CompetitionsPanel({ session }) {
   const { competitions, loading, error, saveCompetition, createCompetition } = useCupData();
   const [newLabel, setNewLabel] = useState('');
   const [newLogoUrl, setNewLogoUrl] = useState('');
+  const [newScope, setNewScope] = useState('national');
   const [createError, setCreateError] = useState(null);
 
   async function handleAdd(e) {
@@ -61,10 +83,14 @@ export default function CompetitionsPanel({ session }) {
     }
     try {
       await callWithReauth(session, (token) =>
-        createCompetition({ value: slugify(newLabel), label: newLabel.trim(), logoUrl: newLogoUrl.trim() }, token)
+        createCompetition(
+          { value: slugify(newLabel), label: newLabel.trim(), logoUrl: newLogoUrl.trim(), scope: newScope },
+          token
+        )
       );
       setNewLabel('');
       setNewLogoUrl('');
+      setNewScope('national');
     } catch (err) {
       setCreateError(err.message);
     }
@@ -98,6 +124,10 @@ export default function CompetitionsPanel({ session }) {
                 placeholder="Logo image URL (optional)"
                 className={`${inputClass} w-56`}
               />
+              <select value={newScope} onChange={(e) => setNewScope(e.target.value)} className={inputClass}>
+                <option value="national">National</option>
+                <option value="european">European</option>
+              </select>
               <button type="submit" className="rounded-md bg-[#1fd8c9] px-3 py-1.5 text-xs font-bold text-[#0f1e54] hover:brightness-95">
                 Add
               </button>

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useCupData } from '../lib/useCupData.jsx';
 import { useCupFixtures } from '../lib/useCupFixtures.js';
-import { usePastTeams } from '../lib/usePastTeams.jsx';
+import { useOtherClubs } from '../lib/useOtherClubs.jsx';
 import { useSession } from '../lib/useSession.jsx';
 import { callWithReauth } from '../lib/reauth.js';
 import { CURRENT_SEASON } from '../lib/seasons.js';
@@ -12,12 +12,11 @@ import AddCupFixtureForm from '../components/AddCupFixtureForm.jsx';
 
 export default function CupCompetitionsPage() {
   const { teams } = useTeams();
-  const { pastTeams } = usePastTeams();
-  const { cupTeams, broadcasters, competitions, loading: cupDataLoading, createCupTeam } = useCupData();
+  const { otherClubs, createOtherClub } = useOtherClubs();
+  const { broadcasters, competitions, loading: cupDataLoading } = useCupData();
   const [season, setSeason] = useState(CURRENT_SEASON);
   const { fixtures, loading: fixturesLoading, error: fixturesError, updateFixture, createFixture } = useCupFixtures(
     teams,
-    cupTeams,
     season
   );
   const session = useSession();
@@ -71,7 +70,7 @@ export default function CupCompetitionsPage() {
   }
 
   async function handleCreateOpponent(fields) {
-    await callWithReauth(session, (token) => createCupTeam(fields, token));
+    await callWithReauth(session, (token) => createOtherClub(fields, token));
   }
 
   return (
@@ -107,8 +106,7 @@ export default function CupCompetitionsPage() {
         {canEdit && showAddForm && (
           <AddCupFixtureForm
             teams={teams}
-            pastTeams={pastTeams}
-            cupTeams={cupTeams}
+            otherClubs={otherClubs}
             competitions={competitions}
             onCreate={handleCreate}
             onCreateOpponent={handleCreateOpponent}

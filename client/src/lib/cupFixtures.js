@@ -34,18 +34,17 @@ function hasValue(v) {
 
 // Resolves the raw sheet row's home/away club NAMES (not slugs - see the
 // module doc below) into full team-like objects, checking the current Serie
-// A roster first (live crest/colours/sponsorship), then pastTeams (a club
-// that played Serie A before but not now), then cupTeams (a club that's
-// never played Serie A at all - the only tier the main fixtures tab doesn't
-// need), then a plain placeholder. Both sides go through the exact same
-// chain - there's no "our club vs opponent" asymmetry, so two Serie A clubs
-// (sponsored or not) can meet each other and both resolve correctly, and a
-// fixture doesn't need either side to be a club you're specifically tracking.
-export function enrichCupFixture(raw, teamByName, pastTeamsByName, cupTeamsByName) {
+// A roster first (live crest/colours/sponsorship), then otherClubs (a club
+// that played Serie A before but not now, or one that never has), then a
+// plain placeholder. Both sides go through the exact same chain - there's no
+// "our club vs opponent" asymmetry, so two Serie A clubs (sponsored or not)
+// can meet each other and both resolve correctly, and a fixture doesn't need
+// either side to be a club you're specifically tracking.
+export function enrichCupFixture(raw, teamByName, otherClubsByName) {
   return {
     ...raw,
-    home: resolveClubByName(raw.home, teamByName, pastTeamsByName, cupTeamsByName),
-    away: resolveClubByName(raw.away, teamByName, pastTeamsByName, cupTeamsByName),
+    home: resolveClubByName(raw.home, teamByName, otherClubsByName),
+    away: resolveClubByName(raw.away, teamByName, otherClubsByName),
   };
 }
 

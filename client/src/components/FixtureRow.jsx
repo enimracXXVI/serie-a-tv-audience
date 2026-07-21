@@ -265,7 +265,7 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
 
         {/* Also fixed-width regardless of whether another broadcaster is
             present, so this never shifts the center block between rows. */}
-        <div className="flex w-12 shrink-0 items-center gap-1 sm:w-24 sm:gap-2">
+        <div className="flex w-16 shrink-0 items-center gap-1 overflow-hidden sm:w-24 sm:gap-2">
           <BroadcasterBadge broadcaster={mainBroadcaster} fallbackName={mainBroadcasterName} className="h-3.5" />
           {fixture.otherBroadcaster && (
             <BroadcasterBadge broadcaster={otherBroadcasterRow} fallbackName={fixture.otherBroadcaster} className="h-3" />
