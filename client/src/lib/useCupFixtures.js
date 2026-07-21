@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchCupFixturesRaw, updateCupFixture, addCupFixture, enrichCupFixture } from './cupFixtures.js';
+import { fetchCupFixturesRaw, updateCupFixture, addCupFixture, deleteCupFixture, enrichCupFixture } from './cupFixtures.js';
 import { applySeasonTeamAttributes } from './teams.js';
 import { useOtherClubs } from './useOtherClubs.jsx';
 import { useSeasonTeamAttributes } from './useSeasonTeamAttributes.jsx';
@@ -81,5 +81,11 @@ export function useCupFixtures(teams, season) {
     return id;
   }, []);
 
-  return { fixtures, loading, error, updateFixture, createFixture };
+  const deleteFixture = useCallback(async (id, accessToken) => {
+    if (!accessToken) throw new Error('UNAUTHENTICATED');
+    await deleteCupFixture(id, accessToken);
+    setRawFixtures((prev) => prev.filter((r) => r.id !== id));
+  }, []);
+
+  return { fixtures, loading, error, updateFixture, createFixture, deleteFixture };
 }

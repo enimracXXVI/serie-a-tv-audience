@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchFixtures, updateFixtureRow, appendFixtureRow } from './sheets.js';
+import { fetchFixtures, updateFixtureRow, appendFixtureRow, deleteFixtureRow } from './sheets.js';
 import { enrichFixture } from './teams.js';
 import { useOtherClubs } from './useOtherClubs.jsx';
 import { computeDayOfWeek } from './matchdays.js';
@@ -92,5 +92,11 @@ export function useFixtures(teamSlugs, teams) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teams]);
 
-  return { fixtures, loading, error, updateFixture, createFixture };
+  const deleteFixture = useCallback(async (id, accessToken) => {
+    if (!accessToken) throw new Error('UNAUTHENTICATED');
+    await deleteFixtureRow(id, accessToken);
+    setRawFixtures((prev) => prev.filter((r) => r.id !== id));
+  }, []);
+
+  return { fixtures, loading, error, updateFixture, createFixture, deleteFixture };
 }

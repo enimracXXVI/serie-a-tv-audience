@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import MatchdayGroup from './MatchdayGroup.jsx';
 import MatchdaySelector from './MatchdaySelector.jsx';
 import { closestMatchday } from '../lib/matchdays.js';
@@ -8,6 +9,7 @@ import { computeSponsorCounts } from '../lib/sponsorCounts.js';
 export default function CalendarView({
   fixtures,
   onUpdate,
+  onDelete,
   highlightSlugs = [],
   accent = '#1fd8c9',
   canEdit = false,
@@ -42,12 +44,33 @@ export default function CalendarView({
   // so fixtures is the only dependency that should retrigger this memo.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const defaultMatchday = useMemo(() => closestMatchday(matchdays, byMatchday), [fixtures]);
-  const [selected, setSelected] = useState(defaultMatchday);
 
-  useEffect(() => {
-    if (selected === null && defaultMatchday !== null) setSelected(defaultMatchday);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultMatchday]);
+  // '?matchday=' persists which matchday (or 'all') is being viewed, so a
+  // bookmarked/shared link reopens on the same one instead of always
+  // resetting to whichever's closest to today. Only written once the user
+  // actually changes it (see setSelected) - a stale/out-of-range value
+  // (e.g. left over from a different season) falls back to the default
+  // rather than rendering nothing.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const matchdayParam = searchParams.get('matchday');
+  const selected =
+    matchdayParam === 'all'
+      ? 'all'
+      : matchdayParam && matchdays.includes(Number(matchdayParam))
+        ? Number(matchdayParam)
+        : defaultMatchday;
+
+  function setSelected(next) {
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        if (next === null || next === undefined) params.delete('matchday');
+        else params.set('matchday', String(next));
+        return params;
+      },
+      { replace: true }
+    );
+  }
 
   if (fixtures.length === 0) {
     return <p className="text-center text-white/40 py-12">No fixtures to show.</p>;
@@ -66,6 +89,7 @@ export default function CalendarView({
           matchday={md}
           fixtures={byMatchday.get(md)}
           onUpdate={onUpdate}
+          onDelete={onDelete}
           highlightSlugs={highlightSlugs}
           accent={accent}
           canEdit={canEdit}

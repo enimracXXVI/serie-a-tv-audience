@@ -21,7 +21,7 @@ function fallbackTeam(name, otherClubsByName) {
   const other = otherClubsByName.get(name);
   return {
     name,
-    slug: slugify(name),
+    slug: other?.slug || slugify(name),
     short: other?.short || String(name).slice(0, 3).toUpperCase(),
     crestUrl: other?.crestUrl || null,
     primary: other?.primary || null,
@@ -38,7 +38,7 @@ export function resolveClubByName(name, teamByName, otherClubsByName) {
   const branding = otherClubsByName?.get(name);
   return {
     name,
-    slug: slugify(name),
+    slug: branding?.slug || slugify(name),
     short: branding?.short || String(name).slice(0, 3).toUpperCase(),
     crestUrl: branding?.crestUrl || null,
     primary: branding?.primary || null,

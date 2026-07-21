@@ -7,12 +7,12 @@ import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useSession } from '../lib/useSession.jsx';
 import { useAppSettings } from '../lib/useAppSettings.jsx';
+import { useSeasonParam } from '../lib/useSeasonParam.js';
 import { callWithReauth } from '../lib/reauth.js';
-import { CURRENT_SEASON } from '../lib/seasons.js';
 
 export default function HomePage() {
   const { teams } = useTeams();
-  const [season, setSeason] = useState(CURRENT_SEASON);
+  const [season, setSeason] = useSeasonParam();
   const {
     fixtures,
     loading: fixturesLoading,
@@ -20,6 +20,7 @@ export default function HomePage() {
     canEdit: seasonCanEdit,
     updateFixture,
     createFixture,
+    deleteFixture,
   } = useSeasonFixtures(season, teams);
   const session = useSession();
   const canEdit = session.signedIn && seasonCanEdit;
@@ -40,6 +41,15 @@ export default function HomePage() {
     await callWithReauth(session, (token) => createFixture(fields, token));
   }
 
+  async function handleDelete(id) {
+    try {
+      await callWithReauth(session, (token) => deleteFixture(id, token));
+      setUpdateError(null);
+    } catch (err) {
+      setUpdateError(err.message);
+    }
+  }
+
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-3">
@@ -53,26 +63,23 @@ export default function HomePage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-8">
-        <CalendarNavBar teams={teams} />
-
-        {!seasonCanEdit && (
-          <p className="mb-4 rounded-lg bg-white/5 px-4 py-2.5 text-xs text-white/50">
-            {season.label} is a past season - view only, nothing here can be edited.
-          </p>
-        )}
-
-        {canEdit && !fixturesLoading && !fixturesError && (
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => setShowAddForm((v) => !v)}
-              className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
-                showAddForm ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
-              }`}
-            >
-              Add fixture {showAddForm ? '▴' : '▾'}
-            </button>
-          </div>
-        )}
+        <CalendarNavBar
+          teams={teams}
+          rightSlot={
+            canEdit &&
+            !fixturesLoading &&
+            !fixturesError && (
+              <button
+                onClick={() => setShowAddForm((v) => !v)}
+                className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                  showAddForm ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+              >
+                Add fixture {showAddForm ? '▴' : '▾'}
+              </button>
+            )
+          }
+        />
 
         {canEdit && showAddForm && (
           <div className="mb-4">
@@ -93,7 +100,7 @@ export default function HomePage() {
             {fixturesError}
           </p>
         ) : (
-          <CalendarView fixtures={fixtures} onUpdate={handleUpdate} canEdit={canEdit} />
+          <CalendarView fixtures={fixtures} onUpdate={handleUpdate} onDelete={canEdit ? handleDelete : null} canEdit={canEdit} />
         )}
       </main>
     </div>

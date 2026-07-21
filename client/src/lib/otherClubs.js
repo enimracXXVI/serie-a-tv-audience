@@ -6,10 +6,14 @@ import { createSheetTabClient } from './sheetTab.js';
 // club (replacing the former separate pastTeams/cupTeams tabs, which had
 // different shapes for no real reason), keyed by `name` - the same
 // immutable text a fixture's home/away column stores, since that's the
-// only thing available to match against when enriching a fixture. No
-// stored slug (same as before) - it's synthesized from the name wherever
-// needed (see teams.js's resolveClubByName/fallbackTeam), so there's
-// nothing to keep in sync or get wrong.
+// only thing available to match against when enriching a fixture.
+//
+// `slug` is optional - leave it blank and it's synthesized from the name
+// (see teams.js's resolveClubByName/fallbackTeam), same as before this
+// field existed. Filling it in yourself is only worth doing if you want a
+// specific value (matching a bundled crest SVG's filename, say, or getting
+// ahead of a future merge of this tab with `teams`) - most rows never need
+// it.
 //
 // `scope` is 'national' or 'european' - national covers both a past
 // Serie A club and a domestic cup opponent (Coppa Italia), european
@@ -21,3 +25,4 @@ const client = createSheetTabClient({ sheetName: 'otherClubs', idField: 'name', 
 export const fetchOtherClubs = client.fetchAll;
 export const updateOtherClub = client.updateRow;
 export const addOtherClub = client.appendRow;
+export const deleteOtherClub = client.deleteRow;

@@ -6,7 +6,9 @@ import { getSavedTeams, saveTeams } from '../lib/savedTeams.js';
 // The three ways to get to a calendar (all teams, sponsored teams, a custom
 // build) - shown on every calendar page, not just the home page, so
 // switching views never requires going back through the hamburger menu.
-export default function CalendarNavBar({ teams }) {
+// `rightSlot` is an optional extra control (HomePage's "Add fixture" toggle)
+// pushed to the far right of the same row instead of getting its own row.
+export default function CalendarNavBar({ teams, rightSlot }) {
   const navigate = useNavigate();
   const [showBuildPanel, setShowBuildPanel] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState(() => getSavedTeams());
@@ -57,6 +59,7 @@ export default function CalendarNavBar({ teams }) {
         >
           Build calendar {showBuildPanel ? '▴' : '▾'}
         </button>
+        {rightSlot && <div className="ml-auto">{rightSlot}</div>}
       </div>
 
       {showBuildPanel && (

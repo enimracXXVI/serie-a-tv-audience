@@ -14,7 +14,7 @@ const TABS = [
 // legs of a tie) in it at once - same position and split as Serie A's
 // MatchdayGroup, rather than each row managing its own separate open/closed
 // tab like before.
-export default function CupRoundGroup({ round, fixtures, onUpdate, canEdit, broadcasters }) {
+export default function CupRoundGroup({ round, fixtures, onUpdate, onDelete, canEdit, broadcasters }) {
   const [activeTab, setActiveTab] = useState(null);
 
   return (
@@ -44,6 +44,7 @@ export default function CupRoundGroup({ round, fixtures, onUpdate, canEdit, broa
               key={tieKeyFor(legs[0])}
               legs={legs}
               onUpdate={onUpdate}
+              onDelete={onDelete}
               canEdit={canEdit}
               editMode={activeTab}
               broadcasters={broadcasters}
@@ -54,6 +55,7 @@ export default function CupRoundGroup({ round, fixtures, onUpdate, canEdit, broa
                 key={f.id}
                 fixture={f}
                 onUpdate={onUpdate}
+                onDelete={onDelete}
                 canEdit={canEdit}
                 editMode={activeTab}
                 broadcasters={broadcasters}

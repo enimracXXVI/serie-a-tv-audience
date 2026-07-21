@@ -18,8 +18,17 @@ function CameraIcon() {
 const STATUS_LABEL = {
   copied: 'Copied!',
   downloaded: 'Downloaded (clipboard unsupported)',
-  error: 'Copy failed',
 };
+
+// A crest/logo hosted on another domain without CORS headers can't be
+// fetched and inlined as a data URL (html-to-image already catches that
+// fetch failure internally) - but it then sets the cloned <img>'s src to
+// an empty string as its fallback, which fires the image's onerror and
+// rejects the ENTIRE capture over one broken image. Handing it a real (if
+// blank) placeholder image avoids that path entirely, which is what was
+// silently failing every capture that included an external crest.
+const BLANK_IMAGE_PLACEHOLDER =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
 
 // Wraps any Dashboard card so a click on the small camera button copies just
 // that card to the clipboard as an image (paste straight into a deck/email -
@@ -49,7 +58,10 @@ export default function ScreenshotableCard({ filename, background = '#ffffff', c
   function finish(nextStatus) {
     setStatus(nextStatus);
     setBusy(false);
-    setTimeout(() => setStatus(null), 1800);
+    // Errors stay up longer - long enough to actually read (or screenshot)
+    // the message, since it's the only diagnostic a report from someone
+    // else's phone is ever going to come with.
+    setTimeout(() => setStatus(null), nextStatus?.type === 'error' ? 4500 : 1800);
   }
 
   function handleClick() {
@@ -60,6 +72,8 @@ export default function ScreenshotableCard({ filename, background = '#ffffff', c
     const renderPromise = toBlob(ref.current, {
       backgroundColor: background,
       pixelRatio: 2,
+      cacheBust: true,
+      imagePlaceholder: BLANK_IMAGE_PLACEHOLDER,
       filter: (node) => !node?.dataset?.screenshotIgnore,
     }).then((blob) => {
       if (!blob) throw new Error('Could not render this card');
@@ -79,7 +93,7 @@ export default function ScreenshotableCard({ filename, background = '#ffffff', c
         .then(() => finish('copied'))
         .catch((err) => {
           console.error('Failed to copy card image', err);
-          finish('error');
+          finish({ type: 'error', message: err?.message || String(err) });
         });
     } else {
       // Old Safari/Firefox without image clipboard support - fall back to a
@@ -91,7 +105,7 @@ export default function ScreenshotableCard({ filename, background = '#ffffff', c
         })
         .catch((err) => {
           console.error('Failed to copy card image', err);
-          finish('error');
+          finish({ type: 'error', message: err?.message || String(err) });
         });
     }
   }
@@ -111,9 +125,11 @@ export default function ScreenshotableCard({ filename, background = '#ffffff', c
       {status && (
         <span
           data-screenshot-ignore="true"
-          className="absolute -top-4 right-10 z-10 whitespace-nowrap rounded-md bg-[#0f1e54] px-2 py-1 text-[10px] font-semibold text-white shadow-md"
+          className={`absolute -top-4 right-10 z-10 max-w-[220px] rounded-md px-2 py-1 text-[10px] font-semibold text-white shadow-md ${
+            status.type === 'error' ? 'bg-red-600' : 'whitespace-nowrap bg-[#0f1e54]'
+          }`}
         >
-          {STATUS_LABEL[status]}
+          {status.type === 'error' ? `Copy failed: ${status.message}` : STATUS_LABEL[status]}
         </span>
       )}
       {children}

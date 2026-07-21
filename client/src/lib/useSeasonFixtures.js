@@ -61,6 +61,7 @@ export function useSeasonFixtures(season, teams) {
       canEdit: true,
       updateFixture: live.updateFixture,
       createFixture: live.createFixture,
+      deleteFixture: live.deleteFixture,
     };
   }
 
@@ -71,5 +72,6 @@ export function useSeasonFixtures(season, teams) {
     canEdit: false,
     updateFixture: null,
     createFixture: null,
+    deleteFixture: null,
   };
 }
