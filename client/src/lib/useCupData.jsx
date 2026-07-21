@@ -53,11 +53,11 @@ export function CupDataProvider({ children }) {
     return { applied, missingHere };
   }
 
-  const saveCupTeam = useCallback(async (slug, fields, accessToken) => {
+  const saveCupTeam = useCallback(async (name, fields, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
-    const { missingFields } = await updateCupTeam(slug, fields, accessToken);
+    const { missingFields } = await updateCupTeam(name, fields, accessToken);
     const { applied, missingHere } = applyMissing(fields, missingFields);
-    setCupTeams((prev) => prev.map((t) => (t.slug === slug ? { ...t, ...applied } : t)));
+    setCupTeams((prev) => prev.map((t) => (t.name === name ? { ...t, ...applied } : t)));
     if (missingHere.length > 0) {
       throw new Error(`Saved, but the cupTeams sheet has no column header for: ${missingHere.join(', ')}.`);
     }
@@ -67,7 +67,7 @@ export function CupDataProvider({ children }) {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
     await addCupTeam(fields, accessToken);
     setCupTeams((prev) => [...prev, fields]);
-    return fields.slug;
+    return fields.name;
   }, []);
 
   const saveBroadcaster = useCallback(async (name, fields, accessToken) => {

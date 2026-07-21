@@ -17,12 +17,17 @@ function slugify(name) {
 function CupTeamRow({ team, session, saveCupTeam }) {
   const [crestUrl, setCrestUrl] = useState(team.crestUrl ?? '');
   const [error, setError] = useState(null);
+  // cupTeams rows are keyed by name, with no slug of their own - the crest
+  // path (client/public/crests/<slug>.svg) still needs one, so synthesize
+  // the same one enrichCupFixture will give this club everywhere else -
+  // same idiom PastTeamsPanel uses for the identical reason.
+  const previewTeam = { ...team, slug: slugify(team.name) };
 
   async function commit() {
     if (crestUrl === (team.crestUrl ?? '')) return;
     setError(null);
     try {
-      await callWithReauth(session, (token) => saveCupTeam(team.slug, { crestUrl }, token));
+      await callWithReauth(session, (token) => saveCupTeam(team.name, { crestUrl }, token));
     } catch (err) {
       setError(err.message);
     }
@@ -31,7 +36,7 @@ function CupTeamRow({ team, session, saveCupTeam }) {
   return (
     <div className="flex flex-col gap-1 rounded-lg bg-white/5 px-3 py-2">
       <div className="flex items-center gap-2">
-        <Crest team={team} size={22} />
+        <Crest team={previewTeam} size={22} />
         <span className="text-sm font-semibold text-white">{team.name}</span>
       </div>
       <input
@@ -63,7 +68,6 @@ function CompetitionSection({ competition, teams, session, saveCupTeam, createCu
       await callWithReauth(session, (token) =>
         createCupTeam(
           {
-            slug: slugify(newName),
             name: newName.trim(),
             short: newName.trim().slice(0, 3).toUpperCase(),
             crestUrl: newCrestUrl.trim(),
@@ -86,7 +90,7 @@ function CompetitionSection({ competition, teams, session, saveCupTeam, createCu
       <h3 className="text-xs font-bold uppercase tracking-wide text-white/50">{competition.label}</h3>
       {teams.length === 0 && <p className="text-xs text-white/40">No opponents added yet.</p>}
       {teams.map((t) => (
-        <CupTeamRow key={t.slug} team={t} session={session} saveCupTeam={saveCupTeam} />
+        <CupTeamRow key={t.name} team={t} session={session} saveCupTeam={saveCupTeam} />
       ))}
       {session.signedIn && (
         <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2 rounded-lg bg-white/5 px-3 py-2">

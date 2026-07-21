@@ -443,13 +443,17 @@ same four with no logo, so everything else below still works without it -
 add it whenever you want logos, not before. Managed from Settings, same
 `=IMAGE("url")`-or-plain-URL rule as crests.
 
-**2. `cupTeams` tab** - the opponents you'll face in these competitions
-(a Serie B side in an early Coppa Italia round, any European club in a UEFA
-tie), added as you go rather than pre-seeded like the 20 Serie A clubs.
-Header row: `slug`, `name`, `short`, `crestUrl`, `primary`, `secondary`,
-`competition` (matching a `value` from the `competitions` tab). Managed from
-the hamburger menu's **Settings** panel (grouped by competition), same
-`=IMAGE("url")`-or-plain-URL rule as the main teams tab's `crestUrl`.
+**2. `cupTeams` tab** - **only** for a club that's never played in the
+current Serie A roster or its history at all (a Serie B side in an early
+Coppa Italia round, any European club in a UEFA tie) - a club that IS a
+current or past Serie A club never needs an entry here, its branding is
+already resolved from `teams`/`pastTeams` automatically (see `cupFixtures`
+below). Header row: `name`, `short`, `crestUrl`, `primary`, `secondary`,
+`competition` (matching a `value` from the `competitions` tab) - keyed by
+`name`, same convention as `pastTeams`, since that's exactly what a cup
+fixture's `home`/`away` columns store. Managed from the hamburger menu's
+**Settings** panel (grouped by competition), same `=IMAGE("url")`-or-
+plain-URL rule as the main teams tab's `crestUrl`.
 
 **3. `broadcasters` tab** - a small reusable list so a cup fixture's
 broadcaster shows a logo badge instead of a retyped name. Header row:
@@ -460,38 +464,52 @@ effect on cup fixtures, where every broadcaster (including the main one) is
 just a plain dropdown choice.
 
 **4. `cupFixtures` tab** - the fixtures themselves. Header row: `id`,
-`competition`, `round`, `ourClub`, `opponent`, `homeAway`, `date`,
-`kickoffTime`, `ourScore`, `theirScore`, `audience`, `broadcaster`,
-`addedTime1H`, `addedTime2H`, `season`, `etOurScore`, `etTheirScore`,
-`penOurScore`, `penTheirScore`. `ourClub` is a slug from the main `teams`
-tab; `opponent` is a slug from `cupTeams`; `round` is free text (`Round of
-16`, `Group A`, whatever your competition calls it - there's no fixed round
-list, a group stage and a knockout draw both just work); `homeAway` is
-`home`, `away`, or `neutral`. There's no sponsor/mascot/walkabout tracking
-here (that was a deliberate call - those activations are tracked per Serie A
-home game only), just audience and added time.
+`competition`, `round`, `home`, `away`, `neutralVenue`, `date`,
+`kickoffTime`, `homeScore`, `awayScore`, `audience`, `broadcaster`,
+`addedTime1H`, `addedTime2H`, `season`, `etHomeScore`, `etAwayScore`,
+`penHomeScore`, `penAwayScore`. `home` and `away` are club **name** text
+(exactly like the main `fixtures` tab's own `home`/`away`, and like
+`pastTeams`' `name` column) - there's no "your club vs the opponent"
+distinction, both are just whichever two clubs actually played, resolved the
+same way for either side: the current `teams` roster first (live crest,
+colours, and - per season, see below - sponsorship), then `pastTeams`, then
+`cupTeams`, then a plain placeholder. This is what lets two of your own
+sponsored clubs meet each other correctly, and lets a Serie A opponent's
+crest/colours show up without ever having to duplicate that club into
+`cupTeams`. `round` is free text (`Round of 16`, `Group A`, whatever your
+competition calls it - there's no fixed round list, a group stage and a
+knockout draw both just work); `neutralVenue` is TRUE/FALSE, for the rare
+match (typically a final) at neither club's own ground. There's no
+sponsor-activation (matchday sponsor/player mascot/walkabout) tracking here
+(that was a deliberate call - those are tracked per Serie A home game only),
+just audience and added time - though a sponsored club's name IS
+highlighted (bold + a small dot), same as everywhere else in the app.
 
 `season` matches a label in `SEASONS` (`client/src/lib/seasons.js`), e.g.
 `26/27` - a blank cell reads as the current season (a one-time fallback for
 rows added before this column existed; the app always writes a real label
 from now on). Unlike Serie A, cup fixtures for every season live in this one
 tab rather than one tab per season - cup volume is small enough that a
-separate archive tab per season would just be overhead.
+separate archive tab per season would just be overhead. Sponsorship
+highlighting is season-scoped too, exactly like the main calendar: the
+current season reads live `teams` Settings, a past season reads the
+`seasonTeamAttributes` tab (only the `sponsored` field is used for cup
+fixtures - `bigClub`/`derbyRival` don't apply here).
 
 **Two-legged ties**: add both legs as two ordinary rows (same `competition`,
-`round`, `season`, `ourClub` and `opponent` - `homeAway` flipped between
-them) - the app groups them automatically and shows an aggregate score once
-both are played. There's no separate "tie" field to fill in; grouping is
-purely by those matching columns, so keep `round`'s spelling identical on
-both legs.
+`round`, `season`, and the same two clubs in `home`/`away` - swapped between
+the two rows) - the app groups them automatically and shows an aggregate
+score once both are played. There's no separate "tie" field to fill in;
+grouping is purely by those matching columns, so keep `round`'s spelling
+identical on both legs.
 
-**Extra time / penalties**: `etOurScore`/`etTheirScore` are optional - fill
+**Extra time / penalties**: `etHomeScore`/`etAwayScore` are optional - fill
 them in only if a match (a single-leg round, a final, or the second leg of a
 tie that's level on aggregate) went to extra time; they're that match's real
 final score (already including the 90 minutes' goals, not added on top of
-`ourScore`/`theirScore`), and take over from the regular-time score for
-display and for a tie's aggregate once filled in. `penOurScore`/
-`penTheirScore` are the shootout score if it still came down to penalties -
+`homeScore`/`awayScore`), and take over from the regular-time score for
+display and for a tie's aggregate once filled in. `penHomeScore`/
+`penAwayScore` are the shootout score if it still came down to penalties -
 these never change a scoreline, just who goes through when the score above
 is level. All four are blank/unused on the vast majority of rows that never
 needed them.
@@ -502,16 +520,39 @@ fixtures you're looking at, grouped by competition and round, with the same
 kind of expandable edit tabs as the main calendar (kickoff details; result,
 added time, audience and broadcaster). **Signed in, on the current season**,
 **Add fixture** opens a form to create a new cup fixture without touching
-the sheet directly - pick the competition, round, your club, and an opponent
-(or add a brand new one inline, right there in the form, if this is the
-first time you're facing them); it's still fine to add a cup fixture by
-pasting a row into the sheet directly instead, whichever's quicker for what
-you're doing. **Past cup seasons are frozen** - no Add fixture, no editing
-an existing row - same precedent as Serie A's archive tabs. Backfilling an
-already-completed cup season (a past Coppa Italia bracket, say) is a direct
-sheet paste: add rows to `cupFixtures` with that season's label filled in by
-hand, the same way Serie A archive tabs, `pastTeams`, and
-`seasonTeamAttributes` are all populated for history.
+the sheet directly - pick the competition, round, then a home club and an
+away club, each from the exact same combined list (every current Serie A
+club plus every club already added to `cupTeams` for that competition), or
+add a brand new one inline, right there in the form, for either side; it's
+still fine to add a cup fixture by pasting a row into the sheet directly
+instead, whichever's quicker for what you're doing. **Past cup seasons are
+frozen** - no Add fixture, no editing an existing row - same precedent as
+Serie A's archive tabs. Backfilling an already-completed cup season (a past
+Coppa Italia bracket, say) is a direct sheet paste: add rows to
+`cupFixtures` with that season's label filled in by hand, the same way
+Serie A archive tabs, `pastTeams`, and `seasonTeamAttributes` are all
+populated for history.
+
+### Migrating from the old `ourClub`/`opponent` shape
+
+If your `cupFixtures`/`cupTeams` tabs still use the previous columns
+(`ourClub`, `opponent`, `homeAway`, `ourScore`, `theirScore`,
+`etOurScore`/`etTheirScore`, `penOurScore`/`penTheirScore`, and `cupTeams`'
+old `slug` column), run the one-time converter below instead of migrating by
+hand - reshuffling which score belongs to `home` vs `away` depends on each
+row's old `homeAway` value, which is tedious and error-prone to do row by
+row. **Back up both tabs first** (Google Sheets → File → Version history →
+Name current version, or just duplicate the tabs) - this script overwrites
+`cupFixtures` and `cupTeams` in place.
+
+1. Open the app in a browser tab and **sign in** (the script reuses that
+   session to write).
+2. Open that tab's DevTools console (F12 or Cmd+Opt+I), paste in the
+   contents of `scripts/migrate-cup-fixtures.js` from this repo, and press
+   Enter.
+3. It logs each step (reading, converting, writing) and a summary count -
+   check for errors before trusting the result, then delete your backup
+   copies once you've confirmed the Cups page looks right.
 
 ## Standing Tiebreakers
 If after all 38 games, two teams are tied on points for either first place or for 17th (the last safety spot), the outcome is decided by a single-legged play-off match. This match consists of 90 minutes of regulation time followed by penalties if necessary (no extra time). The game is to be held at a neutral venue, with the designated "home" team determined by the performance-based criteria listed below. In cases where there are at least three teams tied for one of these positions, a mini table is created using the same tiebreakers to determine which two teams will play in the decider. For ties concerning all other league positions, the following tiebreakers are applied:

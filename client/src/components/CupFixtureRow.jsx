@@ -40,18 +40,15 @@ function NumberField({ label, value, onCommit, placeholder = '' }) {
   );
 }
 
-// leftScore/rightScore mean whatever's shown in the home/away display
-// columns, not "our"/"their" - those get resolved by the caller from
-// homeAway, since "our" club isn't always on the left. note is an optional
-// small caption underneath (AET, penalty shootout result).
-function ScoreDisplay({ leftScore, rightScore, note }) {
-  const played = leftScore !== null && leftScore !== undefined && rightScore !== null && rightScore !== undefined;
+// note is an optional small caption underneath (AET, penalty shootout result).
+function ScoreDisplay({ homeScore, awayScore, note }) {
+  const played = homeScore !== null && homeScore !== undefined && awayScore !== null && awayScore !== undefined;
   return (
     <div className="flex flex-col items-center">
       <div className="flex items-center gap-1 text-sm font-bold text-[#0f1e54]">
-        <span className="w-6 text-center">{played ? leftScore : '-'}</span>
+        <span className="w-6 text-center">{played ? homeScore : '-'}</span>
         <span className="text-gray-300 text-xs">-</span>
-        <span className="w-6 text-center">{played ? rightScore : '-'}</span>
+        <span className="w-6 text-center">{played ? awayScore : '-'}</span>
       </div>
       {note && <span className="text-[9px] font-semibold uppercase tracking-wide text-gray-400">{note}</span>}
     </div>
@@ -77,17 +74,15 @@ function DetailsFields({ fixture, onUpdate }) {
           onChange={(e) => onUpdate(fixture.id, { kickoffTime: e.target.value || null })}
         />
       </Field>
-      <Field label="Venue">
-        <select
-          value={fixture.homeAway ?? 'home'}
-          className={`${inputClass} w-28`}
-          onChange={(e) => onUpdate(fixture.id, { homeAway: e.target.value })}
-        >
-          <option value="home">Home</option>
-          <option value="away">Away</option>
-          <option value="neutral">Neutral</option>
-        </select>
-      </Field>
+      <label className="flex items-center gap-2 pb-1.5">
+        <input
+          type="checkbox"
+          checked={Boolean(fixture.neutralVenue)}
+          onChange={(e) => onUpdate(fixture.id, { neutralVenue: e.target.checked })}
+          className="h-4 w-4 accent-[#1fd8c9]"
+        />
+        <span className="text-xs font-semibold text-gray-600">Neutral venue</span>
+      </label>
     </div>
   );
 }
@@ -95,31 +90,31 @@ function DetailsFields({ fixture, onUpdate }) {
 function ResultFields({ fixture, onUpdate, broadcasters }) {
   return (
     <div className="flex flex-wrap items-end gap-2">
-      <NumberField label="Our score" value={fixture.ourScore} onCommit={(v) => onUpdate(fixture.id, { ourScore: v })} />
-      <NumberField label="Their score" value={fixture.theirScore} onCommit={(v) => onUpdate(fixture.id, { theirScore: v })} />
+      <NumberField label="Home score" value={fixture.homeScore} onCommit={(v) => onUpdate(fixture.id, { homeScore: v })} />
+      <NumberField label="Away score" value={fixture.awayScore} onCommit={(v) => onUpdate(fixture.id, { awayScore: v })} />
       <NumberField
-        label="ET score (us)"
-        value={fixture.etOurScore}
+        label="ET score (home)"
+        value={fixture.etHomeScore}
         placeholder="if extra time"
-        onCommit={(v) => onUpdate(fixture.id, { etOurScore: v })}
+        onCommit={(v) => onUpdate(fixture.id, { etHomeScore: v })}
       />
       <NumberField
-        label="ET score (them)"
-        value={fixture.etTheirScore}
+        label="ET score (away)"
+        value={fixture.etAwayScore}
         placeholder="if extra time"
-        onCommit={(v) => onUpdate(fixture.id, { etTheirScore: v })}
+        onCommit={(v) => onUpdate(fixture.id, { etAwayScore: v })}
       />
       <NumberField
-        label="Pens (us)"
-        value={fixture.penOurScore}
+        label="Pens (home)"
+        value={fixture.penHomeScore}
         placeholder="if shootout"
-        onCommit={(v) => onUpdate(fixture.id, { penOurScore: v })}
+        onCommit={(v) => onUpdate(fixture.id, { penHomeScore: v })}
       />
       <NumberField
-        label="Pens (them)"
-        value={fixture.penTheirScore}
+        label="Pens (away)"
+        value={fixture.penAwayScore}
         placeholder="if shootout"
-        onCommit={(v) => onUpdate(fixture.id, { penTheirScore: v })}
+        onCommit={(v) => onUpdate(fixture.id, { penAwayScore: v })}
       />
       <NumberField label="Added time 1H" value={fixture.addedTime1H} placeholder="min" onCommit={(v) => onUpdate(fixture.id, { addedTime1H: v })} />
       <NumberField label="Added time 2H" value={fixture.addedTime2H} placeholder="min" onCommit={(v) => onUpdate(fixture.id, { addedTime2H: v })} />
@@ -146,12 +141,9 @@ export default function CupFixtureRow({ fixture, onUpdate, canEdit, broadcasters
   const [activeTab, setActiveTab] = useState(null);
   const dateShort = formatDateShort(fixture.date);
   const broadcaster = broadcasters.find((b) => b.name === fixture.broadcaster);
-  const isHome = fixture.homeAway !== 'away';
   const outcome = resolveCupFixtureOutcome(fixture);
-  const leftScore = isHome ? outcome.ourScore : outcome.theirScore;
-  const rightScore = isHome ? outcome.theirScore : outcome.ourScore;
   const scoreNote = outcome.wentToPens
-    ? `pens ${isHome ? outcome.penOurScore : outcome.penTheirScore}-${isHome ? outcome.penTheirScore : outcome.penOurScore}`
+    ? `pens ${outcome.penHomeScore}-${outcome.penAwayScore}`
     : outcome.wentToEt
       ? 'AET'
       : null;
@@ -163,25 +155,31 @@ export default function CupFixtureRow({ fixture, onUpdate, canEdit, broadcasters
           <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center text-center text-[9px] leading-tight text-gray-400">
             {dateShort && <div>{dateShort}</div>}
             {fixture.kickoffTime && <div>{fixture.kickoffTime}</div>}
-            {fixture.homeAway === 'neutral' && <div className="font-black text-gray-400">N</div>}
+            {fixture.neutralVenue && <div className="font-black text-gray-400">N</div>}
           </div>
 
           <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1 sm:gap-2 min-w-0">
             <div className="flex items-center justify-end gap-1.5 min-w-0 sm:gap-2">
-              <span className="truncate text-xs sm:text-sm text-right text-gray-700">
+              <span
+                className={`truncate text-xs sm:text-sm text-right ${fixture.home.sponsored ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}
+              >
                 <span className="sm:hidden">{fixture.home.short ?? fixture.home.name}</span>
                 <span className="hidden sm:inline">{fixture.home.name}</span>
               </span>
+              {fixture.home.sponsored && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fd8c9]" />}
               <Crest team={fixture.home} size={24} />
             </div>
 
             <div className="rounded-md px-1 py-1">
-              <ScoreDisplay leftScore={leftScore} rightScore={rightScore} note={scoreNote} />
+              <ScoreDisplay homeScore={outcome.homeScore} awayScore={outcome.awayScore} note={scoreNote} />
             </div>
 
             <div className="flex items-center gap-1.5 min-w-0 sm:gap-2">
               <Crest team={fixture.away} size={24} />
-              <span className="truncate text-xs sm:text-sm text-gray-700">
+              {fixture.away.sponsored && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fd8c9]" />}
+              <span
+                className={`truncate text-xs sm:text-sm ${fixture.away.sponsored ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}
+              >
                 <span className="sm:hidden">{fixture.away.short ?? fixture.away.name}</span>
                 <span className="hidden sm:inline">{fixture.away.name}</span>
               </span>

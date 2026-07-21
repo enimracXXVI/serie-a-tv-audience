@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchCupFixturesRaw, updateCupFixture, addCupFixture, enrichCupFixture } from './cupFixtures.js';
+import { applySeasonTeamAttributes } from './teams.js';
+import { usePastTeams } from './usePastTeams.jsx';
+import { useSeasonTeamAttributes } from './useSeasonTeamAttributes.jsx';
 import { CURRENT_SEASON } from './seasons.js';
 
 // A cup fixture predating this column reads back with a blank `season` cell
@@ -32,16 +35,22 @@ export function useCupFixtures(teams, cupTeams, season) {
     };
   }, []);
 
-  const teamsBySlug = useMemo(() => new Map(teams.map((t) => [t.slug, t])), [teams]);
-  const cupTeamsBySlug = useMemo(() => new Map(cupTeams.map((t) => [t.slug, t])), [cupTeams]);
+  const teamByName = useMemo(() => new Map(teams.map((t) => [t.staticName, t])), [teams]);
+  const { byName: pastTeamsByName } = usePastTeams();
+  const cupTeamsByName = useMemo(() => new Map(cupTeams.map((t) => [t.name, t])), [cupTeams]);
+  const { rows: seasonAttributeRows } = useSeasonTeamAttributes();
 
-  const fixtures = useMemo(
-    () =>
-      rawFixtures
-        .filter((r) => seasonLabelOf(r) === season.label)
-        .map((r) => enrichCupFixture(r, teamsBySlug, cupTeamsBySlug)),
-    [rawFixtures, teamsBySlug, cupTeamsBySlug, season.label]
-  );
+  const isCurrent = season.label === CURRENT_SEASON.label;
+
+  const fixtures = useMemo(() => {
+    const enriched = rawFixtures
+      .filter((r) => seasonLabelOf(r) === season.label)
+      .map((r) => enrichCupFixture(r, teamByName, pastTeamsByName, cupTeamsByName));
+    // Current season already carries live Settings (sponsored etc.) via the
+    // team objects themselves - only a past season needs the season-scoped
+    // override pass, exactly like the main Serie A archive fixtures.
+    return isCurrent ? enriched : applySeasonTeamAttributes(enriched, season.label, seasonAttributeRows);
+  }, [rawFixtures, teamByName, pastTeamsByName, cupTeamsByName, season.label, isCurrent, seasonAttributeRows]);
 
   const updateFixture = useCallback(async (id, fields, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');

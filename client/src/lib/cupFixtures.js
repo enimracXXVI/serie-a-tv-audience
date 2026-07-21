@@ -1,4 +1,5 @@
 import { createSheetTabClient } from './sheetTab.js';
+import { resolveClubByName } from './teams.js';
 
 const client = createSheetTabClient({
   sheetName: 'cupFixtures',
@@ -6,16 +7,17 @@ const client = createSheetTabClient({
   autoIncrementId: true,
   numericFields: [
     'id',
-    'ourScore',
-    'theirScore',
+    'homeScore',
+    'awayScore',
     'audience',
     'addedTime1H',
     'addedTime2H',
-    'etOurScore',
-    'etTheirScore',
-    'penOurScore',
-    'penTheirScore',
+    'etHomeScore',
+    'etAwayScore',
+    'penHomeScore',
+    'penAwayScore',
   ],
+  booleanFields: ['neutralVenue'],
 });
 
 export const fetchCupFixturesRaw = client.fetchAll;
@@ -23,11 +25,28 @@ export const updateCupFixture = client.updateRow;
 export const addCupFixture = client.appendRow;
 
 export function isCupFixturePlayed(fixture) {
-  return fixture.ourScore !== null && fixture.ourScore !== undefined && fixture.theirScore !== null && fixture.theirScore !== undefined;
+  return fixture.homeScore !== null && fixture.homeScore !== undefined && fixture.awayScore !== null && fixture.awayScore !== undefined;
 }
 
 function hasValue(v) {
   return v !== null && v !== undefined && v !== '';
+}
+
+// Resolves the raw sheet row's home/away club NAMES (not slugs - see the
+// module doc below) into full team-like objects, checking the current Serie
+// A roster first (live crest/colours/sponsorship), then pastTeams (a club
+// that played Serie A before but not now), then cupTeams (a club that's
+// never played Serie A at all - the only tier the main fixtures tab doesn't
+// need), then a plain placeholder. Both sides go through the exact same
+// chain - there's no "our club vs opponent" asymmetry, so two Serie A clubs
+// (sponsored or not) can meet each other and both resolve correctly, and a
+// fixture doesn't need either side to be a club you're specifically tracking.
+export function enrichCupFixture(raw, teamByName, pastTeamsByName, cupTeamsByName) {
+  return {
+    ...raw,
+    home: resolveClubByName(raw.home, teamByName, pastTeamsByName, cupTeamsByName),
+    away: resolveClubByName(raw.away, teamByName, pastTeamsByName, cupTeamsByName),
+  };
 }
 
 // A knockout leg's "real" final score - the extra-time score once it went to
@@ -35,28 +54,28 @@ function hasValue(v) {
 // falling back to the regulation score otherwise. Penalties never change the
 // scoreline itself, just who goes through when the score above is level.
 export function resolveCupFixtureOutcome(fixture) {
-  const wentToEt = hasValue(fixture.etOurScore) && hasValue(fixture.etTheirScore);
-  const wentToPens = hasValue(fixture.penOurScore) && hasValue(fixture.penTheirScore);
+  const wentToEt = hasValue(fixture.etHomeScore) && hasValue(fixture.etAwayScore);
+  const wentToPens = hasValue(fixture.penHomeScore) && hasValue(fixture.penAwayScore);
   return {
-    ourScore: wentToEt ? fixture.etOurScore : fixture.ourScore,
-    theirScore: wentToEt ? fixture.etTheirScore : fixture.theirScore,
+    homeScore: wentToEt ? fixture.etHomeScore : fixture.homeScore,
+    awayScore: wentToEt ? fixture.etAwayScore : fixture.awayScore,
     wentToEt,
     wentToPens,
-    penOurScore: fixture.penOurScore ?? null,
-    penTheirScore: fixture.penTheirScore ?? null,
+    penHomeScore: fixture.penHomeScore ?? null,
+    penAwayScore: fixture.penAwayScore ?? null,
   };
 }
 
 // Two-legged ties aren't a separate concept in the sheet - just two rows
 // that happen to share a competition/round/season and the same two clubs
-// (home/away swapped between them). Grouping them live, rather than via a
-// manually-typed "tie" id, means there's nothing to remember to fill in and
-// nothing to get out of sync - the tradeoff is that it depends on `round`
-// being spelled identically on both legs (see README).
+// (home/away swapped between them - the pair is sorted so which leg is
+// "leg 1" doesn't matter for grouping). Grouping them live, rather than via
+// a manually-typed "tie" id, means there's nothing to remember to fill in
+// and nothing to get out of sync - the tradeoff is that it depends on
+// `round` being spelled identically on both legs (see README).
 export function tieKeyFor(fixture) {
-  const ourClubSlug = fixture.ourClub?.slug ?? fixture.ourClub;
-  const opponentSlug = fixture.opponent?.slug ?? fixture.opponent;
-  return `${fixture.competition}|${fixture.round}|${fixture.season}|${ourClubSlug}|${opponentSlug}`;
+  const pair = [fixture.home.slug, fixture.away.slug].sort().join('~');
+  return `${fixture.competition}|${fixture.round}|${fixture.season}|${pair}`;
 }
 
 // Preserves first-seen order, same as the fixture list itself, so a
@@ -75,45 +94,35 @@ export function groupIntoTies(fixtures) {
 // otherwise (a first leg alone, or a leg still to be played, has no
 // aggregate to show yet). Uses each leg's resolved (post-ET) outcome, since
 // an AET score is that leg's actual final score, not an addition to it.
+// Tracks the aggregate per CLUB, not per home/away column, since which club
+// is "home" flips between legs - teamA is arbitrarily leg 1's home club.
 export function computeTieAggregate(legs) {
   if (legs.length !== 2 || !legs.every(isCupFixturePlayed)) return null;
-  let ourAgg = 0;
-  let theirAgg = 0;
+  const teamA = legs[0].home;
+  const teamB = legs[0].away;
+  let aScore = 0;
+  let bScore = 0;
   for (const leg of legs) {
     const outcome = resolveCupFixtureOutcome(leg);
-    ourAgg += Number(outcome.ourScore) || 0;
-    theirAgg += Number(outcome.theirScore) || 0;
+    const homeIsA = leg.home.slug === teamA.slug;
+    aScore += Number(homeIsA ? outcome.homeScore : outcome.awayScore) || 0;
+    bScore += Number(homeIsA ? outcome.awayScore : outcome.homeScore) || 0;
   }
-  const penLeg = legs.find((l) => hasValue(l.penOurScore) && hasValue(l.penTheirScore));
+  const penLeg = legs.find((l) => hasValue(l.penHomeScore) && hasValue(l.penAwayScore));
+  let penAScore = null;
+  let penBScore = null;
+  if (penLeg) {
+    const homeIsA = penLeg.home.slug === teamA.slug;
+    penAScore = homeIsA ? penLeg.penHomeScore : penLeg.penAwayScore;
+    penBScore = homeIsA ? penLeg.penAwayScore : penLeg.penHomeScore;
+  }
   return {
-    ourAgg,
-    theirAgg,
-    decidedByPens: ourAgg === theirAgg && Boolean(penLeg),
-    penOurScore: penLeg?.penOurScore ?? null,
-    penTheirScore: penLeg?.penTheirScore ?? null,
-  };
-}
-
-// A stand-in so a row always has something Crest-safe to render even before
-// its opponent has been added to the cupTeams roster, or if "ourClub" points
-// at a slug that's since been renamed/removed from the main teams tab.
-function fallbackTeam(slug, name) {
-  return { slug, name: name ?? slug ?? 'Unknown', short: (name ?? slug ?? '???').slice(0, 3).toUpperCase(), crestUrl: null, primary: '#94a3b8', secondary: '#ffffff' };
-}
-
-// Resolves the raw sheet row's ourClub/opponent slugs into full team-like
-// objects (crest, colours) from the two different rosters they each come
-// from, and derives home/away from homeAway so display code can treat this
-// the same way it treats a main-fixtures row.
-export function enrichCupFixture(raw, teamsBySlug, cupTeamsBySlug) {
-  const ourClub = teamsBySlug.get(raw.ourClub) ?? fallbackTeam(raw.ourClub);
-  const opponent = cupTeamsBySlug.get(raw.opponent) ?? fallbackTeam(raw.opponent, raw.opponent);
-  const isHome = raw.homeAway !== 'away';
-  return {
-    ...raw,
-    ourClub,
-    opponent,
-    home: isHome ? ourClub : opponent,
-    away: isHome ? opponent : ourClub,
+    teamA,
+    teamB,
+    aScore,
+    bScore,
+    decidedByPens: aScore === bScore && Boolean(penLeg),
+    penAScore,
+    penBScore,
   };
 }
