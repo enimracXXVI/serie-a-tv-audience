@@ -1,10 +1,52 @@
 import { useState } from 'react';
 import { useCupData } from '../lib/useCupData.jsx';
 import { competitionScope } from '../lib/competitions.js';
+import { useAppSettings } from '../lib/useAppSettings.jsx';
 import { callWithReauth } from '../lib/reauth.js';
 
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9] placeholder:text-white/30';
+
+// Serie A itself isn't a row in the "competitions" tab (it's not a cup, and
+// has no fixtures of its own there) - but its logo is exactly the same kind
+// of setting as every entry below it, so it lives in the same section
+// instead of a separate "Serie A logo" one just for this one field.
+function SerieALogoField({ session }) {
+  const { serieALogoUrl, loading, saveAppSettings } = useAppSettings();
+  const [draft, setDraft] = useState(serieALogoUrl ?? '');
+  const [error, setError] = useState(null);
+
+  async function commit() {
+    if (draft === (serieALogoUrl ?? '')) return;
+    setError(null);
+    try {
+      await callWithReauth(session, (token) => saveAppSettings({ serieALogoUrl: draft }, token));
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  if (loading) return null;
+
+  return (
+    <div className="flex flex-col gap-1.5 rounded-lg bg-white/5 px-3 py-2">
+      <div className="flex items-center gap-2">
+        {serieALogoUrl && <img src={serieALogoUrl} alt="" className="h-5 max-w-[80px] object-contain" />}
+        <span className="text-sm font-semibold text-white">Serie A</span>
+      </div>
+      <input
+        type="text"
+        value={draft}
+        disabled={!session.signedIn}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        placeholder="Logo image URL"
+        className={`${inputClass} w-full`}
+      />
+      {error && <p className="text-xs text-red-300">{error}</p>}
+    </div>
+  );
+}
 
 function slugify(name) {
   return name
@@ -105,6 +147,7 @@ export default function CompetitionsPanel({ session }) {
         <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">{error}</p>
       ) : (
         <div className="flex flex-col gap-1.5">
+          <SerieALogoField session={session} />
           {competitions.map((c) => (
             <CompetitionRow key={c.value} competition={c} session={session} saveCompetition={saveCompetition} />
           ))}

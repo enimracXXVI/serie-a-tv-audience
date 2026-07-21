@@ -92,8 +92,22 @@ export default function ScreenshotableCard({ filename, background = '#ffffff', c
         .write([new ClipboardItem({ 'image/png': renderPromise })])
         .then(() => finish('copied'))
         .catch((err) => {
-          console.error('Failed to copy card image', err);
-          finish({ type: 'error', message: err?.message || String(err) });
+          // ClipboardItem existing doesn't mean an image/png write is
+          // actually supported - Firefox (especially on Android) has
+          // rejected this for real image data even when the constructor is
+          // present. Rather than dead-end on an error, fall back to a
+          // download the same way a browser with no Clipboard API at all
+          // already does below - the render itself already succeeded.
+          console.warn('Clipboard image write unsupported, falling back to download', err);
+          renderPromise
+            .then((blob) => {
+              downloadBlob(blob, filename);
+              finish('downloaded');
+            })
+            .catch((renderErr) => {
+              console.error('Failed to render card image', renderErr);
+              finish({ type: 'error', message: renderErr?.message || String(renderErr) });
+            });
         });
     } else {
       // Old Safari/Firefox without image clipboard support - fall back to a

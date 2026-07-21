@@ -8,6 +8,7 @@ const TABS = [
   { key: 'result', label: 'Result' },
   { key: 'addedTime', label: 'Added time' },
   { key: 'audience', label: 'Audience' },
+  { key: 'all', label: 'All' },
 ];
 
 // One shared editMode tab row per round, controlling every fixture (and both

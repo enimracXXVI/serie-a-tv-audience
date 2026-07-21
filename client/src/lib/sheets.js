@@ -1,5 +1,5 @@
 import { SPREADSHEET_ID, SHEET_NAME, GOOGLE_API_KEY } from './config.js';
-import { columnIndexToLetter, buildHeaderIndex, cell } from './sheetsCommon.js';
+import { columnIndexToLetter, buildHeaderIndex, cell, getSheetId } from './sheetsCommon.js';
 import { computeMatchTags } from './matchTags.js';
 import { computeDayOfWeek } from './matchdays.js';
 
@@ -53,6 +53,10 @@ const FULL_RANGE = `${SHEET_NAME}!A1:Z500`;
 // Cached after the first successful fetch so writes don't need their own
 // header lookup round-trip.
 let headerIndexCache = null;
+// id -> row number, same convention as sheetTab.js's generic client. Kept in
+// sync with reality by deleteFixtureRow refetching after an actual delete -
+// see there for why "row N+1 holds fixture id N" can no longer be assumed.
+let rowIndexCache = null;
 
 function excelSerialToISODate(serial) {
   const epoch = Date.UTC(1899, 11, 30);
@@ -114,7 +118,17 @@ export async function fetchFixtures() {
   const [headerRow, ...dataRows] = rows;
   const headerIndex = buildHeaderIndex(headerRow);
   headerIndexCache = headerIndex;
-  return dataRows.filter((r) => r.length > 0 && r[headerIndex.id] !== undefined).map((r) => rowToFixture(r, headerIndex));
+
+  const rowIndex = {};
+  const fixtures = [];
+  dataRows.forEach((row, i) => {
+    if (row.length === 0 || row[headerIndex.id] === undefined) return;
+    const fixture = rowToFixture(row, headerIndex);
+    fixtures.push(fixture);
+    rowIndex[fixture.id] = i + 2; // header occupies row 1
+  });
+  rowIndexCache = rowIndex;
+  return fixtures;
 }
 
 async function ensureHeaderIndex() {
@@ -139,7 +153,10 @@ async function fetchHeaderIndexFor(tabName) {
 
 export async function updateFixtureRow(fixture, accessToken) {
   const headerIndex = await ensureHeaderIndex();
-  const rowNumber = Number(fixture.id) + 1; // header occupies row 1
+  if (!rowIndexCache || rowIndexCache[fixture.id] === undefined) {
+    throw new Error('Fixtures data has not loaded yet - reload the page and try again.');
+  }
+  const rowNumber = rowIndexCache[fixture.id];
   const updatedAt = new Date().toISOString();
   const patch = { ...fixture, updatedAt };
 
@@ -229,29 +246,40 @@ export async function appendFixtureRow({ matchday, home, away, date, kickoffTime
     throw new Error(`Added, but the fixtures sheet has no column header for: ${missing.join(', ')}.`);
   }
 
+  // `current` (from the fetchFixtures above) reflects every row before this
+  // append, so the new one lands right after all of them - keeps
+  // rowIndexCache accurate for this row without waiting on another fetch.
+  rowIndexCache[nextId] = current.length + 2;
+
   return { ...fields };
 }
 
-// Clears the row's cells rather than removing the sheet row - same reasoning
-// as sheetTab.js's deleteRow: actually deleting the row would shift every
-// row below it, which fixtureRow's id-based `rowNumber = id + 1` math
-// depends on staying fixed. A cleared row is already skipped on the next
-// fetchFixtures (its id cell reads back blank), so this is a real delete
-// from the app's point of view, just leaving a blank row behind in the sheet.
+// Actually removes the sheet row (rather than just clearing its cells) -
+// deleteDimension shifts every row below it up by one, which would silently
+// break every other cached row number (including the "row N+1 holds fixture
+// id N" shortcut this file used to rely on) if left unaddressed. Refetches
+// right after so rowIndexCache is rebuilt from the sheet's real, post-delete
+// layout, and hands back the fresh fixture list so the caller doesn't need
+// to patch its own state blind to which rows just shifted.
 export async function deleteFixtureRow(id, accessToken) {
-  const headerIndex = await ensureHeaderIndex();
-  const rowNumber = Number(id) + 1;
-  const lastLetter = columnIndexToLetter(Math.max(...Object.values(headerIndex)));
-  const range = `${SHEET_NAME}!A${rowNumber}:${lastLetter}${rowNumber}`;
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(
-    range
-  )}:clear`;
+  if (!rowIndexCache || rowIndexCache[id] === undefined) {
+    throw new Error('Fixtures data has not loaded yet - reload the page and try again.');
+  }
+  const rowNumber = rowIndexCache[id];
+  const sheetId = await getSheetId(SHEET_NAME, accessToken);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}:batchUpdate`;
   const res = await fetch(url, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      requests: [
+        { deleteDimension: { range: { sheetId, dimension: 'ROWS', startIndex: rowNumber - 1, endIndex: rowNumber } } },
+      ],
+    }),
   });
   if (res.status === 401 || res.status === 403) throw new Error('UNAUTHENTICATED');
   if (!res.ok) throw new Error('Failed to delete fixture from Google Sheets');
+  return fetchFixtures();
 }
 
 // isBigMatch/isDerby also get written opportunistically whenever a fixture is

@@ -273,11 +273,24 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
         </div>
 
         {/* Also fixed-width regardless of whether another broadcaster is
-            present, so this never shifts the center block between rows. */}
-        <div className="flex w-16 shrink-0 items-center gap-1 overflow-hidden sm:w-24 sm:gap-2">
-          <BroadcasterBadge broadcaster={mainBroadcaster} fallbackName={mainBroadcasterName} className="h-3.5" />
+            present, so this never shifts the center block between rows.
+            Stacked (not side-by-side) on mobile - two wordmark logos sharing
+            one row here were splitting an already-narrow column, squeezing
+            the team names next to them into ellipsis even at 3 letters. Each
+            logo gets `w-full` so it always shrinks to the column's actual
+            width instead of pushing past it. */}
+        <div className="flex w-14 shrink-0 flex-col items-center justify-center gap-0.5 overflow-hidden sm:w-24 sm:flex-row sm:gap-2">
+          <BroadcasterBadge
+            broadcaster={mainBroadcaster}
+            fallbackName={mainBroadcasterName}
+            className="h-3 w-full sm:h-3.5 sm:w-auto"
+          />
           {fixture.otherBroadcaster && (
-            <BroadcasterBadge broadcaster={otherBroadcasterRow} fallbackName={fixture.otherBroadcaster} className="h-3" />
+            <BroadcasterBadge
+              broadcaster={otherBroadcasterRow}
+              fallbackName={fixture.otherBroadcaster}
+              className="h-2.5 w-full sm:h-3 sm:w-auto"
+            />
           )}
         </div>
       </div>

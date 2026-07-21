@@ -5,7 +5,6 @@ import OtherClubsPanel from './OtherClubsPanel.jsx';
 import SeasonTeamAttributesPanel from './SeasonTeamAttributesPanel.jsx';
 import BroadcastersPanel from './BroadcastersPanel.jsx';
 import CompetitionsPanel from './CompetitionsPanel.jsx';
-import AppSettingsPanel from './AppSettingsPanel.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
 import { useSession } from '../lib/useSession.jsx';
 
@@ -239,11 +238,6 @@ export default function HamburgerMenu() {
                   <div className="border-t border-white/10 pt-6">
                     <CollapsibleSection title="Past-season sponsorship / big match / derby">
                       <SeasonTeamAttributesPanel session={session} />
-                    </CollapsibleSection>
-                  </div>
-                  <div className="border-t border-white/10 pt-6">
-                    <CollapsibleSection title="Serie A logo">
-                      <AppSettingsPanel session={session} />
                     </CollapsibleSection>
                   </div>
                   <div className="border-t border-white/10 pt-6">
