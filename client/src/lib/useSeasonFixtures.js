@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useFixtures } from './useFixtures.js';
 import { fetchSeasonFixtures } from './seasonFixtures.js';
 import { enrichFixture, applySeasonTeamAttributes } from './teams.js';
+import { isSerieARow } from './competitions.js';
 import { useClubs } from './useClubs.jsx';
 import { useTeamSeasons } from './useTeamSeasons.jsx';
 
@@ -53,7 +54,10 @@ export function useSeasonFixtures(season, teams) {
   const { bySlug: clubsBySlug, byName: clubsByName } = useClubs();
   const { rows: teamSeasonRows } = useTeamSeasons();
   const enrichedArchive = useMemo(() => {
-    const enriched = archiveFixtures.map((r) => enrichFixture(r, clubsBySlug, clubsByName));
+    // The archive tab now also holds that season's cup fixtures - filter to
+    // Serie A rows only (see cupFixtures.js/useCupFixtures.js for the cup
+    // half of this same tab).
+    const enriched = archiveFixtures.filter(isSerieARow).map((r) => enrichFixture(r, clubsBySlug, clubsByName));
     return applySeasonTeamAttributes(enriched, season.label, teamSeasonRows);
   }, [archiveFixtures, clubsBySlug, clubsByName, season.label, teamSeasonRows]);
 

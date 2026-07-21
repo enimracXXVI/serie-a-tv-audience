@@ -21,6 +21,9 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
   const [matchdaySponsors, setMatchdaySponsors] = useState(row?.matchdaySponsors ?? '');
   const [playerMascots, setPlayerMascots] = useState(row?.playerMascots ?? '');
   const [walkabouts, setWalkabouts] = useState(row?.walkabouts ?? '');
+  const [ledMinutes, setLedMinutes] = useState(row?.ledMinutes ?? '');
+  const [addedTimeLed, setAddedTimeLed] = useState(Boolean(row?.addedTimeLed));
+  const [penaltyLed, setPenaltyLed] = useState(Boolean(row?.penaltyLed));
   const [saveError, setSaveError] = useState(null);
 
   async function commit(fields) {
@@ -50,6 +53,11 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
         {derbyRival && (
           <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-red-400">
             Derby
+          </span>
+        )}
+        {ledMinutes && (
+          <span className="rounded-full bg-sky-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-sky-400">
+            LED
           </span>
         )}
         <span className="text-white/40">{expanded ? '▾' : '▸'}</span>
@@ -148,6 +156,45 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
                   </label>
                 </div>
               )}
+              <div className="flex flex-wrap items-end gap-2 border-t border-white/10 pt-3">
+                <label className="flex flex-col gap-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">
+                    LED minutes in {season}
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={ledMinutes}
+                    onChange={(e) => setLedMinutes(e.target.value)}
+                    onBlur={() => commit({ ledMinutes: ledMinutes === '' ? null : Number(ledMinutes) })}
+                    className={`${inputClass} w-24`}
+                  />
+                </label>
+                <label className="flex items-center gap-2 pb-1.5">
+                  <input
+                    type="checkbox"
+                    checked={addedTimeLed}
+                    onChange={(e) => {
+                      setAddedTimeLed(e.target.checked);
+                      commit({ addedTimeLed: e.target.checked });
+                    }}
+                    className="h-4 w-4 accent-[#1fd8c9]"
+                  />
+                  <span className="text-xs font-semibold text-white/70">Exclusive during added time</span>
+                </label>
+                <label className="flex items-center gap-2 pb-1.5">
+                  <input
+                    type="checkbox"
+                    checked={penaltyLed}
+                    onChange={(e) => {
+                      setPenaltyLed(e.target.checked);
+                      commit({ penaltyLed: e.target.checked });
+                    }}
+                    className="h-4 w-4 accent-[#1fd8c9]"
+                  />
+                  <span className="text-xs font-semibold text-white/70">LED during penalties</span>
+                </label>
+              </div>
               {saveError && (
                 <p className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-xs text-red-300">
                   {saveError}
@@ -167,6 +214,9 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
               ) : (
                 <span>Not sponsored</span>
               )}
+              <span>LED minutes: {ledMinutes || '-'}</span>
+              <span>Added time exclusive: {addedTimeLed ? 'Yes' : 'No'}</span>
+              <span>LED during penalties: {penaltyLed ? 'Yes' : 'No'}</span>
             </div>
           )}
         </div>
@@ -231,11 +281,11 @@ export default function TeamSeasonsPanel({ session }) {
         </select>
       </div>
       <p className="text-xs text-white/40">
-        Sponsorship/big-match/derby designations for {selectedSeason.label} - a club with nothing set here shows as
-        not sponsored/big/derby for this season.
+        Sponsorship/big-match/derby/LED designations for {selectedSeason.label} - a club with nothing set here shows
+        as not sponsored/big/derby, with no LED deal, for this season.
       </p>
       {!session.signedIn && (
-        <p className="text-xs text-white/50">Sign in to edit sponsorship/big-match/derby designations.</p>
+        <p className="text-xs text-white/50">Sign in to edit sponsorship/big-match/derby/LED designations.</p>
       )}
       {loading ? (
         <p className="text-sm text-white/40">Loading…</p>

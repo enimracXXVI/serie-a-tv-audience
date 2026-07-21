@@ -134,7 +134,7 @@ export default function CupCompetitionsPage() {
           <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{fixturesError}</p>
         ) : fixtures.length === 0 ? (
           <p className="text-sm text-white/40">
-            No cup fixtures yet - sign in and use “Add fixture” above, or add a row directly to the cupFixtures sheet tab.
+            No cup fixtures yet - sign in and use “Add fixture” above, or add a row directly to this season's own fixtures sheet tab.
           </p>
         ) : (
           <>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchFixtures, updateFixtureRow, appendFixtureRow, deleteFixtureRow } from './sheets.js';
 import { enrichFixture, applySeasonTeamAttributes } from './teams.js';
+import { isSerieARow } from './competitions.js';
 import { useClubs } from './useClubs.jsx';
 import { useTeamSeasons } from './useTeamSeasons.jsx';
 import { useSeasons } from './useSeasons.jsx';
@@ -38,7 +39,10 @@ export function useFixtures(teamSlugs, teams) {
   const { rows: teamSeasonRows } = useTeamSeasons();
 
   const fixtures = useMemo(() => {
-    let enriched = rawFixtures.map((r) => enrichFixture(r, clubsBySlug, clubsByName));
+    // The live tab now also holds this season's cup fixtures (see
+    // cupFixtures.js/useCupFixtures.js) - filter to Serie A rows only before
+    // this hook's own consumers ever see them.
+    let enriched = rawFixtures.filter(isSerieARow).map((r) => enrichFixture(r, clubsBySlug, clubsByName));
     // sponsored/bigClub/derbyRival/caps are season-scoped now, not part of
     // the club object itself - the live season gets its own row(s) in
     // teamSeasons exactly like every archive season does (see teams.js).
@@ -91,7 +95,15 @@ export function useFixtures(teamSlugs, teams) {
       if (!teams.some((t) => t.slug === homeSlug) || !teams.some((t) => t.slug === awaySlug)) {
         throw new Error('Pick both a home and an away club.');
       }
-      const created = await appendFixtureRow({ matchday, home: homeSlug, away: awaySlug, date, kickoffTime }, accessToken, liveTab);
+      const fields = {
+        matchday,
+        day: computeDayOfWeek(date),
+        home: homeSlug,
+        away: awaySlug,
+        date: date || '',
+        kickoffTime: kickoffTime || '',
+      };
+      const created = await appendFixtureRow(fields, accessToken, liveTab);
       setRawFixtures((prev) => [...prev, created]);
       return created.id;
     },

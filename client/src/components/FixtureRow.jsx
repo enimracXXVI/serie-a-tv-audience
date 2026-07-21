@@ -150,6 +150,39 @@ function AudienceFields({ fixture, onUpdate, mainBroadcasterName }) {
   );
 }
 
+// LED perimeter-board tracking is scoped to the home club's own stadium
+// (boards only exist there - see the Dashboard README section on "Home
+// audience") - so this only ever looks at `fixture.home`'s season-scoped LED
+// settings from teamSeasons, never `away`'s.
+function LedFields({ fixture, onUpdate }) {
+  const { home } = fixture;
+  const hasLedDeal = Boolean(home.ledMinutes || home.addedTimeLed || home.penaltyLed);
+  if (!hasLedDeal) {
+    return <p className="text-xs text-gray-400">No LED deal for {home.name} this season.</p>;
+  }
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <NumberField
+        label="Extra LED minutes"
+        value={fixture.extraLedMinutes}
+        placeholder="min"
+        onCommit={(v) => onUpdate(fixture.id, { extraLedMinutes: v })}
+      />
+      {home.penaltyLed && (
+        <label className="flex items-center gap-2 pb-1.5">
+          <input
+            type="checkbox"
+            checked={Boolean(fixture.penaltyTaken)}
+            onChange={(e) => onUpdate(fixture.id, { penaltyTaken: e.target.checked })}
+            className="h-4 w-4 accent-[#1fd8c9]"
+          />
+          <span className="text-xs font-semibold text-gray-600">Penalty taken</span>
+        </label>
+      )}
+    </div>
+  );
+}
+
 function SponsorshipFields({ fixture, onUpdate, sponsorCounts }) {
   const sides = [];
   if (fixture.home.sponsored) sides.push({ prefix: 'home', team: fixture.home });
@@ -307,6 +340,7 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
           {editMode === 'sponsors' && (
             <SponsorshipFields fixture={fixture} onUpdate={onUpdate} sponsorCounts={sponsorCounts} />
           )}
+          {editMode === 'led' && <LedFields fixture={fixture} onUpdate={onUpdate} />}
           {editMode === 'all' && (
             <>
               <KickoffFields fixture={fixture} onUpdate={onUpdate} otherBroadcasterOptions={otherBroadcasterOptions} />
@@ -314,6 +348,7 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
               <AddedTimeFields fixture={fixture} onUpdate={onUpdate} />
               <AudienceFields fixture={fixture} onUpdate={onUpdate} mainBroadcasterName={mainBroadcasterName} />
               <SponsorshipFields fixture={fixture} onUpdate={onUpdate} sponsorCounts={sponsorCounts} />
+              <LedFields fixture={fixture} onUpdate={onUpdate} />
             </>
           )}
           {onDelete && (

@@ -48,7 +48,7 @@ export function enrichFixture(raw, clubsBySlug, clubsByName) {
     awayScore: raw.awayScore,
     daznAudience: raw.daznAudience,
     skyAudience: raw.skyAudience,
-    // A broadcaster's name (matching a row in the `broadcasters` tab) if this
+    // A broadcaster's slug (matching a row in the `broadcasters` tab) if this
     // game is also shown somewhere besides the main broadcaster, blank/null
     // otherwise - see BroadcastersPanel for how "main" is configured.
     otherBroadcaster: raw.otherBroadcaster || null,
@@ -61,6 +61,22 @@ export function enrichFixture(raw, clubsBySlug, clubsByName) {
     awayMatchdaySponsor: raw.awayMatchdaySponsor,
     awayPlayerMascot: raw.awayPlayerMascot,
     awayWalkabout: raw.awayWalkabout,
+    // LED perimeter-board tracking, Serie A rows only (see FixtureRow's LED
+    // tab) - blank/null on any cup row, same as every field below.
+    extraLedMinutes: raw.extraLedMinutes,
+    penaltyTaken: raw.penaltyTaken,
+    // Cup-only fields (see cupFixtures.js) - undefined/blank on a Serie A
+    // row, left here rather than in a separate enrichment function since
+    // both row types now come from the exact same tab/raw shape.
+    competition: raw.competition || null,
+    round: raw.round || null,
+    neutralVenue: raw.neutralVenue,
+    broadcaster: raw.broadcaster || null,
+    audience: raw.audience,
+    etHomeScore: raw.etHomeScore,
+    etAwayScore: raw.etAwayScore,
+    penHomeScore: raw.penHomeScore,
+    penAwayScore: raw.penAwayScore,
     updatedAt: raw.updatedAt,
   };
 }
@@ -114,6 +130,12 @@ export function overrideTeamAttributes(roster, seasonLabel, attributeRows) {
           matchdaySponsors: row?.matchdaySponsors ?? null,
           playerMascots: row?.playerMascots ?? null,
           walkabouts: row?.walkabouts ?? null,
+          // LED perimeter-board deal, this club's home games only that
+          // season - ledMinutes is a minutes total (not a boolean), so
+          // "no deal" is null/blank, not zero.
+          ledMinutes: row?.ledMinutes ?? null,
+          addedTimeLed: Boolean(row?.addedTimeLed),
+          penaltyLed: Boolean(row?.penaltyLed),
         },
       ];
     })

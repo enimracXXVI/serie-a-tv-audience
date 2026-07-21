@@ -1,29 +1,14 @@
-import { createSheetTabClient } from './sheetTab.js';
-import { resolveClub } from './teams.js';
-
-const client = createSheetTabClient({
-  sheetName: 'cupFixtures',
-  idField: 'id',
-  autoIncrementId: true,
-  numericFields: [
-    'id',
-    'homeScore',
-    'awayScore',
-    'audience',
-    'addedTime1H',
-    'addedTime2H',
-    'etHomeScore',
-    'etAwayScore',
-    'penHomeScore',
-    'penAwayScore',
-  ],
-  booleanFields: ['neutralVenue'],
-});
-
-export const fetchCupFixturesRaw = client.fetchAll;
-export const updateCupFixture = client.updateRow;
-export const addCupFixture = client.appendRow;
-export const deleteCupFixture = client.deleteRow;
+// Cup fixtures live in the very same per-season fixtures tab as Serie A rows
+// now (see sheets.js/competitions.js's isSerieARow) - moved out of the old
+// standalone cupFixtures tab that spanned every season at once, mirroring
+// how Serie A itself already gets a fresh tab each rollover. There's no CRUD
+// client here anymore (fetch/update/append/delete all go through sheets.js,
+// shared with Serie A - see useCupFixtures.js) - this file is now just the
+// pure, row-shape-agnostic helpers cup fixtures need on top of that.
+//
+// `season` is no longer a column on cup fixture rows either - which season a
+// row belongs to is now implicit in which tab it was read from, exactly
+// like Serie A fixtures never had a `season` column.
 
 export function isCupFixturePlayed(fixture) {
   return fixture.homeScore !== null && fixture.homeScore !== undefined && fixture.awayScore !== null && fixture.awayScore !== undefined;
@@ -31,21 +16,6 @@ export function isCupFixturePlayed(fixture) {
 
 function hasValue(v) {
   return v !== null && v !== undefined && v !== '';
-}
-
-// Resolves the raw sheet row's home/away cell (a slug for anything created
-// after clubs were unified into one slug-keyed tab, name text for anything
-// written before that) into full club objects - see teams.js's
-// resolveClub. Both sides go through the exact same chain - there's no "our
-// club vs opponent" asymmetry, so two Serie A clubs (sponsored or not) can
-// meet each other and both resolve correctly, and a fixture doesn't need
-// either side to be a club you're specifically tracking.
-export function enrichCupFixture(raw, clubsBySlug, clubsByName) {
-  return {
-    ...raw,
-    home: resolveClub(raw.home, clubsBySlug, clubsByName),
-    away: resolveClub(raw.away, clubsBySlug, clubsByName),
-  };
 }
 
 // A knockout leg's "real" final score - the extra-time score once it went to
@@ -66,7 +36,8 @@ export function resolveCupFixtureOutcome(fixture) {
 }
 
 // Two-legged ties aren't a separate concept in the sheet - just two rows
-// that happen to share a competition/round/season and the same two clubs
+// that happen to share a competition/round (season is implicit now - both
+// legs always come from the same season's own tab) and the same two clubs
 // (home/away swapped between them - the pair is sorted so which leg is
 // "leg 1" doesn't matter for grouping). Grouping them live, rather than via
 // a manually-typed "tie" id, means there's nothing to remember to fill in
@@ -74,7 +45,7 @@ export function resolveCupFixtureOutcome(fixture) {
 // `round` being spelled identically on both legs (see README).
 export function tieKeyFor(fixture) {
   const pair = [fixture.home.slug, fixture.away.slug].sort().join('~');
-  return `${fixture.competition}|${fixture.round}|${fixture.season}|${pair}`;
+  return `${fixture.competition}|${fixture.round}|${pair}`;
 }
 
 // Preserves first-seen order, same as the fixture list itself, so a

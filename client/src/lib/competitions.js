@@ -46,3 +46,12 @@ export function competitionScope(competition) {
 export function serieALogo(competitions) {
   return competitions.find((c) => c.value === SERIE_A_VALUE)?.logoUrl || '';
 }
+
+// Cup fixtures now live in the very same per-season fixtures tab as Serie A
+// rows (see sheets.js) - this one column tells them apart. A row with no
+// `competition` cell (every Serie A row written before this merge) or the
+// Serie A sentinel itself is a Serie A fixture; anything else is a cup
+// fixture's actual competition value.
+export function isSerieARow(raw) {
+  return !raw.competition || raw.competition === SERIE_A_VALUE;
+}

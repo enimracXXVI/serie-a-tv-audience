@@ -85,6 +85,8 @@ open the sheet directly, add these labels to row 1 if you want them:
 | V | awayWalkabout | |
 | W | isBigMatch | TRUE/FALSE — both clubs in this fixture are marked `bigClub` |
 | X | isDerby | TRUE/FALSE — the two clubs in this fixture are each other's `derbyRival` |
+| Y | extraLedMinutes | Extra LED perimeter-board minutes purchased for this specific home game, on top of whatever's contracted for the season (see `teamSeasons`' LED columns below) |
+| Z | penaltyTaken | TRUE/FALSE — a penalty was taken during the 90 minutes of this match (only meaningful, and only shown in the app, for a home club with a penalty-LED deal that season) |
 
 These TRUE/FALSE columns accept a real checkbox cell or plain text - "TRUE",
 "true", or "True" (with or without stray whitespace) all count as checked;
@@ -149,6 +151,24 @@ changing a club's `bigClub`/`derbyRival` (live or past-season), so historical
 rows update immediately instead of waiting for their next edit. An archive
 season whose tab doesn't exist yet is reported as failed rather than aborting
 the sync for every other season.
+
+Y-Z are only editable from the home page's **LED** tab (per matchday card),
+and only show up at all for a fixture whose *home* club has an LED deal for
+that season - `extraLedMinutes` is a free-entry number (extra minutes bought
+for that one game, on top of the season's base `ledMinutes`), `penaltyTaken`
+only appears if that home club's `penaltyLed` is checked. Both are scoped to
+the home side only, same as the Q-V columns above and the Dashboard's own
+"home audience" framing - LED perimeter boards only exist at a club's own
+stadium, so there's no "away LED" concept.
+
+**This same tab now also holds cup fixtures** (Coppa Italia, Champions
+League, etc.) for this season, sharing the header row above with a handful
+of extra cup-only columns after column Z - see "Cups" further down for the
+full list. A row's `competition` column decides which kind it is: blank (or
+`serie-a`) is a Serie A row like every one above; anything else is a cup
+fixture. If you're pasting Serie A rows by hand, just leave `competition`
+blank - there's nothing else to fill in for a Serie A row that a cup row
+doesn't also need.
 
 ### Settings panel layout
 
@@ -290,9 +310,9 @@ separate "live" version of these fields on the `teams` tab anymore.
 
 Add a `teamSeasons` tab (doesn't exist in the seeded sheet - add it
 yourself) with header row: `slug`, `team`, `season`, `sponsored`, `bigClub`,
-`derbyRival`, `matchdaySponsors`, `playerMascots`, `walkabouts` (an `id`
-column is also fine to keep, same app-never-touches-it deal as the other
-tabs above).
+`derbyRival`, `matchdaySponsors`, `playerMascots`, `walkabouts`, `ledMinutes`,
+`addedTimeLed`, `penaltyLed` (an `id` column is also fine to keep, same
+app-never-touches-it deal as the other tabs above).
 
 - `slug` here is this **row's own key** - always `season::teamSlug` (e.g.
   `26/27::roma`) - the app fills this in for you when you save from
@@ -309,13 +329,18 @@ tabs above).
 - `matchdaySponsors`, `playerMascots`, `walkabouts` - counters for tracking
   your company's in-stadium sponsorship activity at that club that season;
   leave blank for a club you don't sponsor that season.
+- `ledMinutes`, `addedTimeLed`, `penaltyLed` - this club's LED
+  perimeter-board advertising deal for that season, if any - see "LED
+  perimeter-board tracking" below. Independent of `sponsored` - a club can
+  have an LED deal without being a matchday-sponsor/mascot/walkabout club,
+  or vice versa.
 
 A club with **no row** for a given season shows as not sponsored, not a big
-club, no derby rival, no caps for that season - there's no fallback to any
-other season, by design. Managed from the hamburger menu's **Settings**
-panel's **Sponsorship / big match / derby** section: pick any season
-(current or archive) from the dropdown, and every club that actually played
-it that season gets an expandable row with these fields.
+club, no derby rival, no caps, no LED deal for that season - there's no
+fallback to any other season, by design. Managed from the hamburger menu's
+**Settings** panel's **Sponsorship / big match / derby** section: pick any
+season (current or archive) from the dropdown, and every club that actually
+played it that season gets an expandable row with these fields.
 
 `bigClub` and `derbyRival` drive automatic match highlighting - neither is
 stored per fixture, both are worked out live from the two teams involved for
@@ -330,6 +355,39 @@ whichever season is being viewed:
 
 Both show up as a small coloured left border plus a DERBY/BIG label on the
 fixture, everywhere it's displayed.
+
+### LED perimeter-board tracking
+
+A separate deal from sponsorship/big-match/derby above - a club's LED
+perimeter-board advertising is scoped to *their own home games* (the boards
+only exist at that club's own stadium, same "home audience" framing as the
+Dashboard), tracked with `teamSeasons`' three LED columns plus two per-fixture
+columns on the fixtures tab (see "Y-Z" above):
+
+- **`ledMinutes`** (per season/club) - core LED minutes contracted for that
+  club's home games that season. A number, not a boolean, since it's a
+  minutes total rather than a yes/no.
+- **`addedTimeLed`** (per season/club) - your brand is the only one allowed
+  on LED during all added/stoppage time at that club's home games that
+  season.
+- **`penaltyLed`** (per season/club) - your brand gets LED exposure whenever
+  *any* team (home or away) takes a penalty during the 90 minutes at that
+  club's home games that season.
+- **`extraLedMinutes`** (per fixture) - extra LED minutes purchased for that
+  one specific home game, on top of the season's `ledMinutes`. Free entry,
+  no cap.
+- **`penaltyTaken`** (per fixture) - a penalty was actually taken during that
+  game's 90 minutes - only shown (and only meaningful) if that game's home
+  club has `penaltyLed` checked for the season.
+
+All five are managed the same way as everything else here: the season-level
+three from Settings' **Sponsorship / big match / derby** panel (a club with
+nothing set has no LED deal, same "no fallback to another season" rule as
+sponsored/bigClub), the per-fixture two from a new **LED** tab on the home
+page's matchday cards, which only shows up at all for a fixture whose home
+club has some LED deal that season. This is Serie A only, the same
+deliberate scope as the sponsor-activation tracking above - cup fixtures
+don't track LED.
 
 ## Adding fixtures from the app
 
@@ -371,14 +429,16 @@ fine to keep, same app-never-touches-it deal as the other tabs above).
   fixtures tab now - there's no blank/implicit-live convention anymore.
   The live season's row points at whichever tab is actually being written
   to today (e.g. `fixtures_26_27`); an archive season's row points at a
-  read-only tab with **the exact same header row as the live one** (id,
-  matchday, day, date, home, away, homeScore, awayScore, daznAudience,
-  skyAudience, kickoffTime, updatedAt, otherBroadcaster, addedTime1H,
-  addedTime2H, daznSimulcastAudience, homeMatchdaySponsor, homePlayerMascot,
-  homeWalkabout, awayMatchdaySponsor, awayPlayerMascot, awayWalkabout,
-  isBigMatch, isDerby). Neither archive tab exists yet in the seeded sheet -
-  create `fixtures_25_26` and `fixtures_24_25` yourself (header row + past
-  results pasted in).
+  read-only tab with **the exact same header row as the live one** - both
+  the Serie A columns (id, matchday, day, date, home, away, homeScore,
+  awayScore, daznAudience, skyAudience, kickoffTime, updatedAt,
+  otherBroadcaster, addedTime1H, addedTime2H, daznSimulcastAudience,
+  homeMatchdaySponsor, homePlayerMascot, homeWalkabout, awayMatchdaySponsor,
+  awayPlayerMascot, awayWalkabout, isBigMatch, isDerby, extraLedMinutes,
+  penaltyTaken) and, on the same tab, that season's cup fixture rows (see
+  "Cups" below for their columns). Neither archive tab exists yet in the
+  seeded sheet - create `fixtures_25_26` and `fixtures_24_25` yourself
+  (header row + past results, both Serie A and cup, pasted in).
 - `current` - TRUE on exactly one row - **this**, not whether `tab` is
   blank, is what decides which season is live and editable.
 
@@ -437,12 +497,15 @@ Entirely a sheet operation now - no code change or redeploy needed:
    (including the live one) already points at its own named tab
    (e.g. this season is `fixtures_26_27`), rolling over doesn't clear or
    reuse a fixed tab - just create a fresh one for the new season (e.g.
-   `fixtures_27_28`) with the same header row and paste in its fixture
-   list. Add a row for it to the `seasons` tab with `current` set to TRUE
-   and its own `slug` (e.g. `27-28`), and flip the just-finished season's
-   row to `current` FALSE - its `tab` keeps pointing at the season that
-   just ended (e.g. `fixtures_26_27`), which now becomes a read-only
-   archive.
+   `fixtures_27_28`) with the same header row and paste in its Serie A
+   fixture list; the new season's own cup fixtures (Coppa Italia, etc.)
+   go in this same new tab too, once they're known (see "Cups" below - a
+   cup season can only be added to via the app, or pasted in, once it's
+   the live one). Add a row for it to the `seasons` tab with `current` set
+   to TRUE and its own `slug` (e.g. `27-28`), and flip the just-finished
+   season's row to `current` FALSE - its `tab` keeps pointing at the
+   season that just ended (e.g. `fixtures_26_27`), which now becomes a
+   read-only archive (both its Serie A and cup rows).
 4. Promoted clubs' `sponsored`/`bigClub`/`derbyRival`/caps all default to
    unset for the new season - set them from the **Sponsorship / big match /
    derby** Settings panel once the roster's updated (pick the new season
@@ -467,13 +530,14 @@ onto the `competitions` tab's `serie-a` row's `logoUrl` column.
 
 ## Cups (Coppa Italia / Champions League / Europa League / Conference League)
 
-These don't fit the Serie A schema - no round-robin, no fixed 38-matchday
-table, and opponents aren't limited to the current roster - so they live in
-their own tabs instead of extending `fixtures` (the `broadcasters` tab is
-the one exception - it's shared with the main Serie A calendar, see above;
-club branding is shared too, via the unified `teams` tab documented above).
-None of these exist in the seeded sheet - add them yourself if you want to
-track cup competitions:
+Cup fixtures don't fit the Serie A schema - no round-robin, no fixed
+38-matchday table, and opponents aren't limited to the current roster - but
+they do now live in the very same per-season fixtures tab as the Serie A
+calendar (see "Y-Z"/"This same tab now also holds cup fixtures" above),
+rather than a separate standalone tab of their own. `broadcasters` and club
+branding (the unified `teams` tab) were already shared with the main Serie A
+calendar; `competitions` is its own small tab below. None of these exist in
+the seeded sheet - add them yourself if you want to track cup competitions:
 
 **1. `competitions` tab** - which competitions exist, their logo, and their
 scope, so a fixture list/form can show a badge instead of a plain text label
@@ -514,45 +578,48 @@ every broadcaster (including the main one) is just a plain dropdown choice,
 picked and stored by `slug` (a plain broadcaster name typed by hand still
 resolves too, same slug-first/name-fallback rule as everywhere else).
 
-**3. `cupFixtures` tab** - the fixtures themselves. Header row: `id`,
-`competition`, `round`, `home`, `away`, `neutralVenue`, `date`,
-`kickoffTime`, `homeScore`, `awayScore`, `audience`, `broadcaster`,
-`addedTime1H`, `addedTime2H`, `season`, `etHomeScore`, `etAwayScore`,
-`penHomeScore`, `penAwayScore`. `home`/`away` hold a club's `teams`-tab
-**slug** for anything added through the app (a plain club **name** still
-works too - typed by hand, or a row written before the slug-based rewrite -
-the app checks slug first, then falls back to matching by name). There's no
-"your club vs the opponent" distinction, both are just whichever two clubs
-actually played, resolved the same way for either side - this is what lets
-two of your own sponsored clubs meet each other correctly, and lets any
-club's crest/colours show up as long as it has a `teams` row. `broadcaster`
-holds a `broadcasters`-tab **slug** the same way, with the same
-name-fallback for anything typed by hand. `round` is
-free text (`Round of 16`, `Group A`, whatever your competition calls it -
-there's no fixed round list, a group stage and a knockout draw both just
-work); `neutralVenue` is TRUE/FALSE, for the rare match (typically a final)
-at neither club's own ground. There's no sponsor-activation (matchday
-sponsor/player mascot/walkabout) tracking here (that was a deliberate call -
-those are tracked per Serie A home game only), just audience and added
-time - though a sponsored club's name IS highlighted (bold + a small dot),
-same as everywhere else in the app.
+**3. Cup fixture rows, on the season's own fixtures tab** - there's no
+separate `cupFixtures` tab anymore; a cup fixture is just another row on
+that season's `fixtures_XX_YY` tab (the exact same tab documented up in
+"Rolling over a new season"/"seasons"), using the extra columns after `Z`
+(`extraLedMinutes`/`penaltyTaken`) that a Serie A row leaves blank: `competition`,
+`round`, `neutralVenue`, `broadcaster`, `audience`, `etHomeScore`,
+`etAwayScore`, `penHomeScore`, `penAwayScore`. `competition` is what tells a
+row apart from a Serie A one (see "This same tab now also holds cup
+fixtures" above) - it holds the stable `value` key from the `competitions`
+tab below (e.g. `CoppaItalia`), never blank or `serie-a` for an actual cup
+row. `home`/`away` hold a club's `teams`-tab **slug** for anything added
+through the app (a plain club **name** still works too - typed by hand, or a
+row written before the slug-based rewrite - the app checks slug first, then
+falls back to matching by name). There's no "your club vs the opponent"
+distinction, both are just whichever two clubs actually played, resolved the
+same way for either side - this is what lets two of your own sponsored
+clubs meet each other correctly, and lets any club's crest/colours show up
+as long as it has a `teams` row. `broadcaster` holds a `broadcasters`-tab
+**slug** the same way, with the same name-fallback for anything typed by
+hand. `round` is free text (`Round of 16`, `Group A`, whatever your
+competition calls it - there's no fixed round list, a group stage and a
+knockout draw both just work); `neutralVenue` is TRUE/FALSE, for the rare
+match (typically a final) at neither club's own ground. There's no
+sponsor-activation (matchday sponsor/player mascot/walkabout) or LED
+tracking here (that was a deliberate call - those stay Serie A home games
+only), just audience and added time - though a sponsored club's name IS
+highlighted (bold + a small dot), same as everywhere else in the app.
 
-`season` matches a label in the `seasons` tab (see "Past seasons" above),
-e.g. `26/27` - a blank cell reads as the current season (a one-time
-fallback for rows added before this column existed; the app always writes a
-real label from now on). Unlike Serie A, cup fixtures for every season live
-in this one tab rather than one tab per season - cup volume is small enough
-that a separate archive tab per season would just be overhead. Sponsorship
+Which season a cup fixture belongs to is implicit in which tab it's on now
+(there's no `season` column anymore - the app never reads or writes one) -
+exactly like Serie A fixtures already worked before this change. Sponsorship
 highlighting is season-scoped too, exactly like the main calendar, reading
 the `teamSeasons` tab for whichever season is selected (only the `sponsored`
-field is used for cup fixtures - `bigClub`/`derbyRival` don't apply here).
+field is used for cup fixtures - `bigClub`/`derbyRival`/LED don't apply
+here, by design - see "LED perimeter-board tracking" above).
 
-**Two-legged ties**: add both legs as two ordinary rows (same `competition`,
-`round`, `season`, and the same two clubs in `home`/`away` - swapped between
-the two rows) - the app groups them automatically and shows an aggregate
-score once both are played. There's no separate "tie" field to fill in;
-grouping is purely by those matching columns, so keep `round`'s spelling
-identical on both legs.
+**Two-legged ties**: add both legs as two ordinary rows on the same season's
+tab (same `competition`, `round`, and the same two clubs in `home`/`away` -
+swapped between the two rows) - the app groups them automatically and shows
+an aggregate score once both are played. There's no separate "tie" field to
+fill in; grouping is purely by those matching columns, so keep `round`'s
+spelling identical on both legs.
 
 **Extra time / penalties**: `etHomeScore`/`etAwayScore` are optional - fill
 them in only if a match (a single-leg round, a final, or the second leg of a
@@ -580,20 +647,38 @@ sheet directly instead, whichever's quicker for what you're doing. **Past
 cup seasons are frozen** - no Add fixture, no editing an existing row - same
 precedent as Serie A's archive tabs. Backfilling an already-completed cup
 season (a past Coppa Italia bracket, say) is a direct sheet paste: add rows
-to `cupFixtures` with that season's label filled in by hand, the same way
-Serie A archive tabs and `teamSeasons` are all populated for history.
+to that season's own `fixtures_XX_YY` tab, the same way Serie A archive
+tabs and `teamSeasons` are all populated for history.
 
-### Migrating from the old `ourClub`/`opponent` shape
+### Migrating from the old standalone `cupFixtures` tab
 
-If your `cupFixtures`/`cupTeams` tabs still use the previous columns
-(`ourClub`, `opponent`, `homeAway`, `ourScore`, `theirScore`,
+If you're upgrading from before cup fixtures moved onto the season's own
+fixtures tab, do this once, per season you want to keep cup history for:
+
+1. **Back up first** (Google Sheets → File → Version history → Name current
+   version, or just duplicate the old `cupFixtures` tab) - the steps below
+   move rows out of it for good.
+2. For each season's rows in the old `cupFixtures` tab, copy them onto that
+   season's own `fixtures_XX_YY` tab (a new tab if that season doesn't have
+   fixture rows there yet, e.g. a cup-only season) - same columns as before,
+   minus the old `season` column (implicit now - see "This same tab now
+   also holds cup fixtures" above), so drop `season` and leave `competition`
+   as-is for every cup row you copy over.
+3. Delete the old `cupFixtures` tab once you've confirmed the Cups page
+   looks right for every season - the app no longer reads it.
+
+### Migrating from the even older `ourClub`/`opponent` shape
+
+If your (now-retired) `cupFixtures`/`cupTeams` tabs still use the previous
+columns (`ourClub`, `opponent`, `homeAway`, `ourScore`, `theirScore`,
 `etOurScore`/`etTheirScore`, `penOurScore`/`penTheirScore`, and `cupTeams`'
-old `slug` column), run the one-time converter below instead of migrating by
-hand - reshuffling which score belongs to `home` vs `away` depends on each
-row's old `homeAway` value, which is tedious and error-prone to do row by
-row. **Back up both tabs first** (Google Sheets → File → Version history →
-Name current version, or just duplicate the tabs) - this script overwrites
-`cupFixtures` and `cupTeams` in place.
+old `slug` column), run the one-time converter below first, then follow the
+migration above to move its output onto each season's own tab - reshuffling
+which score belongs to `home` vs `away` depends on each row's old `homeAway`
+value, which is tedious and error-prone to do row by row. **Back up both
+tabs first** (Google Sheets → File → Version history → Name current
+version, or just duplicate the tabs) - this script overwrites `cupFixtures`
+and `cupTeams` in place.
 
 1. Open the app in a browser tab and **sign in** (the script reuses that
    session to write).
@@ -604,12 +689,14 @@ Name current version, or just duplicate the tabs) - this script overwrites
    check for errors before trusting the result, then delete your backup
    copies once you've confirmed the Cups page looks right.
 
-This script still writes its output to a `cupTeams` tab (the shape that
-existed when it was written) - the app itself no longer reads that tab, so
-if you're running this old migration today, copy `cupTeams`' rows into the
-unified `teams` tab by hand afterwards (name/short/crestUrl/primary/
-secondary as-is, `scope` set to `national`/`european` depending on its old
-`competition`) to get that data into the tab the app actually uses.
+This script still writes its output to `cupFixtures`/`cupTeams` tabs (the
+shape that existed when it was written) - the app itself no longer reads
+either tab, so if you're running this old migration today, follow it up
+with: copying `cupTeams`' rows into the unified `teams` tab by hand
+(name/short/crestUrl/primary/secondary as-is, `scope` set to
+`national`/`european` depending on its old `competition`), then the
+standalone-`cupFixtures`-tab migration above to get its rows onto each
+season's own tab.
 
 ## Standing Tiebreakers
 If after all 38 games, two teams are tied on points for either first place or for 17th (the last safety spot), the outcome is decided by a single-legged play-off match. This match consists of 90 minutes of regulation time followed by penalties if necessary (no extra time). The game is to be held at a neutral venue, with the designated "home" team determined by the performance-based criteria listed below. In cases where there are at least three teams tied for one of these positions, a mini table is created using the same tiebreakers to determine which two teams will play in the decider. For ties concerning all other league positions, the following tiebreakers are applied:
@@ -727,6 +814,11 @@ Below that:
 Every card on the page has a small camera button in its top-right corner -
 click it to download just that card as a PNG (2x resolution), e.g. to drop
 into a sponsorship deck without a manual screen-crop.
+
+On desktop, a slim dot rail floats down the left edge of the page (hidden on
+mobile, where there's no room for it) - hover a dot to see which card it
+jumps to, click to scroll straight there instead of hunting up and down the
+page for it.
 
 ## One-time setup
 
