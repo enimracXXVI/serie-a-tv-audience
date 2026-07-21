@@ -1,66 +1,49 @@
-import teamsData from '../data/teams.json';
+import { slugify } from './clubs.js';
 
-export const teams = teamsData;
-
-// A past-season fixture can name a club that's no longer (or wasn't yet) in
-// the current 20-club roster - relegated/promoted since. There's no team
-// record for it, so it needs a stable synthetic slug of its own (rather than
-// staying slug-less) so per-team metrics can still group its games.
-function slugify(name) {
-  return String(name)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-}
-
-// A club not in the current roster still gets its real crest/colours if
-// it's been added to the "otherClubs" Settings tab (see useOtherClubs.jsx) -
-// otherwise it falls back to a plain short-code/grey placeholder, same as
-// before that tab existed.
-function fallbackTeam(name, otherClubsByName) {
-  const other = otherClubsByName.get(name);
+// A truly unrecognized club (typo, or a row that hasn't been added to the
+// unified "teams" tab yet) still needs *something* to render - a plain
+// short-code/grey placeholder, same as always. `raw` here is whatever text
+// the fixture cell actually held (a slug for anything created after the
+// slug-based rewrite, a name for anything written before it) - used as both
+// the display name and the slug fallback since there's nothing better to
+// go on.
+function unknownClubFallback(raw) {
   return {
-    name,
-    slug: other?.slug || slugify(name),
-    short: other?.short || String(name).slice(0, 3).toUpperCase(),
-    crestUrl: other?.crestUrl || null,
-    primary: other?.primary || null,
-    secondary: other?.secondary || null,
+    name: raw,
+    slug: slugify(raw),
+    short: String(raw).slice(0, 3).toUpperCase(),
+    crestUrl: null,
+    primary: null,
+    secondary: null,
   };
 }
 
-// Same fallback shape as fallbackTeam above - used by cup fixtures, where a
-// club can be a genuine non-Serie-A opponent that never played in the
-// current roster or its history at all, same "otherClubs" tab either way.
-export function resolveClubByName(name, teamByName, otherClubsByName) {
-  const current = teamByName.get(name);
-  if (current) return current;
-  const branding = otherClubsByName?.get(name);
-  return {
-    name,
-    slug: branding?.slug || slugify(name),
-    short: branding?.short || String(name).slice(0, 3).toUpperCase(),
-    crestUrl: branding?.crestUrl || null,
-    primary: branding?.primary || null,
-    secondary: branding?.secondary || null,
-    sponsored: false,
-    bigClub: false,
-    derbyRival: null,
-  };
+// Resolves a fixture's home/away cell text to a full club object. Slug is
+// tried first (every fixture created after the unified "teams" tab shipped
+// writes a slug), falling back to a name-text match (every fixture written
+// before that, plus a legacy row that's never had its home/away cell
+// rewritten) - so a club can be renamed going forward without a mass
+// rewrite of `fixtures`/`cupFixtures`/archive tabs. See clubs.js/README for
+// the full reasoning.
+export function resolveClub(raw, clubsBySlug, clubsByName) {
+  return clubsBySlug.get(raw) ?? clubsByName?.get(raw) ?? unknownClubFallback(raw);
 }
 
-// Fixtures store home/away as the club's bundled (immutable) name text, so
-// matching must stay keyed by that even if a live Settings edit renames the
-// club for display - see useTeams.js's `staticName`.
-export function enrichFixture(raw, teamByName, otherClubsByName = new Map()) {
+// Fixtures store home/away as whatever text was picked at creation time
+// (slug going forward, name text for anything older) - resolveClub handles
+// either. `sponsored`/`bigClub`/`derbyRival`/the sponsor-activation caps are
+// NOT part of a resolved club object here - those are season-scoped and
+// applied afterwards by applySeasonTeamAttributes, for every season
+// including the current one.
+export function enrichFixture(raw, clubsBySlug, clubsByName) {
   return {
     id: raw.id,
     matchday: raw.matchday,
     day: raw.day,
     date: raw.date,
     kickoffTime: raw.kickoffTime,
-    home: teamByName.get(raw.home) ?? fallbackTeam(raw.home, otherClubsByName),
-    away: teamByName.get(raw.away) ?? fallbackTeam(raw.away, otherClubsByName),
+    home: resolveClub(raw.home, clubsBySlug, clubsByName),
+    away: resolveClub(raw.away, clubsBySlug, clubsByName),
     homeScore: raw.homeScore,
     awayScore: raw.awayScore,
     daznAudience: raw.daznAudience,
@@ -94,43 +77,49 @@ export function teamsInFixtures(fixtures) {
   );
 }
 
-// sponsored/bigClub/derbyRival on a live team object are global, current-only
-// Settings - applying them to a past season's fixtures as-is would make
-// today's sponsorship/derby designations silently apply retroactively. This
-// overrides those three fields for one archive season using the
-// "seasonTeamAttributes" tab, defaulting to false/null for any club with no
-// row for that season - there's deliberately no fallback to the live value.
+// sponsored/bigClub/derbyRival/matchdaySponsors/playerMascots/walkabouts
+// live on the `teamSeasons` tab, one row per (season, club) - a club with no
+// row for a given season defaults to not-sponsored/not-big/no-derby/no caps,
+// by construction (there's no fallback to any other season's value). Applied
+// to every season now, including the current one - not just archives - so
+// `teams` (the unified branding tab) never needs to carry a season dimension
+// at all.
 //
-// derbyRival is stored in the sheet as a name, not a slug (a current-roster
-// club's real slug is arbitrary and not guaranteed to equal a slugified
-// name, while a non-roster club's only slug IS its slugified name) - it's
-// resolved to an actual slug here, against THIS season's own real roster, so
-// a current-roster rival resolves to its real slug and a non-roster rival
-// resolves to the exact same synthetic slug enrichFixture already gave it
-// elsewhere in this same fixture list. An unresolvable name (typo, or the
-// rival never played this season) fails closed to null, never a wrong match.
-export function applySeasonTeamAttributes(fixtures, seasonLabel, attributeRows) {
-  const roster = teamsInFixtures(fixtures);
-  const nameToSlug = new Map(roster.map((t) => [t.staticName ?? t.name, t.slug]));
-
-  const rowsByName = new Map(
-    attributeRows.filter((r) => r.season === seasonLabel).map((r) => [r.name, r])
+// derbyRival is stored as a slug directly (clubs are keyed by slug
+// everywhere now, so there's no name-to-slug resolution needed here anymore,
+// unlike before the unification). Exported separately from
+// applySeasonTeamAttributes (below) so useTeams.jsx can apply the exact same
+// override to a plain roster list, not just a fixture list's embedded
+// home/away objects - both need the current season's sponsored/bigClub/
+// derbyRival/caps, since neither the `teams` tab nor a bare club object
+// carries them anymore.
+export function overrideTeamAttributes(roster, seasonLabel, attributeRows) {
+  const rowsBySlug = new Map(
+    attributeRows.filter((r) => r.season === seasonLabel).map((r) => [r.slug, r])
   );
 
-  const overridden = new Map(
+  return new Map(
     roster.map((team) => {
-      const row = rowsByName.get(team.staticName ?? team.name);
+      const row = rowsBySlug.get(team.slug);
       return [
         team.slug,
         {
           ...team,
           sponsored: Boolean(row?.sponsored),
           bigClub: Boolean(row?.bigClub),
-          derbyRival: row?.derbyRival ? (nameToSlug.get(row.derbyRival) ?? null) : null,
+          derbyRival: row?.derbyRival || null,
+          matchdaySponsors: row?.matchdaySponsors ?? null,
+          playerMascots: row?.playerMascots ?? null,
+          walkabouts: row?.walkabouts ?? null,
         },
       ];
     })
   );
+}
+
+export function applySeasonTeamAttributes(fixtures, seasonLabel, attributeRows) {
+  const roster = teamsInFixtures(fixtures);
+  const overridden = overrideTeamAttributes(roster, seasonLabel, attributeRows);
 
   return fixtures.map((f) => ({
     ...f,

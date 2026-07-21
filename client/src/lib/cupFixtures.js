@@ -1,5 +1,5 @@
 import { createSheetTabClient } from './sheetTab.js';
-import { resolveClubByName } from './teams.js';
+import { resolveClub } from './teams.js';
 
 const client = createSheetTabClient({
   sheetName: 'cupFixtures',
@@ -33,19 +33,18 @@ function hasValue(v) {
   return v !== null && v !== undefined && v !== '';
 }
 
-// Resolves the raw sheet row's home/away club NAMES (not slugs - see the
-// module doc below) into full team-like objects, checking the current Serie
-// A roster first (live crest/colours/sponsorship), then otherClubs (a club
-// that played Serie A before but not now, or one that never has), then a
-// plain placeholder. Both sides go through the exact same chain - there's no
-// "our club vs opponent" asymmetry, so two Serie A clubs (sponsored or not)
-// can meet each other and both resolve correctly, and a fixture doesn't need
+// Resolves the raw sheet row's home/away cell (a slug for anything created
+// after clubs were unified into one slug-keyed tab, name text for anything
+// written before that) into full club objects - see teams.js's
+// resolveClub. Both sides go through the exact same chain - there's no "our
+// club vs opponent" asymmetry, so two Serie A clubs (sponsored or not) can
+// meet each other and both resolve correctly, and a fixture doesn't need
 // either side to be a club you're specifically tracking.
-export function enrichCupFixture(raw, teamByName, otherClubsByName) {
+export function enrichCupFixture(raw, clubsBySlug, clubsByName) {
   return {
     ...raw,
-    home: resolveClubByName(raw.home, teamByName, otherClubsByName),
-    away: resolveClubByName(raw.away, teamByName, otherClubsByName),
+    home: resolveClub(raw.home, clubsBySlug, clubsByName),
+    away: resolveClub(raw.away, clubsBySlug, clubsByName),
   };
 }
 

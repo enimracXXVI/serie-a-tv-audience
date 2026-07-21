@@ -1,29 +1,30 @@
 import { useState } from 'react';
 import { competitionScope } from '../lib/competitions.js';
+import { clubScope, slugify } from '../lib/clubs.js';
 
 const inputClass =
-  'rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
+  'w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
 
 const NEW_CLUB = '__new__';
 
-function ClubSelect({ label, value, onChange, teams, opponents }) {
+function ClubSelect({ label, value, onChange, currentRoster, opponents }) {
   return (
     <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
       <option value="">{label}</option>
-      {teams.length > 0 && (
+      {currentRoster.length > 0 && (
         <optgroup label="Serie A">
-          {teams.map((t) => (
-            <option key={t.staticName} value={t.staticName}>
-              {t.name}
+          {currentRoster.map((c) => (
+            <option key={c.slug} value={c.slug}>
+              {c.name}
             </option>
           ))}
         </optgroup>
       )}
       {opponents.length > 0 && (
         <optgroup label="Other clubs">
-          {opponents.map((t) => (
-            <option key={t.name} value={t.name}>
-              {t.name}
+          {opponents.map((c) => (
+            <option key={c.slug} value={c.slug}>
+              {c.name}
             </option>
           ))}
         </optgroup>
@@ -37,11 +38,12 @@ function ClubSelect({ label, value, onChange, teams, opponents }) {
 // adding several fixtures for the same round - a full matchday's worth of
 // cup ties - doesn't mean re-picking the same competition/round every time.
 // Home and away are both picked from the exact same combined list (any
-// Serie A club, sponsored or not, plus any otherClubs club whose scope
-// matches the selected competition) - there's no "your club" side, so two
-// of your own sponsored clubs can meet each other just as easily as either
-// meeting a club you've never heard of.
-export default function AddCupFixtureForm({ teams, otherClubs = [], competitions, onCreate, onCreateOpponent, onDone }) {
+// Serie A club, sponsored or not, plus any club whose scope matches the
+// selected competition) - there's no "your club" side, so two of your own
+// sponsored clubs can meet each other just as easily as either meeting a
+// club you've never heard of. Both sides write the picked club's SLUG (not
+// name text) into the fixture - see clubs.js/teams.js for why.
+export default function AddCupFixtureForm({ clubs, competitions, onCreate, onCreateOpponent, onDone }) {
   const [competition, setCompetition] = useState(competitions[0].value);
   const [round, setRound] = useState('');
   const [home, setHome] = useState('');
@@ -57,7 +59,8 @@ export default function AddCupFixtureForm({ teams, otherClubs = [], competitions
   const [error, setError] = useState(null);
 
   const scope = competitionScope(competitions.find((c) => c.value === competition));
-  const opponents = otherClubs.filter((t) => (t.scope === 'european' ? 'european' : 'national') === scope);
+  const currentRoster = clubs.filter((c) => clubScope(c) === 'current');
+  const opponents = clubs.filter((c) => clubScope(c) === scope);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -72,40 +75,44 @@ export default function AddCupFixtureForm({ teams, otherClubs = [], competitions
     }
     setSaving(true);
     try {
-      let homeName = home;
+      let homeSlug = home;
       if (home === NEW_CLUB) {
         if (!newHomeClubName.trim()) throw new Error('Enter the new home club’s name.');
-        homeName = newHomeClubName.trim();
+        const name = newHomeClubName.trim();
+        homeSlug = slugify(name);
         await onCreateOpponent({
-          name: homeName,
-          short: homeName.slice(0, 3).toUpperCase(),
+          name,
+          slug: homeSlug,
+          short: name.slice(0, 3).toUpperCase(),
           crestUrl: newHomeClubCrestUrl.trim(),
           primary: '#0f1e54',
           secondary: '#ffffff',
           scope,
         });
       }
-      let awayName = away;
+      let awaySlug = away;
       if (away === NEW_CLUB) {
         if (!newAwayClubName.trim()) throw new Error('Enter the new away club’s name.');
-        awayName = newAwayClubName.trim();
+        const name = newAwayClubName.trim();
+        awaySlug = slugify(name);
         await onCreateOpponent({
-          name: awayName,
-          short: awayName.slice(0, 3).toUpperCase(),
+          name,
+          slug: awaySlug,
+          short: name.slice(0, 3).toUpperCase(),
           crestUrl: newAwayClubCrestUrl.trim(),
           primary: '#0f1e54',
           secondary: '#ffffff',
           scope,
         });
       }
-      if (homeName === awayName) {
+      if (homeSlug === awaySlug) {
         throw new Error('Home and away must be different clubs.');
       }
       await onCreate({
         competition,
         round: round.trim(),
-        home: homeName,
-        away: awayName,
+        home: homeSlug,
+        away: awaySlug,
         neutralVenue,
         date: date || '',
         kickoffTime: kickoffTime || '',
@@ -146,7 +153,7 @@ export default function AddCupFixtureForm({ teams, otherClubs = [], competitions
           placeholder="Round (e.g. Round of 16)"
           className={`${inputClass} w-48`}
         />
-        <ClubSelect label="Home club…" value={home} onChange={setHome} teams={teams} opponents={opponents} />
+        <ClubSelect label="Home club…" value={home} onChange={setHome} currentRoster={currentRoster} opponents={opponents} />
         {home === NEW_CLUB && (
           <>
             <input
@@ -165,7 +172,7 @@ export default function AddCupFixtureForm({ teams, otherClubs = [], competitions
             />
           </>
         )}
-        <ClubSelect label="Away club…" value={away} onChange={setAway} teams={teams} opponents={opponents} />
+        <ClubSelect label="Away club…" value={away} onChange={setAway} currentRoster={currentRoster} opponents={opponents} />
         {away === NEW_CLUB && (
           <>
             <input

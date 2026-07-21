@@ -5,10 +5,10 @@ import StandingsPage from './pages/StandingsPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import CupCompetitionsPage from './pages/CupCompetitionsPage.jsx';
 import HamburgerMenu from './components/HamburgerMenu.jsx';
-import { TeamsProvider } from './lib/useTeams.jsx';
+import { ClubsProvider } from './lib/useClubs.jsx';
 import { CupDataProvider } from './lib/useCupData.jsx';
-import { OtherClubsProvider } from './lib/useOtherClubs.jsx';
-import { SeasonTeamAttributesProvider } from './lib/useSeasonTeamAttributes.jsx';
+import { SeasonsProvider } from './lib/useSeasons.jsx';
+import { TeamSeasonsProvider } from './lib/useTeamSeasons.jsx';
 import { AppSettingsProvider } from './lib/useAppSettings.jsx';
 import { SessionProvider } from './lib/useSession.jsx';
 
@@ -16,9 +16,9 @@ export default function App() {
   return (
     <SessionProvider>
       <AppSettingsProvider>
-        <TeamsProvider>
-          <OtherClubsProvider>
-            <SeasonTeamAttributesProvider>
+        <SeasonsProvider>
+          <ClubsProvider>
+            <TeamSeasonsProvider>
               <CupDataProvider>
                 <HamburgerMenu />
                 <Routes>
@@ -29,9 +29,9 @@ export default function App() {
                   <Route path="/cup" element={<CupCompetitionsPage />} />
                 </Routes>
               </CupDataProvider>
-            </SeasonTeamAttributesProvider>
-          </OtherClubsProvider>
-        </TeamsProvider>
+            </TeamSeasonsProvider>
+          </ClubsProvider>
+        </SeasonsProvider>
       </AppSettingsProvider>
     </SessionProvider>
   );

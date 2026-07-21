@@ -3,7 +3,7 @@ import { getStoredSession, signIn as googleSignIn, signOut as googleSignOut } fr
 
 const SessionContext = createContext(null);
 
-// Shared across the whole app (like TeamsProvider) so signing in from the
+// Shared across the whole app (like ClubsProvider) so signing in from the
 // hamburger menu is reflected immediately everywhere canEdit is gated
 // (HomePage, CupCompetitionsPage, ...) instead of only in whichever
 // component happened to hold its own local session state - previously each

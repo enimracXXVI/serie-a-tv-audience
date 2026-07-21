@@ -1,19 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchCupFixturesRaw, updateCupFixture, addCupFixture, deleteCupFixture, enrichCupFixture } from './cupFixtures.js';
 import { applySeasonTeamAttributes } from './teams.js';
-import { useOtherClubs } from './useOtherClubs.jsx';
-import { useSeasonTeamAttributes } from './useSeasonTeamAttributes.jsx';
-import { CURRENT_SEASON } from './seasons.js';
+import { useClubs } from './useClubs.jsx';
+import { useTeamSeasons } from './useTeamSeasons.jsx';
+import { useSeasons } from './useSeasons.jsx';
 
 // A cup fixture predating this column reads back with a blank `season` cell
 // - treated as the current season at read time only, so an old row isn't
 // orphaned on first load. Every row the app writes from now on always gets
 // a real label (see createFixture below), so this fallback only matters once.
-function seasonLabelOf(raw) {
-  return raw.season || CURRENT_SEASON.label;
+function seasonLabelOf(raw, currentSeasonLabel) {
+  return raw.season || currentSeasonLabel;
 }
 
-export function useCupFixtures(teams, season) {
+export function useCupFixtures(season) {
   const [rawFixtures, setRawFixtures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,21 +35,18 @@ export function useCupFixtures(teams, season) {
     };
   }, []);
 
-  const teamByName = useMemo(() => new Map(teams.map((t) => [t.staticName, t])), [teams]);
-  const { byName: otherClubsByName } = useOtherClubs();
-  const { rows: seasonAttributeRows } = useSeasonTeamAttributes();
-
-  const isCurrent = season.label === CURRENT_SEASON.label;
+  const { bySlug: clubsBySlug, byName: clubsByName } = useClubs();
+  const { rows: teamSeasonRows } = useTeamSeasons();
+  const { currentSeason } = useSeasons();
 
   const fixtures = useMemo(() => {
     const enriched = rawFixtures
-      .filter((r) => seasonLabelOf(r) === season.label)
-      .map((r) => enrichCupFixture(r, teamByName, otherClubsByName));
-    // Current season already carries live Settings (sponsored etc.) via the
-    // team objects themselves - only a past season needs the season-scoped
-    // override pass, exactly like the main Serie A archive fixtures.
-    return isCurrent ? enriched : applySeasonTeamAttributes(enriched, season.label, seasonAttributeRows);
-  }, [rawFixtures, teamByName, otherClubsByName, season.label, isCurrent, seasonAttributeRows]);
+      .filter((r) => seasonLabelOf(r, currentSeason.label) === season.label)
+      .map((r) => enrichCupFixture(r, clubsBySlug, clubsByName));
+    // sponsored/bigClub/derbyRival are season-scoped now (teamSeasons),
+    // applied for every season including the current one.
+    return applySeasonTeamAttributes(enriched, season.label, teamSeasonRows);
+  }, [rawFixtures, clubsBySlug, clubsByName, season.label, currentSeason.label, teamSeasonRows]);
 
   const updateFixture = useCallback(async (id, fields, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
@@ -73,13 +70,16 @@ export function useCupFixtures(teams, season) {
   // viewed - past cup seasons are frozen (no create, no edit) once they're
   // no longer current, same as Serie A's archive tabs; backfilling an
   // already-completed cup season is a direct sheet paste (see README).
-  const createFixture = useCallback(async (fields, accessToken) => {
-    if (!accessToken) throw new Error('UNAUTHENTICATED');
-    const withSeason = { ...fields, season: CURRENT_SEASON.label };
-    const { id } = await addCupFixture(withSeason, accessToken);
-    setRawFixtures((prev) => [...prev, { ...withSeason, id }]);
-    return id;
-  }, []);
+  const createFixture = useCallback(
+    async (fields, accessToken) => {
+      if (!accessToken) throw new Error('UNAUTHENTICATED');
+      const withSeason = { ...fields, season: currentSeason.label };
+      const { id } = await addCupFixture(withSeason, accessToken);
+      setRawFixtures((prev) => [...prev, { ...withSeason, id }]);
+      return id;
+    },
+    [currentSeason.label]
+  );
 
   const deleteFixture = useCallback(async (id, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');

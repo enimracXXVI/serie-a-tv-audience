@@ -3,13 +3,13 @@ import { columnIndexToLetter, buildHeaderIndex, cell, getSheetId } from './sheet
 
 // A reusable Google Sheets tab client (fetch all rows by header name, update
 // a row by id, append a new row) - the same shape as the hand-written
-// fixtures/teams clients in sheets.js/teamSettings.js, generalized so a new
-// tab (otherClubs, broadcasters, cupFixtures) doesn't need its own copy of the
-// fetch/update/append boilerplate.
+// fixtures client in sheets.js, generalized so a new tab (teams, broadcasters,
+// cupFixtures) doesn't need its own copy of the fetch/update/append
+// boilerplate.
 //
 // idField identifies each row - autoIncrementId assigns the next integer
 // (like the fixtures tab's numeric id); set it false for a tab where the
-// user supplies their own key (otherClubs' name, broadcasters' name) - appendRow
+// user supplies their own key (teams' slug, broadcasters' name) - appendRow
 // then requires that field and rejects a duplicate.
 export function createSheetTabClient({
   sheetName,
@@ -17,9 +17,11 @@ export function createSheetTabClient({
   autoIncrementId = true,
   numericFields = [],
   booleanFields = [],
+  imageFormulaFields = [],
 }) {
   const NUMERIC_FIELDS = new Set(numericFields);
   const BOOLEAN_FIELDS = new Set(booleanFields);
+  const IMAGE_FORMULA_FIELDS = new Set(imageFormulaFields);
   const FULL_RANGE = `${sheetName}!A1:Z500`;
 
   let headerIndexCache = null;
@@ -31,6 +33,19 @@ export function createSheetTabClient({
   // sheets.js/seasonFixtures.js already apply to isBigMatch and friends).
   function isTruthyCell(value) {
     return value === true || (typeof value === 'string' && value.trim().toUpperCase() === 'TRUE');
+  }
+
+  // UNFORMATTED_VALUE can't compute an =IMAGE("url") formula down to a plain
+  // value (it just comes back blank), so a field configured as
+  // imageFormulaFields needs a second, FORMULA-rendered read to recover the
+  // URL. A plain pasted URL passes through unchanged either way, so this
+  // stays backward compatible with just typing a link straight into the cell.
+  function extractImageUrl(raw) {
+    if (typeof raw !== 'string') return raw ?? null;
+    const trimmed = raw.trim();
+    const match = trimmed.match(/^=image\(\s*"([^"]*)"/i);
+    if (match) return match[1] || null;
+    return trimmed || null;
   }
 
   function rowToItem(row, headerIndex) {
@@ -63,11 +78,38 @@ export function createSheetTabClient({
     }
     headerIndexCache = headerIndex;
 
+    // Each configured image-formula field needs its own second read (in
+    // FORMULA render mode) to unwrap =IMAGE("url") - fetched once per field
+    // here, keyed by data-row position, then merged into each item below.
+    const imageFormulas = {};
+    for (const field of IMAGE_FORMULA_FIELDS) {
+      if (headerIndex[field] === undefined || dataRows.length === 0) continue;
+      const letter = columnIndexToLetter(headerIndex[field]);
+      const range = `${sheetName}!${letter}2:${letter}${dataRows.length + 1}`;
+      try {
+        const formulaRes = await fetch(
+          `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(
+            range
+          )}?key=${GOOGLE_API_KEY}&valueRenderOption=FORMULA&_=${Date.now()}`,
+          { cache: 'no-store' }
+        );
+        if (formulaRes.ok) {
+          const formulaData = await formulaRes.json();
+          imageFormulas[field] = (formulaData.values || []).map((r) => cell(r, 0));
+        }
+      } catch {
+        // non-fatal - falls back to the plain UNFORMATTED_VALUE reading below
+      }
+    }
+
     const rowIndex = {};
     const items = [];
     dataRows.forEach((row, i) => {
       if (row.length === 0) return;
       const obj = rowToItem(row, headerIndex);
+      for (const field of IMAGE_FORMULA_FIELDS) {
+        if (imageFormulas[field]) obj[field] = extractImageUrl(imageFormulas[field][i]) ?? obj[field];
+      }
       if (obj[idField] === null || obj[idField] === undefined || obj[idField] === '') return;
       items.push(obj);
       rowIndex[obj[idField]] = i + 2; // header occupies row 1
@@ -76,23 +118,25 @@ export function createSheetTabClient({
     return items;
   }
 
-  async function postBatchUpdate(data, accessToken) {
+  async function postBatchUpdate(valueInputOption, data, accessToken) {
+    if (data.length === 0) return;
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values:batchUpdate`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ valueInputOption: 'RAW', data }),
+      body: JSON.stringify({ valueInputOption, data }),
     });
     if (res.status === 401 || res.status === 403) throw new Error('UNAUTHENTICATED');
     if (!res.ok) throw new Error(`Failed to save to the "${sheetName}" tab`);
   }
 
-  async function updateRow(id, fields, accessToken) {
-    if (!headerIndexCache || rowIndexCache?.[id] === undefined) {
-      throw new Error(`"${sheetName}" data has not loaded yet - reload the page and try again.`);
-    }
-    const rowNumber = rowIndexCache[id];
-    const data = [];
+  // Splits fields into plain RAW writes and =IMAGE("url") USER_ENTERED
+  // writes - Sheets' batchUpdate takes one valueInputOption per call, so an
+  // image-formula field always needs its own separate post from everything
+  // else.
+  function buildWriteBatches(rowNumber, fields) {
+    const rawData = [];
+    const formulaData = [];
     const missing = [];
     for (const field of Object.keys(fields)) {
       const colIdx = headerIndexCache[field];
@@ -101,16 +145,29 @@ export function createSheetTabClient({
         continue;
       }
       const letter = columnIndexToLetter(colIdx);
-      data.push({
-        range: `${sheetName}!${letter}${rowNumber}:${letter}${rowNumber}`,
-        majorDimension: 'ROWS',
-        values: [[fields[field] ?? '']],
-      });
+      const range = `${sheetName}!${letter}${rowNumber}:${letter}${rowNumber}`;
+      if (IMAGE_FORMULA_FIELDS.has(field)) {
+        const url = fields[field];
+        const value = url ? `=IMAGE("${String(url).replace(/"/g, '""')}")` : '';
+        formulaData.push({ range, majorDimension: 'ROWS', values: [[value]] });
+      } else {
+        rawData.push({ range, majorDimension: 'ROWS', values: [[fields[field] ?? '']] });
+      }
     }
-    if (data.length === 0) {
+    return { rawData, formulaData, missing };
+  }
+
+  async function updateRow(id, fields, accessToken) {
+    if (!headerIndexCache || rowIndexCache?.[id] === undefined) {
+      throw new Error(`"${sheetName}" data has not loaded yet - reload the page and try again.`);
+    }
+    const rowNumber = rowIndexCache[id];
+    const { rawData, formulaData, missing } = buildWriteBatches(rowNumber, fields);
+    if (rawData.length === 0 && formulaData.length === 0) {
       throw new Error(`No matching column headers found in the "${sheetName}" tab - check row 1 has the expected labels.`);
     }
-    await postBatchUpdate(data, accessToken);
+    await postBatchUpdate('RAW', rawData, accessToken);
+    await postBatchUpdate('USER_ENTERED', formulaData, accessToken);
     // Missing headers never throw here - everything else in this save did
     // write successfully; the caller decides whether to surface a warning
     // scoped to just the field(s) it actually tried to change.
@@ -146,12 +203,21 @@ export function createSheetTabClient({
         missing.push(key);
         continue;
       }
-      row[idx] = value ?? '';
+      if (IMAGE_FORMULA_FIELDS.has(key)) {
+        row[idx] = value ? `=IMAGE("${String(value).replace(/"/g, '""')}")` : '';
+      } else {
+        row[idx] = value ?? '';
+      }
     }
 
+    // Any image-formula field needs USER_ENTERED to be parsed as a formula
+    // rather than shown as literal text - append itself only supports one
+    // valueInputOption, so use USER_ENTERED whenever such a field is
+    // configured (a plain string in any other cell passes through unchanged).
+    const valueInputOption = imageFormulaFields.length > 0 ? 'USER_ENTERED' : 'RAW';
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(
       `${sheetName}!A1`
-    )}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
+    )}:append?valueInputOption=${valueInputOption}&insertDataOption=INSERT_ROWS`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },

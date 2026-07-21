@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import TeamSettingsPanel from './TeamSettingsPanel.jsx';
-import OtherClubsPanel from './OtherClubsPanel.jsx';
-import SeasonTeamAttributesPanel from './SeasonTeamAttributesPanel.jsx';
+import TeamsPanel from './TeamsPanel.jsx';
+import TeamSeasonsPanel from './TeamSeasonsPanel.jsx';
 import BroadcastersPanel from './BroadcastersPanel.jsx';
 import CompetitionsPanel from './CompetitionsPanel.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
@@ -227,17 +226,12 @@ export default function HamburgerMenu() {
 
               {displayedView === 'settings' && (
                 <div className="flex flex-col gap-6">
-                  <CollapsibleSection title="Serie A clubs">
-                    <TeamSettingsPanel session={session} />
+                  <CollapsibleSection title="Teams">
+                    <TeamsPanel session={session} />
                   </CollapsibleSection>
                   <div className="border-t border-white/10 pt-6">
-                    <CollapsibleSection title="Other clubs">
-                      <OtherClubsPanel session={session} />
-                    </CollapsibleSection>
-                  </div>
-                  <div className="border-t border-white/10 pt-6">
-                    <CollapsibleSection title="Past-season sponsorship / big match / derby">
-                      <SeasonTeamAttributesPanel session={session} />
+                    <CollapsibleSection title="Sponsorship / big match / derby">
+                      <TeamSeasonsPanel session={session} />
                     </CollapsibleSection>
                   </div>
                   <div className="border-t border-white/10 pt-6">
