@@ -57,7 +57,9 @@ export default function CalendarView({
 
   return (
     <div className="flex flex-col gap-4">
-      <MatchdaySelector matchdays={matchdays} selected={selected ?? matchdays[0]} onChange={setSelected} />
+      <div className="sticky top-14 z-30 -mx-6 bg-[#0f1e54] px-6 py-2 sm:top-[60px]">
+        <MatchdaySelector matchdays={matchdays} selected={selected ?? matchdays[0]} onChange={setSelected} />
+      </div>
       {visibleMatchdays.map((md) => (
         <MatchdayGroup
           key={md}

@@ -5,7 +5,7 @@ import AddSerieAFixtureForm from '../components/AddSerieAFixtureForm.jsx';
 import SeasonSelector from '../components/SeasonSelector.jsx';
 import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
 import { useTeams } from '../lib/useTeams.jsx';
-import { useSession } from '../lib/useSession.js';
+import { useSession } from '../lib/useSession.jsx';
 import { useAppSettings } from '../lib/useAppSettings.jsx';
 import { callWithReauth } from '../lib/reauth.js';
 import { CURRENT_SEASON } from '../lib/seasons.js';

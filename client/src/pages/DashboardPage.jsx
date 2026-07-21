@@ -146,17 +146,16 @@ export default function DashboardPage() {
   const { fixtures, loading: fixturesLoading, error: fixturesError } = useSeasonFixtures(season, teams);
   const [includeSimulcast, setIncludeSimulcast] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  // Defaults to on (matches prior behavior) whenever the URL doesn't say
-  // otherwise - only written into the URL when turned off, so a plain
-  // /dashboard link stays clean.
-  const [includeOther, setIncludeOtherState] = useState(() => searchParams.get('other') !== '0');
+  // Defaults to off whenever the URL doesn't say otherwise - only written
+  // into the URL when turned on, so a plain /dashboard link stays clean.
+  const [includeOther, setIncludeOtherState] = useState(() => searchParams.get('other') === '1');
   const setIncludeOther = (value) => {
     setIncludeOtherState(value);
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
-        if (value) next.delete('other');
-        else next.set('other', '0');
+        if (value) next.set('other', '1');
+        else next.delete('other');
         return next;
       },
       { replace: true }
@@ -258,7 +257,7 @@ export default function DashboardPage() {
             <ToggleSwitch
               checked={includeOther}
               onChange={setIncludeOther}
-              label="Include other-broadcaster audience"
+              label="Include other broadcaster audience"
               title={`Uncheck for ${mainBroadcasterName}-only numbers`}
             />
             <ToggleSwitch
