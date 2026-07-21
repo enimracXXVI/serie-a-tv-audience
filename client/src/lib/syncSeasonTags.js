@@ -10,12 +10,12 @@ import { SEASONS } from './seasons.js';
 // someone happens to edit one of that season's rows from the app. An
 // archive tab that doesn't exist yet fails just that one season rather than
 // aborting the whole run.
-export async function syncAllSeasonsMatchTags({ teamByName, pastTeamsByName, seasonAttributeRows }, accessToken) {
+export async function syncAllSeasonsMatchTags({ teamByName, otherClubsByName, seasonAttributeRows }, accessToken) {
   const results = [];
   for (const season of SEASONS) {
     try {
       const raw = season.tab ? await fetchSeasonFixtures(season.tab) : await fetchFixtures();
-      let fixtures = raw.map((r) => enrichFixture(r, teamByName, pastTeamsByName));
+      let fixtures = raw.map((r) => enrichFixture(r, teamByName, otherClubsByName));
       if (season.tab) fixtures = applySeasonTeamAttributes(fixtures, season.label, seasonAttributeRows);
       const count = await syncMatchTags(fixtures, accessToken, season.tab ?? undefined);
       results.push({ label: season.label, ok: true, count });

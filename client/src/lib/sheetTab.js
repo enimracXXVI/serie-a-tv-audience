@@ -4,12 +4,12 @@ import { columnIndexToLetter, buildHeaderIndex, cell } from './sheetsCommon.js';
 // A reusable Google Sheets tab client (fetch all rows by header name, update
 // a row by id, append a new row) - the same shape as the hand-written
 // fixtures/teams clients in sheets.js/teamSettings.js, generalized so a new
-// tab (cupTeams, broadcasters, cupFixtures) doesn't need its own copy of the
+// tab (otherClubs, broadcasters, cupFixtures) doesn't need its own copy of the
 // fetch/update/append boilerplate.
 //
 // idField identifies each row - autoIncrementId assigns the next integer
 // (like the fixtures tab's numeric id); set it false for a tab where the
-// user supplies their own key (cupTeams' slug, broadcasters' name) - appendRow
+// user supplies their own key (otherClubs' name, broadcasters' name) - appendRow
 // then requires that field and rejects a duplicate.
 export function createSheetTabClient({
   sheetName,

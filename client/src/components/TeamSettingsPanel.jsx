@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Crest from './Crest.jsx';
+import ColorField from './ColorField.jsx';
 import { useTeams } from '../lib/useTeams.jsx';
 import { callWithReauth } from '../lib/reauth.js';
 
@@ -49,26 +50,6 @@ function NumberField({ label, value, onCommit }) {
           if (num !== (value ?? null)) onCommit(num);
         }}
       />
-    </Field>
-  );
-}
-
-function ColorField({ label, value, onCommit }) {
-  const [draft, setDraft] = useState(value ?? '#000000');
-  return (
-    <Field label={label}>
-      <div className="flex items-center gap-2">
-        <input
-          type="color"
-          value={draft}
-          onChange={(e) => {
-            setDraft(e.target.value);
-            onCommit(e.target.value);
-          }}
-          className="h-8 w-10 cursor-pointer rounded border border-white/20 bg-transparent p-0.5"
-        />
-        <span className="text-xs text-white/50">{draft}</span>
-      </div>
     </Field>
   );
 }

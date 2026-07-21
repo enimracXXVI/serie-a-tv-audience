@@ -213,7 +213,7 @@ export default function CupFixtureRow({ fixture, onUpdate, canEdit, editMode, br
             </div>
           </div>
 
-          <div className="flex w-16 shrink-0 items-center justify-end gap-1">
+          <div className="flex w-16 shrink-0 items-center justify-end gap-1 overflow-hidden">
             {broadcaster?.logoUrl && <img src={broadcaster.logoUrl} alt={broadcaster.name} className="h-3.5 max-w-full object-contain" />}
           </div>
         </div>

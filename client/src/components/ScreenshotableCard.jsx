@@ -32,43 +32,67 @@ const STATUS_LABEL = {
 // in the real page (white for the white chart/table cards, the page's own
 // navy for the stat tiles, which are styled dark-on-transparent and would
 // otherwise render as invisible white-on-white once captured standalone).
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${filename}.png`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function ScreenshotableCard({ filename, background = '#ffffff', children }) {
   const ref = useRef(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null);
 
-  async function handleClick() {
+  function finish(nextStatus) {
+    setStatus(nextStatus);
+    setBusy(false);
+    setTimeout(() => setStatus(null), 1800);
+  }
+
+  function handleClick() {
     if (!ref.current || busy) return;
     setBusy(true);
     setStatus(null);
-    try {
-      const blob = await toBlob(ref.current, {
-        backgroundColor: background,
-        pixelRatio: 2,
-        filter: (node) => !node?.dataset?.screenshotIgnore,
-      });
-      if (!blob) throw new Error('Could not render this card');
 
-      if (navigator.clipboard?.write && typeof ClipboardItem !== 'undefined') {
-        await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-        setStatus('copied');
-      } else {
-        // Old Safari/Firefox without image clipboard support - fall back to
-        // a plain download rather than silently doing nothing.
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${filename}.png`;
-        a.click();
-        URL.revokeObjectURL(url);
-        setStatus('downloaded');
-      }
-    } catch (err) {
-      console.error('Failed to copy card image', err);
-      setStatus('error');
-    } finally {
-      setBusy(false);
-      setTimeout(() => setStatus(null), 1800);
+    const renderPromise = toBlob(ref.current, {
+      backgroundColor: background,
+      pixelRatio: 2,
+      filter: (node) => !node?.dataset?.screenshotIgnore,
+    }).then((blob) => {
+      if (!blob) throw new Error('Could not render this card');
+      return blob;
+    });
+
+    if (navigator.clipboard?.write && typeof ClipboardItem !== 'undefined') {
+      // navigator.clipboard.write() must be called synchronously inside the
+      // click handler, not after an awaited render - Safari and most mobile
+      // browsers revoke the "recent user gesture" a clipboard write needs by
+      // the time an awaited html-to-image render finishes, which is exactly
+      // why this silently failed on mobile. Handing ClipboardItem a Promise
+      // instead of an already-resolved Blob keeps the write() call itself
+      // synchronous while still waiting on the render.
+      navigator.clipboard
+        .write([new ClipboardItem({ 'image/png': renderPromise })])
+        .then(() => finish('copied'))
+        .catch((err) => {
+          console.error('Failed to copy card image', err);
+          finish('error');
+        });
+    } else {
+      // Old Safari/Firefox without image clipboard support - fall back to a
+      // plain download rather than silently doing nothing.
+      renderPromise
+        .then((blob) => {
+          downloadBlob(blob, filename);
+          finish('downloaded');
+        })
+        .catch((err) => {
+          console.error('Failed to copy card image', err);
+          finish('error');
+        });
     }
   }
 

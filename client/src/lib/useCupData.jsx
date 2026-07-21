@@ -1,15 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { fetchCupTeams, updateCupTeam, addCupTeam } from './cupTeams.js';
 import { fetchBroadcasters, updateBroadcaster, addBroadcaster } from './broadcasters.js';
 import { fetchCompetitions, updateCompetition, addCompetition, DEFAULT_COMPETITIONS } from './competitions.js';
 
 const CupDataContext = createContext(null);
 
 // Shared across the whole app (like TeamsProvider) so an edit made in
-// Settings - a new cup opponent, a new broadcaster, a competition logo - is
-// immediately visible wherever cup fixtures are shown, without a reload.
+// Settings - a new broadcaster, a competition logo - is immediately visible
+// wherever cup fixtures are shown, without a reload. Non-Serie-A club data
+// (branding, scope) lives in its own OtherClubsProvider (useOtherClubs.jsx),
+// not here - this provider only covers broadcasters and competitions.
 export function CupDataProvider({ children }) {
-  const [cupTeams, setCupTeams] = useState([]);
   const [broadcasters, setBroadcasters] = useState([]);
   const [competitions, setCompetitions] = useState(DEFAULT_COMPETITIONS);
   const [loading, setLoading] = useState(true);
@@ -17,11 +17,9 @@ export function CupDataProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([fetchCupTeams(), fetchBroadcasters()])
-      .then(([teams, casters]) => {
-        if (cancelled) return;
-        setCupTeams(teams);
-        setBroadcasters(casters);
+    fetchBroadcasters()
+      .then((casters) => {
+        if (!cancelled) setBroadcasters(casters);
       })
       .catch((err) => {
         if (!cancelled) setError(err.message);
@@ -52,23 +50,6 @@ export function CupDataProvider({ children }) {
     for (const f of missingHere) delete applied[f];
     return { applied, missingHere };
   }
-
-  const saveCupTeam = useCallback(async (name, fields, accessToken) => {
-    if (!accessToken) throw new Error('UNAUTHENTICATED');
-    const { missingFields } = await updateCupTeam(name, fields, accessToken);
-    const { applied, missingHere } = applyMissing(fields, missingFields);
-    setCupTeams((prev) => prev.map((t) => (t.name === name ? { ...t, ...applied } : t)));
-    if (missingHere.length > 0) {
-      throw new Error(`Saved, but the cupTeams sheet has no column header for: ${missingHere.join(', ')}.`);
-    }
-  }, []);
-
-  const createCupTeam = useCallback(async (fields, accessToken) => {
-    if (!accessToken) throw new Error('UNAUTHENTICATED');
-    await addCupTeam(fields, accessToken);
-    setCupTeams((prev) => [...prev, fields]);
-    return fields.name;
-  }, []);
 
   const saveBroadcaster = useCallback(async (name, fields, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
@@ -107,13 +88,10 @@ export function CupDataProvider({ children }) {
   return (
     <CupDataContext.Provider
       value={{
-        cupTeams,
         broadcasters,
         competitions,
         loading,
         error,
-        saveCupTeam,
-        createCupTeam,
         saveBroadcaster,
         createBroadcaster,
         saveCompetition,

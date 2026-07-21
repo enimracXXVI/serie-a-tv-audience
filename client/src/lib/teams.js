@@ -14,32 +14,28 @@ function slugify(name) {
 }
 
 // A club not in the current roster still gets its real crest/colours if
-// it's been added to the "pastTeams" Settings tab (see usePastTeams.jsx) -
+// it's been added to the "otherClubs" Settings tab (see useOtherClubs.jsx) -
 // otherwise it falls back to a plain short-code/grey placeholder, same as
 // before that tab existed.
-function fallbackTeam(name, pastTeamsByName) {
-  const past = pastTeamsByName.get(name);
+function fallbackTeam(name, otherClubsByName) {
+  const other = otherClubsByName.get(name);
   return {
     name,
     slug: slugify(name),
-    short: past?.short || String(name).slice(0, 3).toUpperCase(),
-    crestUrl: past?.crestUrl || null,
-    primary: past?.primary || null,
-    secondary: past?.secondary || null,
+    short: other?.short || String(name).slice(0, 3).toUpperCase(),
+    crestUrl: other?.crestUrl || null,
+    primary: other?.primary || null,
+    secondary: other?.secondary || null,
   };
 }
 
-// Same fallback chain as fallbackTeam above, generalized with an optional
-// extra tier checked after pastTeams and before the generic placeholder -
-// used by cup fixtures, where a club can be a genuine non-Serie-A opponent
-// (the "cupTeams" tab) that never played in the current roster or its
-// history at all. Kept separate from fallbackTeam/enrichFixture (rather than
-// changing them to take this same extra tier) so the main Serie A fixtures
-// path - already correct and heavily relied on - stays untouched.
-export function resolveClubByName(name, teamByName, pastTeamsByName, extraByName) {
+// Same fallback shape as fallbackTeam above - used by cup fixtures, where a
+// club can be a genuine non-Serie-A opponent that never played in the
+// current roster or its history at all, same "otherClubs" tab either way.
+export function resolveClubByName(name, teamByName, otherClubsByName) {
   const current = teamByName.get(name);
   if (current) return current;
-  const branding = pastTeamsByName?.get(name) ?? extraByName?.get(name);
+  const branding = otherClubsByName?.get(name);
   return {
     name,
     slug: slugify(name),
@@ -56,15 +52,15 @@ export function resolveClubByName(name, teamByName, pastTeamsByName, extraByName
 // Fixtures store home/away as the club's bundled (immutable) name text, so
 // matching must stay keyed by that even if a live Settings edit renames the
 // club for display - see useTeams.js's `staticName`.
-export function enrichFixture(raw, teamByName, pastTeamsByName = new Map()) {
+export function enrichFixture(raw, teamByName, otherClubsByName = new Map()) {
   return {
     id: raw.id,
     matchday: raw.matchday,
     day: raw.day,
     date: raw.date,
     kickoffTime: raw.kickoffTime,
-    home: teamByName.get(raw.home) ?? fallbackTeam(raw.home, pastTeamsByName),
-    away: teamByName.get(raw.away) ?? fallbackTeam(raw.away, pastTeamsByName),
+    home: teamByName.get(raw.home) ?? fallbackTeam(raw.home, otherClubsByName),
+    away: teamByName.get(raw.away) ?? fallbackTeam(raw.away, otherClubsByName),
     homeScore: raw.homeScore,
     awayScore: raw.awayScore,
     daznAudience: raw.daznAudience,

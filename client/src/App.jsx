@@ -7,7 +7,7 @@ import CupCompetitionsPage from './pages/CupCompetitionsPage.jsx';
 import HamburgerMenu from './components/HamburgerMenu.jsx';
 import { TeamsProvider } from './lib/useTeams.jsx';
 import { CupDataProvider } from './lib/useCupData.jsx';
-import { PastTeamsProvider } from './lib/usePastTeams.jsx';
+import { OtherClubsProvider } from './lib/useOtherClubs.jsx';
 import { SeasonTeamAttributesProvider } from './lib/useSeasonTeamAttributes.jsx';
 import { AppSettingsProvider } from './lib/useAppSettings.jsx';
 import { SessionProvider } from './lib/useSession.jsx';
@@ -17,7 +17,7 @@ export default function App() {
     <SessionProvider>
       <AppSettingsProvider>
         <TeamsProvider>
-          <PastTeamsProvider>
+          <OtherClubsProvider>
             <SeasonTeamAttributesProvider>
               <CupDataProvider>
                 <HamburgerMenu />
@@ -30,7 +30,7 @@ export default function App() {
                 </Routes>
               </CupDataProvider>
             </SeasonTeamAttributesProvider>
-          </PastTeamsProvider>
+          </OtherClubsProvider>
         </TeamsProvider>
       </AppSettingsProvider>
     </SessionProvider>

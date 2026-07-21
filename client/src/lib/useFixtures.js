@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchFixtures, updateFixtureRow, appendFixtureRow } from './sheets.js';
 import { enrichFixture } from './teams.js';
-import { usePastTeams } from './usePastTeams.jsx';
+import { useOtherClubs } from './useOtherClubs.jsx';
 import { computeDayOfWeek } from './matchdays.js';
 
 export function useFixtures(teamSlugs, teams) {
@@ -32,17 +32,17 @@ export function useFixtures(teamSlugs, teams) {
   // Keyed by each club's immutable bundled name, not its current (possibly
   // renamed) display name - see teams.js's enrichFixture.
   const teamByName = useMemo(() => new Map(teams.map((t) => [t.staticName, t])), [teams]);
-  const { byName: pastTeamsByName } = usePastTeams();
+  const { byName: otherClubsByName } = useOtherClubs();
 
   const fixtures = useMemo(() => {
-    let enriched = rawFixtures.map((r) => enrichFixture(r, teamByName, pastTeamsByName));
+    let enriched = rawFixtures.map((r) => enrichFixture(r, teamByName, otherClubsByName));
     if (teamSlugs.length > 0) {
       const wanted = new Set(teamSlugs);
       enriched = enriched.filter((f) => wanted.has(f.home.slug) || wanted.has(f.away.slug));
     }
     return enriched;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rawFixtures, teamByName, pastTeamsByName]);
+  }, [rawFixtures, teamByName, otherClubsByName]);
 
   const updateFixture = useCallback(
     async (id, fields, accessToken) => {

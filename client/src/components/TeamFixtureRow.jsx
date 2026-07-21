@@ -93,7 +93,7 @@ export default function TeamFixtureRow({ fixture, team }) {
           <ScoreDisplay usScore={usScore} themScore={themScore} />
         </div>
 
-        <div className="flex w-10 shrink-0 items-center gap-1">
+        <div className="flex w-14 shrink-0 items-center gap-1 overflow-hidden">
           <BroadcasterBadge broadcaster={mainBroadcaster} fallbackName="Main broadcaster" className="h-3" />
           {fixture.otherBroadcaster && (
             <BroadcasterBadge broadcaster={otherBroadcasterRow} fallbackName={fixture.otherBroadcaster} className="h-3" />
