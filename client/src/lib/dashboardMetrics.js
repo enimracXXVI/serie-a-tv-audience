@@ -163,16 +163,16 @@ export function computeAudienceByDayAndTime(fixtures, simulcastInfo, includeSimu
     const aud = effectiveAudience(f, simulcastInfo, includeSimulcast, includeOther);
     const time = f.kickoffTime;
     const key = `${f.day}|${time}`;
-    if (!byKey.has(key)) byKey.set(key, { day: f.day, time, list: [] });
-    byKey.get(key).list.push(aud);
+    if (!byKey.has(key)) byKey.set(key, { day: f.day, time, games: [] });
+    byKey.get(key).games.push({ fixture: f, audience: aud });
   }
-  return [...byKey.values()].map(({ day, time, list }) => ({
-    day,
-    time,
-    avg: avg(list),
-    total: sum(list),
-    count: list.length,
-  }));
+  // `games` (the actual fixtures behind this cell/row) rides alongside the
+  // aggregate numbers - lets the heatmap/breakdown table open a modal
+  // showing exactly which games make up a given average, on click/tap.
+  return [...byKey.values()].map(({ day, time, games }) => {
+    const list = games.map((g) => g.audience);
+    return { day, time, avg: avg(list), total: sum(list), count: list.length, games };
+  });
 }
 
 // How much of a visibility premium big matches and derbies carry over an
@@ -248,11 +248,15 @@ export function computeOpponentAudience(team, fixtures, simulcastInfo, includeSi
   for (const f of homePlayed) {
     const aud = effectiveAudience(f, simulcastInfo, includeSimulcast, includeOther);
     all.push(aud);
-    if (!byOpponent.has(f.away.slug)) byOpponent.set(f.away.slug, { opponent: f.away, list: [] });
-    byOpponent.get(f.away.slug).list.push(aud);
+    if (!byOpponent.has(f.away.slug)) byOpponent.set(f.away.slug, { opponent: f.away, games: [] });
+    byOpponent.get(f.away.slug).games.push({ fixture: f, audience: aud });
   }
+  // `games` rides alongside the aggregate so a row can open a modal showing
+  // exactly when each of these games was played and whether it shared its
+  // kickoff slot with anything else - both directly affect that game's own
+  // audience, which a bare average/count hides.
   const rows = [...byOpponent.values()]
-    .map(({ opponent, list }) => ({ opponent, avg: avg(list), count: list.length }))
+    .map(({ opponent, games }) => ({ opponent, avg: avg(games.map((g) => g.audience)), count: games.length, games }))
     .sort((a, b) => b.avg - a.avg);
   const range = all.length
     ? { min: Math.min(...all), max: Math.max(...all), avg: avg(all), count: all.length }

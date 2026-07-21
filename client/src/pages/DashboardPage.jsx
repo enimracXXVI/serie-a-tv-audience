@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
@@ -181,7 +181,6 @@ export default function DashboardPage() {
   const mainBroadcasterName = broadcasters.find((b) => b.isMain)?.name || 'main broadcaster';
   const [season, setSeason] = useSeasonParam();
   const { fixtures, loading: fixturesLoading, error: fixturesError } = useSeasonFixtures(season, teams);
-  const [includeSimulcast, setIncludeSimulcast] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   // Defaults to off whenever the URL doesn't say otherwise - only written
   // into the URL when turned on, so a plain /dashboard link stays clean.
@@ -198,7 +197,34 @@ export default function DashboardPage() {
       { replace: true }
     );
   };
-  const [focusedSlug, setFocusedSlug] = useState(null);
+  const [includeSimulcast, setIncludeSimulcastState] = useState(() => searchParams.get('simulcast') === '1');
+  const setIncludeSimulcast = (value) => {
+    setIncludeSimulcastState(value);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (value) next.set('simulcast', '1');
+        else next.delete('simulcast');
+        return next;
+      },
+      { replace: true }
+    );
+  };
+  // Which club is focused - also shareable, same reasoning as the two
+  // toggles above.
+  const [focusedSlug, setFocusedSlugState] = useState(() => searchParams.get('team') || null);
+  const setFocusedSlug = (slug) => {
+    setFocusedSlugState(slug);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (slug) next.set('team', slug);
+        else next.delete('team');
+        return next;
+      },
+      { replace: true }
+    );
+  };
 
   const loading = teamsLoading || fixturesLoading;
 
@@ -214,9 +240,17 @@ export default function DashboardPage() {
 
   // Switching season can leave a focused club that didn't play in the new
   // one - reset back to "all clubs" rather than silently focusing a club
-  // with zero games this season.
+  // with zero games this season. Skipped on the very first render so a
+  // shared/bookmarked `?team=` link isn't wiped out the instant it loads -
+  // this should only fire on an actual, later season change.
+  const isFirstRender = useRef(true);
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     setFocusedSlug(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [season.label]);
 
   const simulcastInfo = useMemo(() => computeSimulcastInfo(fixtures), [fixtures]);
@@ -373,7 +407,7 @@ export default function DashboardPage() {
 
             <div id="dash-heatmap" className="scroll-mt-20 grid grid-cols-1 gap-4 lg:grid-cols-2">
               <ScreenshotableCard filename="dashboard-day-kickoff-heatmap">
-                <DayTimeHeatmap rows={audienceByDayAndTime} />
+                <DayTimeHeatmap rows={audienceByDayAndTime} simulcastInfo={simulcastInfo} />
               </ScreenshotableCard>
               <div className="flex h-full flex-col gap-4">
                 <ScreenshotableCard filename="dashboard-tag-premium">
@@ -387,7 +421,7 @@ export default function DashboardPage() {
 
             <div id="dash-games" className="scroll-mt-20 grid grid-cols-1 gap-4 lg:grid-cols-2">
               <ScreenshotableCard filename="dashboard-day-kickoff-breakdown">
-                <DayTimeBreakdownTable rows={audienceByDayAndTime} />
+                <DayTimeBreakdownTable rows={audienceByDayAndTime} simulcastInfo={simulcastInfo} />
               </ScreenshotableCard>
               <ScreenshotableCard filename="dashboard-top-games">
                 <TopGamesList
@@ -406,7 +440,7 @@ export default function DashboardPage() {
                 with the league-wide sections above. */}
             <div id="dash-opponent" className="scroll-mt-20">
               <ScreenshotableCard filename="dashboard-opponent-audience">
-                <OpponentAudienceChart team={focusedTeam} data={opponentAudience} />
+                <OpponentAudienceChart team={focusedTeam} data={opponentAudience} simulcastInfo={simulcastInfo} />
               </ScreenshotableCard>
             </div>
 
