@@ -23,6 +23,7 @@ const client = createSheetTabClient({
 export const fetchCupFixturesRaw = client.fetchAll;
 export const updateCupFixture = client.updateRow;
 export const addCupFixture = client.appendRow;
+export const deleteCupFixture = client.deleteRow;
 
 export function isCupFixturePlayed(fixture) {
   return fixture.homeScore !== null && fixture.homeScore !== undefined && fixture.awayScore !== null && fixture.awayScore !== undefined;

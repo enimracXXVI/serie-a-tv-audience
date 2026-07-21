@@ -194,7 +194,7 @@ function SponsorshipFields({ fixture, onUpdate, sponsorCounts }) {
   );
 }
 
-export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], canEdit, editMode, sponsorCounts }) {
+export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs = [], canEdit, editMode, sponsorCounts }) {
   const { home, away } = fixture;
   const homeHighlighted = highlightSlugs.includes(home.slug);
   const awayHighlighted = highlightSlugs.includes(away.slug);
@@ -208,6 +208,13 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
   const otherBroadcasterRow = fixture.otherBroadcaster
     ? broadcasters.find((b) => b.name === fixture.otherBroadcaster)
     : null;
+
+  function handleDelete() {
+    if (!window.confirm(`Delete this fixture (${home.name} vs ${away.name})? This can't be undone from here.`)) {
+      return;
+    }
+    onDelete(fixture.id);
+  }
 
   return (
     <div className="flex items-stretch" style={{ background: tagStyle.background }}>
@@ -236,6 +243,7 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
               playerMascot={fixture.homePlayerMascot}
               walkabout={fixture.homeWalkabout}
             />
+            {home.sponsored && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fd8c9]" />}
             <span
               className={`truncate text-xs sm:text-sm text-right ${homeHighlighted ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}
             >
@@ -255,6 +263,7 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
               <span className="sm:hidden">{away.short ?? away.name}</span>
               <span className="hidden sm:inline">{away.name}</span>
             </span>
+            {away.sponsored && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fd8c9]" />}
             <SponsorBadges
               matchdaySponsor={fixture.awayMatchdaySponsor}
               playerMascot={fixture.awayPlayerMascot}
@@ -294,6 +303,14 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
               <AudienceFields fixture={fixture} onUpdate={onUpdate} mainBroadcasterName={mainBroadcasterName} />
               <SponsorshipFields fixture={fixture} onUpdate={onUpdate} sponsorCounts={sponsorCounts} />
             </>
+          )}
+          {onDelete && (
+            <button
+              onClick={handleDelete}
+              className="w-fit rounded-md border border-red-300 px-2.5 py-1 text-xs font-semibold text-red-500 hover:bg-red-50"
+            >
+              Delete fixture
+            </button>
           )}
         </div>
       )}

@@ -16,7 +16,7 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 }
 
-export default function MatchdayGroup({ matchday, fixtures, onUpdate, highlightSlugs, accent, canEdit, sponsorCounts }) {
+export default function MatchdayGroup({ matchday, fixtures, onUpdate, onDelete, highlightSlugs, accent, canEdit, sponsorCounts }) {
   const [activeTab, setActiveTab] = useState(null);
   // Editing a date re-sorts this matchday the instant it's saved, which
   // jumps the row out from under you mid-edit - so while any tab is open the
@@ -77,6 +77,7 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, highlightS
             key={f.id}
             fixture={f}
             onUpdate={onUpdate}
+            onDelete={onDelete}
             highlightSlugs={highlightSlugs}
             canEdit={canEdit}
             editMode={activeTab}

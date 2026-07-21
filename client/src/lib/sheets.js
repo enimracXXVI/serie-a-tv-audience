@@ -232,6 +232,28 @@ export async function appendFixtureRow({ matchday, home, away, date, kickoffTime
   return { ...fields };
 }
 
+// Clears the row's cells rather than removing the sheet row - same reasoning
+// as sheetTab.js's deleteRow: actually deleting the row would shift every
+// row below it, which fixtureRow's id-based `rowNumber = id + 1` math
+// depends on staying fixed. A cleared row is already skipped on the next
+// fetchFixtures (its id cell reads back blank), so this is a real delete
+// from the app's point of view, just leaving a blank row behind in the sheet.
+export async function deleteFixtureRow(id, accessToken) {
+  const headerIndex = await ensureHeaderIndex();
+  const rowNumber = Number(id) + 1;
+  const lastLetter = columnIndexToLetter(Math.max(...Object.values(headerIndex)));
+  const range = `${SHEET_NAME}!A${rowNumber}:${lastLetter}${rowNumber}`;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(
+    range
+  )}:clear`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (res.status === 401 || res.status === 403) throw new Error('UNAUTHENTICATED');
+  if (!res.ok) throw new Error('Failed to delete fixture from Google Sheets');
+}
+
 // isBigMatch/isDerby also get written opportunistically whenever a fixture is
 // otherwise edited (see EDITABLE_FIELDS above), but that only reaches rows
 // someone happens to touch. This does every currently-loaded fixture in one

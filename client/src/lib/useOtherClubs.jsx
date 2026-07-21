@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { fetchOtherClubs, updateOtherClub, addOtherClub } from './otherClubs.js';
+import { fetchOtherClubs, updateOtherClub, addOtherClub, deleteOtherClub } from './otherClubs.js';
 
 const OtherClubsContext = createContext(null);
 
@@ -51,8 +51,16 @@ export function OtherClubsProvider({ children }) {
     return fields.name;
   }, []);
 
+  const removeOtherClub = useCallback(async (name, accessToken) => {
+    if (!accessToken) throw new Error('UNAUTHENTICATED');
+    await deleteOtherClub(name, accessToken);
+    setOtherClubs((prev) => prev.filter((t) => t.name !== name));
+  }, []);
+
   return (
-    <OtherClubsContext.Provider value={{ otherClubs, byName, loading, saveOtherClub, createOtherClub }}>
+    <OtherClubsContext.Provider
+      value={{ otherClubs, byName, loading, saveOtherClub, createOtherClub, removeOtherClub }}
+    >
       {children}
     </OtherClubsContext.Provider>
   );

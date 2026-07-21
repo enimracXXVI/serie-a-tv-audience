@@ -303,7 +303,7 @@ monogram badge and a neutral grey line/bar colour wherever it shows up -
 correct numbers, generic look. To give it a real crest and colours instead,
 add an `otherClubs` tab (doesn't exist in the seeded sheet - add it
 yourself) with header row: `name`, `short`, `crestUrl`, `primary`,
-`secondary`, `scope`. One tab, one shape, for every club that isn't a
+`secondary`, `scope`, `slug`. One tab, one shape, for every club that isn't a
 current Serie A club - a club that used to play Serie A but doesn't now, a
 Serie B side in an early Coppa Italia round, any European club in a UEFA
 tie (this replaces the former separate `pastTeams`/`cupTeams` tabs, which
@@ -323,9 +323,11 @@ note below if you already have data in either).
   in archive Serie A seasons can be either, it's never filtered by scope
   there.
 
-There's deliberately no `slug` column - it's synthesized from `name` the
-same way everywhere it's needed, so there's nothing to keep in sync or get
-wrong by hand-typing one.
+- `slug` is optional - leave it blank and it's synthesized from `name` the
+  same way it always has been, which is right for almost every row. Filling
+  it in yourself is only worth doing for a specific reason (matching a
+  bundled crest SVG's filename, or getting ahead of a possible future merge
+  of this tab into `teams`) - most rows never need it.
 
 Managed from the hamburger menu's **Settings** panel's **Other clubs**
 section (collapsible **National**/**European** groups, same expandable-row

@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
 import { teamsInFixtures } from '../lib/teams.js';
-import { CURRENT_SEASON } from '../lib/seasons.js';
+import { useSeasonParam } from '../lib/useSeasonParam.js';
 import {
   computeAllTeamMetrics,
   computeSimulcastInfo,
@@ -142,7 +142,7 @@ export default function DashboardPage() {
   const { teams, loading: teamsLoading } = useTeams();
   const { broadcasters } = useCupData();
   const mainBroadcasterName = broadcasters.find((b) => b.isMain)?.name || 'main broadcaster';
-  const [season, setSeason] = useState(CURRENT_SEASON);
+  const [season, setSeason] = useSeasonParam();
   const { fixtures, loading: fixturesLoading, error: fixturesError } = useSeasonFixtures(season, teams);
   const [includeSimulcast, setIncludeSimulcast] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();

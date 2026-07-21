@@ -4,6 +4,7 @@ import { useCupData } from '../lib/useCupData.jsx';
 import { useCupFixtures } from '../lib/useCupFixtures.js';
 import { useOtherClubs } from '../lib/useOtherClubs.jsx';
 import { useSession } from '../lib/useSession.jsx';
+import { useSeasonParam } from '../lib/useSeasonParam.js';
 import { callWithReauth } from '../lib/reauth.js';
 import { CURRENT_SEASON } from '../lib/seasons.js';
 import SeasonSelector from '../components/SeasonSelector.jsx';
@@ -14,11 +15,15 @@ export default function CupCompetitionsPage() {
   const { teams } = useTeams();
   const { otherClubs, createOtherClub } = useOtherClubs();
   const { broadcasters, competitions, loading: cupDataLoading } = useCupData();
-  const [season, setSeason] = useState(CURRENT_SEASON);
-  const { fixtures, loading: fixturesLoading, error: fixturesError, updateFixture, createFixture } = useCupFixtures(
-    teams,
-    season
-  );
+  const [season, setSeason] = useSeasonParam();
+  const {
+    fixtures,
+    loading: fixturesLoading,
+    error: fixturesError,
+    updateFixture,
+    createFixture,
+    deleteFixture,
+  } = useCupFixtures(teams, season);
   const session = useSession();
   const [showAddForm, setShowAddForm] = useState(false);
   const [updateError, setUpdateError] = useState(null);
@@ -73,6 +78,15 @@ export default function CupCompetitionsPage() {
     await callWithReauth(session, (token) => createOtherClub(fields, token));
   }
 
+  async function handleDelete(id) {
+    try {
+      await callWithReauth(session, (token) => deleteFixture(id, token));
+      setUpdateError(null);
+    } catch (err) {
+      setUpdateError(err.message);
+    }
+  }
+
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-3">
@@ -97,12 +111,6 @@ export default function CupCompetitionsPage() {
       </header>
 
       <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-6">
-        {season.label !== CURRENT_SEASON.label && (
-          <p className="rounded-lg bg-white/5 px-4 py-2.5 text-xs text-white/50">
-            {season.label} is a past season - view only, nothing here can be edited.
-          </p>
-        )}
-
         {canEdit && showAddForm && (
           <AddCupFixtureForm
             teams={teams}
@@ -168,6 +176,7 @@ export default function CupCompetitionsPage() {
                         round={round}
                         fixtures={roundFixtures}
                         onUpdate={handleUpdate}
+                        onDelete={canEdit ? handleDelete : null}
                         canEdit={canEdit}
                         broadcasters={broadcasters}
                       />

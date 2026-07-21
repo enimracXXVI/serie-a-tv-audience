@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
 import { teamsInFixtures } from '../lib/teams.js';
 import { computeStandings, maxPlayedMatchday } from '../lib/standings.js';
-import { CURRENT_SEASON } from '../lib/seasons.js';
 import { useAppSettings } from '../lib/useAppSettings.jsx';
+import { useSeasonParam } from '../lib/useSeasonParam.js';
 import SeasonSelector from '../components/SeasonSelector.jsx';
 import StandingsTable from '../components/StandingsTable.jsx';
 import StandingsChart from '../components/StandingsChart.jsx';
@@ -12,7 +13,7 @@ import StandingsChart from '../components/StandingsChart.jsx';
 export default function StandingsPage() {
   const { teams, loading: teamsLoading } = useTeams();
   const { serieALogoUrl } = useAppSettings();
-  const [season, setSeason] = useState(CURRENT_SEASON);
+  const [season, setSeason] = useSeasonParam();
   const { fixtures, loading: fixturesLoading, error: fixturesError } = useSeasonFixtures(season, teams);
 
   const loading = teamsLoading || fixturesLoading;
@@ -26,15 +27,30 @@ export default function StandingsPage() {
   const effectiveTeams = useMemo(() => (season.tab ? teamsInFixtures(fixtures) : teams), [season.tab, fixtures, teams]);
 
   const maxMatchday = useMemo(() => maxPlayedMatchday(fixtures) || 1, [fixtures]);
-  // null tracks "latest matchday" live as data loads; a number means the
-  // user has dragged the slider to a specific point in the season.
-  const [tableMatchday, setTableMatchday] = useState(null);
-  // Switching season should default back to "latest" for whichever season
-  // is now shown, not stay stuck on a matchday number from the previous one.
-  useEffect(() => {
-    setTableMatchday(null);
-  }, [season.label]);
-  const effectiveTableMatchday = Math.min(tableMatchday ?? maxMatchday, maxMatchday);
+
+  // '?matchday=' persists which matchday the table is shown as-of, so a
+  // bookmarked/shared link reopens on the same point in the season instead
+  // of always resetting to "latest". Absent (or blank, e.g. right after
+  // useSeasonParam clears it on a season change) means "latest" - only
+  // written into the URL once the user actually drags the slider away from
+  // that.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const matchdayParam = searchParams.get('matchday');
+  const tableMatchday = matchdayParam ? Number(matchdayParam) : null;
+
+  function setTableMatchday(next) {
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        if (next === null) params.delete('matchday');
+        else params.set('matchday', String(next));
+        return params;
+      },
+      { replace: true }
+    );
+  }
+
+  const effectiveTableMatchday = Math.min(Math.max(tableMatchday ?? maxMatchday, 1), maxMatchday);
   const standings = loading || fixturesError ? [] : computeStandings(fixtures, effectiveTeams, effectiveTableMatchday);
 
   return (

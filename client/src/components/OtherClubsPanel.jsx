@@ -47,10 +47,11 @@ function TextField({ label, value, onCommit, maxLength, uppercase = false, width
   );
 }
 
-function OtherClubRow({ club, session, saveOtherClub }) {
+function OtherClubRow({ club, session, saveOtherClub, removeOtherClub }) {
   const [expanded, setExpanded] = useState(false);
   const [saveError, setSaveError] = useState(null);
-  const previewClub = { ...club, slug: slugify(club.name) };
+  const [deleting, setDeleting] = useState(false);
+  const previewClub = { ...club, slug: club.slug || slugify(club.name) };
 
   async function commit(fields) {
     setSaveError(null);
@@ -58,6 +59,20 @@ function OtherClubRow({ club, session, saveOtherClub }) {
       await callWithReauth(session, (token) => saveOtherClub(club.name, fields, token));
     } catch (err) {
       setSaveError(err.message);
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm(`Delete "${club.name}"? This can't be undone from here - you'd need to re-add it by hand.`)) {
+      return;
+    }
+    setDeleting(true);
+    setSaveError(null);
+    try {
+      await callWithReauth(session, (token) => removeOtherClub(club.name, token));
+    } catch (err) {
+      setSaveError(err.message);
+      setDeleting(false);
     }
   }
 
@@ -95,17 +110,36 @@ function OtherClubRow({ club, session, saveOtherClub }) {
                   </select>
                 </Field>
               </div>
-              <TextField
-                label="Crest image URL"
-                value={club.crestUrl}
-                width="w-full"
-                onCommit={(v) => commit({ crestUrl: v })}
-              />
+              <div className="flex flex-wrap items-end gap-2">
+                <TextField
+                  label="Crest image URL"
+                  value={club.crestUrl}
+                  width="w-full sm:w-64"
+                  onCommit={(v) => commit({ crestUrl: v })}
+                />
+                <TextField
+                  label="Slug (optional)"
+                  value={club.slug}
+                  width="w-36"
+                  onCommit={(v) => commit({ slug: v })}
+                />
+              </div>
+              <p className="text-[10px] text-white/30">
+                Slug is only worth setting if you want a specific value - leave it blank and it's derived from the
+                name automatically.
+              </p>
               {saveError && (
                 <p className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-xs text-red-300">
                   {saveError}
                 </p>
               )}
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="w-fit rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+              >
+                {deleting ? 'Deleting…' : 'Delete club'}
+              </button>
             </>
           ) : (
             <div className="flex flex-col gap-1 text-xs text-white/50">
@@ -187,7 +221,7 @@ function AddClubForm({ session, createOtherClub }) {
 }
 
 export default function OtherClubsPanel({ session }) {
-  const { otherClubs, loading, saveOtherClub, createOtherClub } = useOtherClubs();
+  const { otherClubs, loading, saveOtherClub, createOtherClub, removeOtherClub } = useOtherClubs();
   const national = useMemo(() => otherClubs.filter((c) => scopeOf(c) === 'national'), [otherClubs]);
   const european = useMemo(() => otherClubs.filter((c) => scopeOf(c) === 'european'), [otherClubs]);
 
@@ -207,7 +241,13 @@ export default function OtherClubsPanel({ session }) {
             <div className="flex flex-col gap-1.5">
               {national.length === 0 && <p className="text-xs text-white/40">None added yet.</p>}
               {national.map((c) => (
-                <OtherClubRow key={c.name} club={c} session={session} saveOtherClub={saveOtherClub} />
+                <OtherClubRow
+                  key={c.name}
+                  club={c}
+                  session={session}
+                  saveOtherClub={saveOtherClub}
+                  removeOtherClub={removeOtherClub}
+                />
               ))}
             </div>
           </CollapsibleSection>
@@ -215,7 +255,13 @@ export default function OtherClubsPanel({ session }) {
             <div className="flex flex-col gap-1.5">
               {european.length === 0 && <p className="text-xs text-white/40">None added yet.</p>}
               {european.map((c) => (
-                <OtherClubRow key={c.name} club={c} session={session} saveOtherClub={saveOtherClub} />
+                <OtherClubRow
+                  key={c.name}
+                  club={c}
+                  session={session}
+                  saveOtherClub={saveOtherClub}
+                  removeOtherClub={removeOtherClub}
+                />
               ))}
             </div>
           </CollapsibleSection>
