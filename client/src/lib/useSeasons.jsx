@@ -7,8 +7,10 @@ const SeasonsContext = createContext(null);
 // empty), so the rest of the app - fixtures, standings, dashboard, cups -
 // still has a live season to fall back to rather than hard-breaking. Same
 // graceful-degradation convention competitions.js's DEFAULT_COMPETITIONS
-// already uses for a not-yet-created tab.
-const FALLBACK_SEASONS = [{ label: '26/27', tab: null, current: true }];
+// already uses for a not-yet-created tab. `tab` matches the live fixtures
+// tab's actual current name - every season (including the live one) points
+// at a real tab now, there's no more "blank tab means live" convention.
+const FALLBACK_SEASONS = [{ label: '26/27', tab: 'fixtures_26_27', current: true, slug: '26-27' }];
 
 export function SeasonsProvider({ children }) {
   const [seasons, setSeasons] = useState(FALLBACK_SEASONS);

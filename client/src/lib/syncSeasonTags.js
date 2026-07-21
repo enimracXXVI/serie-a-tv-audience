@@ -1,4 +1,4 @@
-import { fetchFixtures, syncMatchTags } from './sheets.js';
+import { syncMatchTags } from './sheets.js';
 import { fetchSeasonFixtures } from './seasonFixtures.js';
 import { enrichFixture, applySeasonTeamAttributes } from './teams.js';
 
@@ -7,18 +7,17 @@ import { enrichFixture, applySeasonTeamAttributes } from './teams.js';
 // sponsorship/big-club/derby designations ("Sponsorship / big match /
 // derby" panel) doesn't just sit unsynced until someone happens to edit one
 // of that season's rows from the app. An archive tab that doesn't exist yet
-// fails just that one season rather than aborting the whole run. This
-// fetches its own raw copy of every season's fixtures independently of any
-// hook's already-enriched state, so the sponsored/bigClub/derby override is
-// applied here unconditionally, for every season including the live one.
+// fails just that one season rather than aborting the whole run. Every
+// season (live included) now has a real `tab` name, so the same read-only
+// fetchSeasonFixtures works for all of them - no special-casing the live one.
 export async function syncAllSeasonsMatchTags({ clubsBySlug, clubsByName, teamSeasonRows, seasons }, accessToken) {
   const results = [];
   for (const season of seasons) {
     try {
-      const raw = season.tab ? await fetchSeasonFixtures(season.tab) : await fetchFixtures();
+      const raw = await fetchSeasonFixtures(season.tab);
       let fixtures = raw.map((r) => enrichFixture(r, clubsBySlug, clubsByName));
       fixtures = applySeasonTeamAttributes(fixtures, season.label, teamSeasonRows);
-      const count = await syncMatchTags(fixtures, accessToken, season.tab ?? undefined);
+      const count = await syncMatchTags(fixtures, accessToken, season.tab);
       results.push({ label: season.label, ok: true, count });
     } catch (err) {
       results.push({ label: season.label, ok: false, error: err.message });

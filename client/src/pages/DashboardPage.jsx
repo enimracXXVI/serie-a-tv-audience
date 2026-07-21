@@ -170,7 +170,10 @@ export default function DashboardPage() {
   // section below (ranked bar chart, table, focus-club dropdown...), so
   // derive the season's real roster from its own fixtures rather than
   // assuming the current one played it.
-  const effectiveTeams = useMemo(() => (season.tab ? teamsInFixtures(fixtures) : teams), [season.tab, fixtures, teams]);
+  const effectiveTeams = useMemo(
+    () => (season.current ? teams : teamsInFixtures(fixtures)),
+    [season, fixtures, teams]
+  );
 
   // Switching season can leave a focused club that didn't play in the new
   // one - reset back to "all clubs" rather than silently focusing a club

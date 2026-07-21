@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Crest from './Crest.jsx';
 import { resolveCupFixtureOutcome } from '../lib/cupFixtures.js';
+import { resolveBroadcaster } from '../lib/broadcasters.js';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
@@ -118,7 +119,7 @@ function KickoffFields({ fixture, onUpdate, broadcasters }) {
         >
           <option value="">None</option>
           {broadcasters.map((b) => (
-            <option key={b.name} value={b.name}>
+            <option key={b.slug} value={b.slug}>
               {b.name}
             </option>
           ))}
@@ -199,7 +200,7 @@ function AudienceFields({ fixture, onUpdate }) {
 
 export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, editMode, broadcasters }) {
   const dateShort = formatDateShort(fixture.date);
-  const broadcaster = broadcasters.find((b) => b.name === fixture.broadcaster);
+  const broadcaster = resolveBroadcaster(fixture.broadcaster, broadcasters);
   const outcome = resolveCupFixtureOutcome(fixture);
   const scoreNote = outcome.wentToPens
     ? `pens ${outcome.penHomeScore}-${outcome.penAwayScore}`

@@ -34,19 +34,20 @@ export function TeamSeasonsProvider({ children }) {
   // Unlike a tab pre-seeded with one row per club, this tab starts empty -
   // a club only gets a row the first time it's configured for a given
   // season, so this decides update-vs-append itself rather than assuming
-  // the row already exists.
+  // the row already exists. `slug` (the sheet's row key) holds the
+  // composite `season::teamSlug` string; `team` holds the club's own slug.
   const saveTeamSeason = useCallback(
-    async (seasonLabel, slug, fields, accessToken) => {
+    async (seasonLabel, teamSlug, fields, accessToken) => {
       if (!accessToken) throw new Error('UNAUTHENTICATED');
-      const id = makeId(seasonLabel, slug);
-      const existing = rows.find((r) => r.id === id);
+      const compositeKey = makeId(seasonLabel, teamSlug);
+      const existing = rows.find((r) => r.slug === compositeKey);
 
       if (existing) {
-        const { missingFields } = await updateTeamSeason(id, fields, accessToken);
+        const { missingFields } = await updateTeamSeason(compositeKey, fields, accessToken);
         const missingHere = (missingFields ?? []).filter((f) => f in fields);
         const applied = { ...fields };
         for (const f of missingHere) delete applied[f];
-        setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...applied } : r)));
+        setRows((prev) => prev.map((r) => (r.slug === compositeKey ? { ...r, ...applied } : r)));
         if (missingHere.length > 0) {
           throw new Error(`Saved, but the teamSeasons sheet has no column header for: ${missingHere.join(', ')}.`);
         }
@@ -54,9 +55,9 @@ export function TeamSeasonsProvider({ children }) {
       }
 
       const allFields = {
-        id,
+        slug: compositeKey,
         season: seasonLabel,
-        slug,
+        team: teamSlug,
         sponsored: false,
         bigClub: false,
         derbyRival: '',

@@ -51,11 +51,11 @@ export function CupDataProvider({ children }) {
     return { applied, missingHere };
   }
 
-  const saveBroadcaster = useCallback(async (name, fields, accessToken) => {
+  const saveBroadcaster = useCallback(async (slug, fields, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
-    const { missingFields } = await updateBroadcaster(name, fields, accessToken);
+    const { missingFields } = await updateBroadcaster(slug, fields, accessToken);
     const { applied, missingHere } = applyMissing(fields, missingFields);
-    setBroadcasters((prev) => prev.map((b) => (b.name === name ? { ...b, ...applied } : b)));
+    setBroadcasters((prev) => prev.map((b) => (b.slug === slug ? { ...b, ...applied } : b)));
     if (missingHere.length > 0) {
       throw new Error(`Saved, but the broadcasters sheet has no column header for: ${missingHere.join(', ')}.`);
     }
@@ -65,7 +65,7 @@ export function CupDataProvider({ children }) {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
     await addBroadcaster(fields, accessToken);
     setBroadcasters((prev) => [...prev, fields]);
-    return fields.name;
+    return fields.slug;
   }, []);
 
   const saveCompetition = useCallback(async (value, fields, accessToken) => {

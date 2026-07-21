@@ -1,4 +1,4 @@
-import { SPREADSHEET_ID, SHEET_NAME, GOOGLE_API_KEY } from './config.js';
+import { SPREADSHEET_ID, GOOGLE_API_KEY } from './config.js';
 import { columnIndexToLetter, buildHeaderIndex, cell, getSheetId } from './sheetsCommon.js';
 import { computeMatchTags } from './matchTags.js';
 import { computeDayOfWeek } from './matchdays.js';
@@ -46,12 +46,16 @@ const EDITABLE_FIELDS = [
   'isDerby',
 ];
 
-// Generous range: columns can be reordered/added by name (see rowToFixture),
-// rows must stay in seeded order (row N+1 holds fixture id N).
-const FULL_RANGE = `${SHEET_NAME}!A1:Z500`;
+// Every function here takes the live season's tab name explicitly (from
+// useSeasons()'s currentSeason.tab) rather than a hardcoded constant - the
+// tab holding the current season's fixtures is renamed every season rollover
+// (e.g. fixtures_26_27 -> fixtures_27_28), driven entirely by the `seasons`
+// sheet tab now, not a value baked into the code.
 
 // Cached after the first successful fetch so writes don't need their own
-// header lookup round-trip.
+// header lookup round-trip. Only ever holds one tab's worth of state at a
+// time - safe because this file is only ever used for whichever season is
+// currently live within a given page load.
 let headerIndexCache = null;
 // id -> row number, same convention as sheetTab.js's generic client. Kept in
 // sync with reality by deleteFixtureRow refetching after an actual delete -
@@ -98,9 +102,10 @@ function rowToFixture(row, headerIndex) {
   return obj;
 }
 
-export async function fetchFixtures() {
+export async function fetchFixtures(sheetName) {
+  const range = `${sheetName}!A1:Z500`;
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(
-    FULL_RANGE
+    range
   )}?key=${GOOGLE_API_KEY}&valueRenderOption=UNFORMATTED_VALUE&_=${Date.now()}`;
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) {
@@ -131,16 +136,10 @@ export async function fetchFixtures() {
   return fixtures;
 }
 
-async function ensureHeaderIndex() {
-  if (headerIndexCache) return headerIndexCache;
-  headerIndexCache = await fetchHeaderIndexFor(SHEET_NAME);
-  return headerIndexCache;
-}
-
 // Sibling season archive tabs share the same header row as the live
-// `fixtures` tab, but aren't guaranteed to have columns in the exact same
-// order - a fresh lookup per tab (rather than reusing the live-only cache
-// above) keeps syncing tags to an archive tab safe even if that ever drifts.
+// fixtures tab, but aren't guaranteed to have columns in the exact same
+// order - a fresh lookup per tab (rather than reusing the cache above)
+// keeps syncing tags to an archive tab safe even if that ever drifts.
 async function fetchHeaderIndexFor(tabName) {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(
     `${tabName}!1:1`
@@ -151,8 +150,9 @@ async function fetchHeaderIndexFor(tabName) {
   return buildHeaderIndex((data.values && data.values[0]) || []);
 }
 
-export async function updateFixtureRow(fixture, accessToken) {
-  const headerIndex = await ensureHeaderIndex();
+export async function updateFixtureRow(fixture, accessToken, sheetName) {
+  if (!headerIndexCache) headerIndexCache = await fetchHeaderIndexFor(sheetName);
+  const headerIndex = headerIndexCache;
   if (!rowIndexCache || rowIndexCache[fixture.id] === undefined) {
     throw new Error('Fixtures data has not loaded yet - reload the page and try again.');
   }
@@ -171,7 +171,7 @@ export async function updateFixtureRow(fixture, accessToken) {
     const letter = columnIndexToLetter(colIdx);
     const value = BOOLEAN_FIELDS.has(field) ? Boolean(patch[field]) : patch[field] ?? '';
     data.push({
-      range: `${SHEET_NAME}!${letter}${rowNumber}:${letter}${rowNumber}`,
+      range: `${sheetName}!${letter}${rowNumber}:${letter}${rowNumber}`,
       majorDimension: 'ROWS',
       values: [[value]],
     });
@@ -205,9 +205,9 @@ export async function updateFixtureRow(fixture, accessToken) {
 // the app, instead of the whole-season paste-into-the-sheet setup). id is
 // computed from a fresh read right before appending so two near-simultaneous
 // creates don't collide, matching the same append pattern as sheetTab.js.
-export async function appendFixtureRow({ matchday, home, away, date, kickoffTime }, accessToken) {
-  const headerIndex = await ensureHeaderIndex();
-  const current = await fetchFixtures();
+export async function appendFixtureRow({ matchday, home, away, date, kickoffTime }, accessToken, sheetName) {
+  const current = await fetchFixtures(sheetName);
+  const headerIndex = headerIndexCache;
   const nextId = current.reduce((max, f) => Math.max(max, Number(f.id) || 0), 0) + 1;
 
   const fields = {
@@ -233,12 +233,12 @@ export async function appendFixtureRow({ matchday, home, away, date, kickoffTime
   }
 
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(
-    `${SHEET_NAME}!A1`
+    `${sheetName}!A1`
   )}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ range: `${SHEET_NAME}!A1`, majorDimension: 'ROWS', values: [row] }),
+    body: JSON.stringify({ range: `${sheetName}!A1`, majorDimension: 'ROWS', values: [row] }),
   });
   if (res.status === 401 || res.status === 403) throw new Error('UNAUTHENTICATED');
   if (!res.ok) throw new Error('Failed to add the new fixture to Google Sheets');
@@ -261,12 +261,12 @@ export async function appendFixtureRow({ matchday, home, away, date, kickoffTime
 // right after so rowIndexCache is rebuilt from the sheet's real, post-delete
 // layout, and hands back the fresh fixture list so the caller doesn't need
 // to patch its own state blind to which rows just shifted.
-export async function deleteFixtureRow(id, accessToken) {
+export async function deleteFixtureRow(id, accessToken, sheetName) {
   if (!rowIndexCache || rowIndexCache[id] === undefined) {
     throw new Error('Fixtures data has not loaded yet - reload the page and try again.');
   }
   const rowNumber = rowIndexCache[id];
-  const sheetId = await getSheetId(SHEET_NAME, accessToken);
+  const sheetId = await getSheetId(sheetName, accessToken);
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}:batchUpdate`;
   const res = await fetch(url, {
     method: 'POST',
@@ -279,7 +279,7 @@ export async function deleteFixtureRow(id, accessToken) {
   });
   if (res.status === 401 || res.status === 403) throw new Error('UNAUTHENTICATED');
   if (!res.ok) throw new Error('Failed to delete fixture from Google Sheets');
-  return fetchFixtures();
+  return fetchFixtures(sheetName);
 }
 
 // isBigMatch/isDerby also get written opportunistically whenever a fixture is
@@ -288,8 +288,8 @@ export async function deleteFixtureRow(id, accessToken) {
 // go, so the sheet is a complete, queryable mirror of what Settings computes
 // right after configuring bigClub/derbyRival, not just the rows someone
 // happened to edit.
-export async function syncMatchTags(fixtures, accessToken, sheetName = SHEET_NAME) {
-  const headerIndex = sheetName === SHEET_NAME ? await ensureHeaderIndex() : await fetchHeaderIndexFor(sheetName);
+export async function syncMatchTags(fixtures, accessToken, sheetName) {
+  const headerIndex = await fetchHeaderIndexFor(sheetName);
   const bigIdx = headerIndex.isBigMatch;
   const derbyIdx = headerIndex.isDerby;
   if (bigIdx === undefined && derbyIdx === undefined) {

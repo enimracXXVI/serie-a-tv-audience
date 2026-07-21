@@ -4,7 +4,8 @@ import { useTeams } from '../lib/useTeams.jsx';
 import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
 import { teamsInFixtures } from '../lib/teams.js';
 import { computeStandings, maxPlayedMatchday } from '../lib/standings.js';
-import { useAppSettings } from '../lib/useAppSettings.jsx';
+import { useCupData } from '../lib/useCupData.jsx';
+import { serieALogo } from '../lib/competitions.js';
 import { useSeasonParam } from '../lib/useSeasonParam.js';
 import SeasonSelector from '../components/SeasonSelector.jsx';
 import StandingsTable from '../components/StandingsTable.jsx';
@@ -12,7 +13,8 @@ import StandingsChart from '../components/StandingsChart.jsx';
 
 export default function StandingsPage() {
   const { teams, loading: teamsLoading } = useTeams();
-  const { serieALogoUrl } = useAppSettings();
+  const { competitions } = useCupData();
+  const serieALogoUrl = serieALogo(competitions);
   const [season, setSeason] = useSeasonParam();
   const { fixtures, loading: fixturesLoading, error: fixturesError } = useSeasonFixtures(season, teams);
 
@@ -24,7 +26,10 @@ export default function StandingsPage() {
   // silently drop out of every other club's record too (computeStandings
   // skips a fixture completely if either side isn't in the team list it's
   // given). Derive the season's real roster from its own fixtures instead.
-  const effectiveTeams = useMemo(() => (season.tab ? teamsInFixtures(fixtures) : teams), [season.tab, fixtures, teams]);
+  const effectiveTeams = useMemo(
+    () => (season.current ? teams : teamsInFixtures(fixtures)),
+    [season, fixtures, teams]
+  );
 
   const maxMatchday = useMemo(() => maxPlayedMatchday(fixtures) || 1, [fixtures]);
 

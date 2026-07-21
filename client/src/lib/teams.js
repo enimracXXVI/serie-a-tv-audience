@@ -94,8 +94,11 @@ export function teamsInFixtures(fixtures) {
 // derbyRival/caps, since neither the `teams` tab nor a bare club object
 // carries them anymore.
 export function overrideTeamAttributes(roster, seasonLabel, attributeRows) {
+  // teamSeasons' own `slug` column holds the composite `season::team` key
+  // (its row-identifying id) - the team's own slug lives in its `team`
+  // column instead.
   const rowsBySlug = new Map(
-    attributeRows.filter((r) => r.season === seasonLabel).map((r) => [r.slug, r])
+    attributeRows.filter((r) => r.season === seasonLabel).map((r) => [r.team, r])
   );
 
   return new Map(

@@ -5,6 +5,7 @@ import SponsorBadges from './SponsorBadges.jsx';
 import { matchTagStyle } from '../lib/matchTags.js';
 import { SPONSOR_TYPES } from '../lib/sponsorCounts.js';
 import { useCupData } from '../lib/useCupData.jsx';
+import { resolveBroadcaster } from '../lib/broadcasters.js';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
@@ -82,7 +83,7 @@ function KickoffFields({ fixture, onUpdate, otherBroadcasterOptions }) {
         >
           <option value="">None</option>
           {otherBroadcasterOptions.map((b) => (
-            <option key={b.name} value={b.name}>
+            <option key={b.slug} value={b.slug}>
               {b.name}
             </option>
           ))}
@@ -205,9 +206,7 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
   const mainBroadcaster = broadcasters.find((b) => b.isMain) ?? null;
   const mainBroadcasterName = mainBroadcaster?.name || 'Main broadcaster';
   const otherBroadcasterOptions = broadcasters.filter((b) => !b.isMain);
-  const otherBroadcasterRow = fixture.otherBroadcaster
-    ? broadcasters.find((b) => b.name === fixture.otherBroadcaster)
-    : null;
+  const otherBroadcasterRow = resolveBroadcaster(fixture.otherBroadcaster, broadcasters);
 
   function handleDelete() {
     if (!window.confirm(`Delete this fixture (${home.name} vs ${away.name})? This can't be undone from here.`)) {
