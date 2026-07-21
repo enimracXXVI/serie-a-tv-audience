@@ -17,7 +17,7 @@ export default function CupCompetitionsPage() {
   // Serie A is a real "competitions" row now (for its logo setting - see
   // competitions.js) but isn't a cup - never has cupFixtures of its own and
   // can't be picked as one to add a fixture under.
-  const competitions = useMemo(() => allCompetitions.filter((c) => c.value !== SERIE_A_VALUE), [allCompetitions]);
+  const competitions = useMemo(() => allCompetitions.filter((c) => c.slug !== SERIE_A_VALUE), [allCompetitions]);
   const [season, setSeason] = useSeasonParam();
   const { currentSeason } = useSeasons();
   const {
@@ -54,7 +54,7 @@ export default function CupCompetitionsPage() {
     return byCompetition;
   }, [fixtures]);
 
-  const visibleCompetitions = competitions.filter((c) => grouped.has(c.value));
+  const visibleCompetitions = competitions.filter((c) => grouped.has(c.slug));
 
   function toggleCollapsed(value) {
     setCollapsed((prev) => {
@@ -142,29 +142,29 @@ export default function CupCompetitionsPage() {
               <div id="cup-nav" className="scroll-mt-4 flex flex-wrap items-center gap-1.5">
                 {visibleCompetitions.map((c) => (
                   <a
-                    key={c.value}
-                    href={`#competition-${c.value}`}
+                    key={c.slug}
+                    href={`#competition-${c.slug}`}
                     className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-white/20"
                   >
-                    {c.logoUrl && <img src={c.logoUrl} alt="" className="h-3.5 max-w-[40px] object-contain" />}
-                    {c.label}
+                    {c.logoURL && <img src={c.logoURL} alt="" className="h-3.5 max-w-[40px] object-contain" />}
+                    {c.name}
                   </a>
                 ))}
               </div>
             )}
 
             {visibleCompetitions.map((c) => {
-              const isCollapsed = collapsed.has(c.value);
+              const isCollapsed = collapsed.has(c.slug);
               return (
-                <div key={c.value} id={`competition-${c.value}`} className="scroll-mt-4 flex flex-col gap-3">
+                <div key={c.slug} id={`competition-${c.slug}`} className="scroll-mt-4 flex flex-col gap-3">
                   <div className="flex items-center justify-between gap-2">
                     <button
-                      onClick={() => toggleCollapsed(c.value)}
+                      onClick={() => toggleCollapsed(c.slug)}
                       className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-white/60 hover:text-white/80"
                     >
                       <span className={`inline-block text-white/40 transition-transform ${isCollapsed ? '-rotate-90' : ''}`}>▾</span>
-                      {c.logoUrl && <img src={c.logoUrl} alt="" className="h-4 max-w-[60px] object-contain" />}
-                      {c.label}
+                      {c.logoURL && <img src={c.logoURL} alt="" className="h-4 max-w-[60px] object-contain" />}
+                      {c.name}
                     </button>
                     {visibleCompetitions.length > 1 && (
                       <a href="#cup-nav" className="text-xs font-semibold text-white/40 hover:text-white">
@@ -173,7 +173,7 @@ export default function CupCompetitionsPage() {
                     )}
                   </div>
                   {!isCollapsed &&
-                    [...grouped.get(c.value).entries()].map(([round, roundFixtures]) => (
+                    [...grouped.get(c.slug).entries()].map(([round, roundFixtures]) => (
                       <CupRoundGroup
                         key={round}
                         round={round}

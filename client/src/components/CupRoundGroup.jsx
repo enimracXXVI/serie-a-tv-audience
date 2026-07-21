@@ -8,6 +8,7 @@ const TABS = [
   { key: 'result', label: 'Result' },
   { key: 'addedTime', label: 'Added time' },
   { key: 'audience', label: 'Audience' },
+  { key: 'led', label: 'LED' },
   { key: 'all', label: 'All' },
 ];
 

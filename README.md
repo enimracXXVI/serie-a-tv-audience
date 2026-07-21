@@ -155,11 +155,13 @@ the sync for every other season.
 Y-Z are only editable from the home page's **LED** tab (per matchday card),
 and only show up at all for a fixture whose *home* club has an LED deal for
 that season - `extraLedMinutes` is a free-entry number (extra minutes bought
-for that one game, on top of the season's base `ledMinutes`), `penaltyTaken`
-only appears if that home club's `penaltyLed` is checked. Both are scoped to
-the home side only, same as the Q-V columns above and the Dashboard's own
-"home audience" framing - LED perimeter boards only exist at a club's own
-stadium, so there's no "away LED" concept.
+for that one game, on top of the season's base per-fixture `ledMinutes`),
+`penaltyTaken` only appears if that home club's `penaltyLed` is checked.
+Both are scoped to the home side only, same as the Q-V columns above and
+the Dashboard's own "home audience" framing - LED perimeter boards only
+exist at a club's own stadium, so there's no "away LED" concept. The same
+LED tab (and the same Y-Z columns) also shows up on a Coppa Italia cup
+fixture up to the semifinals - see "LED perimeter-board tracking" below.
 
 **This same tab now also holds cup fixtures** (Coppa Italia, Champions
 League, etc.) for this season, sharing the header row above with a handful
@@ -364,9 +366,9 @@ only exist at that club's own stadium, same "home audience" framing as the
 Dashboard), tracked with `teamSeasons`' three LED columns plus two per-fixture
 columns on the fixtures tab (see "Y-Z" above):
 
-- **`ledMinutes`** (per season/club) - core LED minutes contracted for that
-  club's home games that season. A number, not a boolean, since it's a
-  minutes total rather than a yes/no.
+- **`ledMinutes`** (per season/club) - core LED minutes contracted **per home
+  fixture** that season - a rate, not a season-long total. A number, not a
+  boolean, since it's a minutes count rather than a yes/no.
 - **`addedTimeLed`** (per season/club) - your brand is the only one allowed
   on LED during all added/stoppage time at that club's home games that
   season.
@@ -374,8 +376,8 @@ columns on the fixtures tab (see "Y-Z" above):
   *any* team (home or away) takes a penalty during the 90 minutes at that
   club's home games that season.
 - **`extraLedMinutes`** (per fixture) - extra LED minutes purchased for that
-  one specific home game, on top of the season's `ledMinutes`. Free entry,
-  no cap.
+  one specific home game, on top of the season's per-fixture `ledMinutes`
+  rate. Free entry, no cap.
 - **`penaltyTaken`** (per fixture) - a penalty was actually taken during that
   game's 90 minutes - only shown (and only meaningful) if that game's home
   club has `penaltyLed` checked for the season.
@@ -383,11 +385,21 @@ columns on the fixtures tab (see "Y-Z" above):
 All five are managed the same way as everything else here: the season-level
 three from Settings' **Sponsorship / big match / derby** panel (a club with
 nothing set has no LED deal, same "no fallback to another season" rule as
-sponsored/bigClub), the per-fixture two from a new **LED** tab on the home
+sponsored/bigClub), the per-fixture two from a **LED** tab on the home
 page's matchday cards, which only shows up at all for a fixture whose home
-club has some LED deal that season. This is Serie A only, the same
-deliberate scope as the sponsor-activation tracking above - cup fixtures
-don't track LED.
+club has some LED deal that season.
+
+**Scope: Serie A, plus Coppa Italia up to the semifinals.** Unlike the
+sponsor-activation tracking above (Serie A only, no exceptions), a Coppa
+Italia fixture also gets the same **LED** tab and the same Y-Z columns,
+reading the same home club's `teamSeasons` LED settings - *except* the
+final, which is played at a neutral venue (there's no "home club's own
+stadium" for a final, so LED naturally doesn't apply there). The app
+doesn't match on round text for this - it simply checks that the
+competition is Coppa Italia and the fixture's own `neutralVenue` isn't
+checked, which already excludes the final without needing to know it's
+called "Final". Every other cup (Champions League, Europa League,
+Conference League) still doesn't track LED at all.
 
 ## Adding fixtures from the app
 
@@ -514,7 +526,7 @@ Entirely a sheet operation now - no code change or redeploy needed:
 ### Serie A logo
 
 Serie A isn't a cup, but it lives as an ordinary row in the `competitions`
-tab (see "Cups" below) anyway - `value` set to `serie-a` - purely so its
+tab (see "Cups" below) anyway - `slug` set to `serie-a` - purely so its
 logo has a home without needing its own single-purpose tab. Set it from the
 top of Settings' **Competitions** section (it's the same kind of "one logo"
 setting as every competition listed below it, so it lives there rather than
@@ -526,7 +538,7 @@ isn't one.
 
 There's no `appSettings` tab anymore - if you're upgrading from an earlier
 version of this app, delete it once you've copied its `serieALogoUrl` value
-onto the `competitions` tab's `serie-a` row's `logoUrl` column.
+onto the `competitions` tab's `serie-a` row's `logoURL` column.
 
 ## Cups (Coppa Italia / Champions League / Europa League / Conference League)
 
@@ -541,31 +553,39 @@ the seeded sheet - add them yourself if you want to track cup competitions:
 
 **1. `competitions` tab** - which competitions exist, their logo, and their
 scope, so a fixture list/form can show a badge instead of a plain text label
-and know which `teams` to offer as opponents. Header row: `value`, `label`,
-`logoUrl`, `scope` (an `id` column is also fine to keep, same
-app-never-touches-it deal as the other tabs above). `value` is the stable
-key `cupFixtures.competition` points at - don't rename it once you've used
-it elsewhere. `scope` is `national` or `european` - decides which
-non-current clubs show up as opponent options for that competition in the
-Add fixture form (a current Serie A club is always offered regardless); a
-blank/missing cell reads as `national` (a one-time fallback for a
-competition added before this column existed). Serie A itself also lives as
-a row here (`value` set to `serie-a`) purely to hold its logo setting - see
-"Serie A logo" above; it's excluded everywhere a *cup* competition is
-listed or picked. Paste this seed block into A2 to start with the four cups
-you'd expect (`logoUrl` blank, fill in from Settings):
+and know which `teams` to offer as opponents. Header row: `id`, `slug`,
+`name`, `long`, `short`, `logoURL`, `scope` - `id`/`long`/`short` are extra
+columns the app never reads or writes (same decorative/reference-only deal
+as the equivalent columns on `teams`); the four that matter are:
+
+- `slug` - the stable key a cup fixture's `competition` cell points at
+  (e.g. `CoppaItalia`) - don't rename it once you've used it elsewhere.
+- `name` - shown everywhere (Cups page headings, the Add fixture picker,
+  Settings).
+- `logoURL` - same `=IMAGE("url")`-or-plain-URL rule as crests, managed
+  from Settings.
+- `scope` - `national` or `european` - decides which non-current clubs show
+  up as opponent options for that competition in the Add fixture form (a
+  current Serie A club is always offered regardless); a blank/missing cell
+  reads as `national` (a one-time fallback for a competition added before
+  this column existed).
+
+Serie A itself also lives as a row here (`slug` set to `serie-a`) purely to
+hold its logo setting - see "Serie A logo" above; it's excluded everywhere a
+*cup* competition is listed or picked. Paste this seed block into A2
+(leaving `id`/`long`/`short` blank) to start with the four cups you'd
+expect (`logoURL` blank, fill in from Settings):
 
 ```
-CoppaItalia	Coppa Italia		national
-ChampionsLeague	Champions League		european
-EuropaLeague	Europa League		european
-ConferenceLeague	Conference League		european
+	CoppaItalia	Coppa Italia			national
+	ChampionsLeague	Champions League			european
+	EuropaLeague	Europa League			european
+	ConferenceLeague	Conference League			european
 ```
 
 If this tab doesn't exist yet (or is empty), the app falls back to those
 same four with no logo, so everything else below still works without it -
-add it whenever you want logos, not before. Managed from Settings, same
-`=IMAGE("url")`-or-plain-URL rule as crests.
+add it whenever you want logos, not before.
 
 **2. `broadcasters` tab** - a small reusable list so a cup fixture's
 broadcaster shows a logo badge instead of a retyped name. Header row:
@@ -600,19 +620,22 @@ as long as it has a `teams` row. `broadcaster` holds a `broadcasters`-tab
 hand. `round` is free text (`Round of 16`, `Group A`, whatever your
 competition calls it - there's no fixed round list, a group stage and a
 knockout draw both just work); `neutralVenue` is TRUE/FALSE, for the rare
-match (typically a final) at neither club's own ground. There's no
-sponsor-activation (matchday sponsor/player mascot/walkabout) or LED
-tracking here (that was a deliberate call - those stay Serie A home games
-only), just audience and added time - though a sponsored club's name IS
-highlighted (bold + a small dot), same as everywhere else in the app.
+match (typically a final) at neither club's own ground - see "LED
+perimeter-board tracking" above for why this column also decides whether a
+Coppa Italia fixture gets LED tracking. There's no sponsor-activation
+(matchday sponsor/player mascot/walkabout) tracking here (that was a
+deliberate call - it stays Serie A home games only), just audience and
+added time - though a sponsored club's name IS highlighted (bold + a small
+dot), same as everywhere else in the app.
 
 Which season a cup fixture belongs to is implicit in which tab it's on now
 (there's no `season` column anymore - the app never reads or writes one) -
 exactly like Serie A fixtures already worked before this change. Sponsorship
 highlighting is season-scoped too, exactly like the main calendar, reading
-the `teamSeasons` tab for whichever season is selected (only the `sponsored`
-field is used for cup fixtures - `bigClub`/`derbyRival`/LED don't apply
-here, by design - see "LED perimeter-board tracking" above).
+the `teamSeasons` tab for whichever season is selected (only `sponsored` is
+used for highlighting cup fixtures - `bigClub`/`derbyRival` don't apply here
+by design; LED does apply, for Coppa Italia only - see "LED perimeter-board
+tracking" above).
 
 **Two-legged ties**: add both legs as two ordinary rows on the same season's
 tab (same `competition`, `round`, and the same two clubs in `home`/`away` -

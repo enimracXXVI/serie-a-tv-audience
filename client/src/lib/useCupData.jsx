@@ -68,11 +68,11 @@ export function CupDataProvider({ children }) {
     return fields.slug;
   }, []);
 
-  const saveCompetition = useCallback(async (value, fields, accessToken) => {
+  const saveCompetition = useCallback(async (slug, fields, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
-    const { missingFields } = await updateCompetition(value, fields, accessToken);
+    const { missingFields } = await updateCompetition(slug, fields, accessToken);
     const { applied, missingHere } = applyMissing(fields, missingFields);
-    setCompetitions((prev) => prev.map((c) => (c.value === value ? { ...c, ...applied } : c)));
+    setCompetitions((prev) => prev.map((c) => (c.slug === slug ? { ...c, ...applied } : c)));
     if (missingHere.length > 0) {
       throw new Error(`Saved, but the competitions sheet has no column header for: ${missingHere.join(', ')}.`);
     }
@@ -82,7 +82,7 @@ export function CupDataProvider({ children }) {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
     await addCompetition(fields, accessToken);
     setCompetitions((prev) => [...prev, fields]);
-    return fields.value;
+    return fields.slug;
   }, []);
 
   return (

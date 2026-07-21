@@ -44,7 +44,7 @@ function ClubSelect({ label, value, onChange, currentRoster, opponents }) {
 // club you've never heard of. Both sides write the picked club's SLUG (not
 // name text) into the fixture - see clubs.js/teams.js for why.
 export default function AddCupFixtureForm({ clubs, competitions, onCreate, onCreateOpponent, onDone }) {
-  const [competition, setCompetition] = useState(competitions[0].value);
+  const [competition, setCompetition] = useState(competitions[0].slug);
   const [round, setRound] = useState('');
   const [home, setHome] = useState('');
   const [away, setAway] = useState('');
@@ -58,7 +58,7 @@ export default function AddCupFixtureForm({ clubs, competitions, onCreate, onCre
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  const scope = competitionScope(competitions.find((c) => c.value === competition));
+  const scope = competitionScope(competitions.find((c) => c.slug === competition));
   const currentRoster = clubs.filter((c) => clubScope(c) === 'current');
   const opponents = clubs.filter((c) => clubScope(c) === scope);
 
@@ -141,8 +141,8 @@ export default function AddCupFixtureForm({ clubs, competitions, onCreate, onCre
       <div className="flex flex-wrap gap-2">
         <select value={competition} onChange={(e) => setCompetition(e.target.value)} className={inputClass}>
           {competitions.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
+            <option key={c.slug} value={c.slug}>
+              {c.name}
             </option>
           ))}
         </select>
