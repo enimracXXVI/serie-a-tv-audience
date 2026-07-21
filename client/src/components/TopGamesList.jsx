@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
+import SimulcastBadge from './SimulcastBadge.jsx';
 import { computeTopGames } from '../lib/dashboardMetrics.js';
 import { formatNumber } from '../lib/formatNumber.js';
 
@@ -82,6 +83,9 @@ export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSi
               <div className="flex w-20 shrink-0 flex-col items-center text-center text-[10px] leading-tight text-gray-400">
                 <span className="font-bold text-gray-500">MD{fixture.matchday}</span>
                 <span className="whitespace-nowrap">{formatDate(fixture.date)}</span>
+                <span className="whitespace-nowrap">
+                  {fixture.day} {fixture.kickoffTime}
+                </span>
               </div>
               <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1.5 min-w-0">
                 <div className="flex items-center justify-end gap-1.5 min-w-0">
@@ -94,6 +98,7 @@ export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSi
                   <span className="truncate text-xs font-semibold text-gray-700">{fixture.away.short ?? fixture.away.name}</span>
                 </div>
               </div>
+              <SimulcastBadge fixture={fixture} simulcastInfo={simulcastInfo} />
               <span className="w-16 shrink-0 text-right text-sm font-black text-[#0f1e54]">{formatNumber(audience)}</span>
             </li>
           ))}
