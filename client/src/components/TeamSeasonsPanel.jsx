@@ -1,30 +1,32 @@
 import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
 import { useTeams } from '../lib/useTeams.jsx';
-import { useOtherClubs } from '../lib/useOtherClubs.jsx';
+import { useClubs } from '../lib/useClubs.jsx';
 import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
-import { useSeasonTeamAttributes } from '../lib/useSeasonTeamAttributes.jsx';
+import { useTeamSeasons } from '../lib/useTeamSeasons.jsx';
 import { teamsInFixtures } from '../lib/teams.js';
-import { makeId } from '../lib/seasonTeamAttributes.js';
-import { SEASONS } from '../lib/seasons.js';
+import { makeId } from '../lib/teamSeasons.js';
+import { useSeasons } from '../lib/useSeasons.jsx';
 import { callWithReauth } from '../lib/reauth.js';
 import { syncAllSeasonsMatchTags } from '../lib/syncSeasonTags.js';
 
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9]';
 
-function SeasonTeamRow({ season, team, roster, row, session, saveSeasonTeamAttribute }) {
+function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
   const [expanded, setExpanded] = useState(false);
   const [sponsored, setSponsored] = useState(Boolean(row?.sponsored));
   const [bigClub, setBigClub] = useState(Boolean(row?.bigClub));
   const [derbyRival, setDerbyRival] = useState(row?.derbyRival || '');
+  const [matchdaySponsors, setMatchdaySponsors] = useState(row?.matchdaySponsors ?? '');
+  const [playerMascots, setPlayerMascots] = useState(row?.playerMascots ?? '');
+  const [walkabouts, setWalkabouts] = useState(row?.walkabouts ?? '');
   const [saveError, setSaveError] = useState(null);
-  const name = team.staticName ?? team.name;
 
   async function commit(fields) {
     setSaveError(null);
     try {
-      await callWithReauth(session, (token) => saveSeasonTeamAttribute(season, name, fields, token));
+      await callWithReauth(session, (token) => saveTeamSeason(season, team.slug, fields, token));
     } catch (err) {
       setSaveError(err.message);
     }
@@ -98,13 +100,54 @@ function SeasonTeamRow({ season, team, roster, row, session, saveSeasonTeamAttri
                     {roster
                       .filter((t) => t.slug !== team.slug)
                       .map((t) => (
-                        <option key={t.slug} value={t.staticName ?? t.name}>
+                        <option key={t.slug} value={t.slug}>
                           {t.name}
                         </option>
                       ))}
                   </select>
                 </label>
               </div>
+              {sponsored && (
+                <div className="flex flex-wrap gap-2">
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">
+                      Matchday sponsors
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={matchdaySponsors}
+                      onChange={(e) => setMatchdaySponsors(e.target.value)}
+                      onBlur={() => commit({ matchdaySponsors: matchdaySponsors === '' ? null : Number(matchdaySponsors) })}
+                      className={`${inputClass} w-24`}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">
+                      Player mascots
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={playerMascots}
+                      onChange={(e) => setPlayerMascots(e.target.value)}
+                      onBlur={() => commit({ playerMascots: playerMascots === '' ? null : Number(playerMascots) })}
+                      className={`${inputClass} w-24`}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Walkabouts</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={walkabouts}
+                      onChange={(e) => setWalkabouts(e.target.value)}
+                      onBlur={() => commit({ walkabouts: walkabouts === '' ? null : Number(walkabouts) })}
+                      className={`${inputClass} w-24`}
+                    />
+                  </label>
+                </div>
+              )}
               {saveError && (
                 <p className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-xs text-red-300">
                   {saveError}
@@ -113,9 +156,17 @@ function SeasonTeamRow({ season, team, roster, row, session, saveSeasonTeamAttri
             </>
           ) : (
             <div className="flex flex-col gap-1 text-xs text-white/50">
-              <span>Sponsored: {sponsored ? 'Yes' : 'No'}</span>
               <span>Big club: {bigClub ? 'Yes' : 'No'}</span>
-              <span>Derby rival: {derbyRival || '-'}</span>
+              <span>Derby rival: {roster.find((t) => t.slug === derbyRival)?.name ?? derbyRival ?? '-'}</span>
+              {sponsored ? (
+                <>
+                  <span>Sponsored - matchday sponsors: {matchdaySponsors || '-'}</span>
+                  <span>Player mascots: {playerMascots || '-'}</span>
+                  <span>Walkabouts: {walkabouts || '-'}</span>
+                </>
+              ) : (
+                <span>Not sponsored</span>
+              )}
             </div>
           )}
         </div>
@@ -124,29 +175,28 @@ function SeasonTeamRow({ season, team, roster, row, session, saveSeasonTeamAttri
   );
 }
 
-export default function SeasonTeamAttributesPanel({ session }) {
+export default function TeamSeasonsPanel({ session }) {
   const { teams } = useTeams();
-  const { byName: otherClubsByName } = useOtherClubs();
-  const archiveSeasons = useMemo(() => SEASONS.filter((s) => s.tab), []);
-  const [selectedLabel, setSelectedLabel] = useState(archiveSeasons[0]?.label ?? null);
-  const selectedSeason = archiveSeasons.find((s) => s.label === selectedLabel) ?? archiveSeasons[0];
+  const { bySlug: clubsBySlug, byName: clubsByName } = useClubs();
+  const { seasons } = useSeasons();
+  const [selectedLabel, setSelectedLabel] = useState(null);
+  const selectedSeason = seasons.find((s) => s.label === selectedLabel) ?? seasons[0];
 
   const { fixtures, loading: fixturesLoading, error: fixturesError } = useSeasonFixtures(
     selectedSeason ?? { label: null, tab: null },
     teams
   );
-  const { rows, loading: rowsLoading, saveSeasonTeamAttribute } = useSeasonTeamAttributes();
+  const { rows, loading: rowsLoading, saveTeamSeason } = useTeamSeasons();
   const [syncStatus, setSyncStatus] = useState(null); // null | 'syncing' | results array
 
   const roster = useMemo(() => (selectedSeason ? teamsInFixtures(fixtures) : []), [fixtures, selectedSeason]);
   const rowsByKey = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
-  const teamByName = useMemo(() => new Map(teams.map((t) => [t.staticName, t])), [teams]);
 
   async function handleSyncAllSeasons() {
     setSyncStatus('syncing');
     try {
       const results = await callWithReauth(session, (token) =>
-        syncAllSeasonsMatchTags({ teamByName, otherClubsByName, seasonAttributeRows: rows }, token)
+        syncAllSeasonsMatchTags({ clubsBySlug, clubsByName, teamSeasonRows: rows, seasons }, token)
       );
       setSyncStatus(results);
     } catch (err) {
@@ -157,7 +207,7 @@ export default function SeasonTeamAttributesPanel({ session }) {
   if (!selectedSeason) {
     return (
       <div className="flex flex-col gap-3">
-        <p className="text-xs text-white/40">No archive seasons configured yet - see lib/seasons.js.</p>
+        <p className="text-xs text-white/40">No seasons configured yet - see the "seasons" sheet tab.</p>
       </div>
     );
   }
@@ -173,7 +223,7 @@ export default function SeasonTeamAttributesPanel({ session }) {
           onChange={(e) => setSelectedLabel(e.target.value)}
           className={`${inputClass} w-24`}
         >
-          {archiveSeasons.map((s) => (
+          {seasons.map((s) => (
             <option key={s.label} value={s.label}>
               {s.label}
             </option>
@@ -181,12 +231,11 @@ export default function SeasonTeamAttributesPanel({ session }) {
         </select>
       </div>
       <p className="text-xs text-white/40">
-        Only applies to {selectedSeason.label} - the live season's sponsorship/big-club/derby settings stay in{' '}
-        <strong>Team settings</strong> above. A club with nothing set here shows as not sponsored/big/derby for this
-        season, regardless of its current live setting.
+        Sponsorship/big-match/derby designations for {selectedSeason.label} - a club with nothing set here shows as
+        not sponsored/big/derby for this season.
       </p>
       {!session.signedIn && (
-        <p className="text-xs text-white/50">Sign in to edit past-season sponsorship/big-match/derby designations.</p>
+        <p className="text-xs text-white/50">Sign in to edit sponsorship/big-match/derby designations.</p>
       )}
       {loading ? (
         <p className="text-sm text-white/40">Loading…</p>
@@ -197,14 +246,14 @@ export default function SeasonTeamAttributesPanel({ session }) {
       ) : (
         <div className="flex flex-col gap-1.5">
           {roster.map((team) => (
-            <SeasonTeamRow
+            <TeamSeasonRow
               key={team.slug}
               season={selectedSeason.label}
               team={team}
               roster={roster}
-              row={rowsByKey.get(makeId(selectedSeason.label, team.staticName ?? team.name))}
+              row={rowsByKey.get(makeId(selectedSeason.label, team.slug))}
               session={session}
-              saveSeasonTeamAttribute={saveSeasonTeamAttribute}
+              saveTeamSeason={saveTeamSeason}
             />
           ))}
         </div>
@@ -220,8 +269,8 @@ export default function SeasonTeamAttributesPanel({ session }) {
           </button>
           <p className="text-[10px] text-white/40">
             Writes isBigMatch/isDerby to every configured season's own tab in one go - run this once after changing a
-            past season's sponsorship/big-club/derby designations above, rather than waiting for someone to happen to
-            edit one of that season's fixture rows.
+            season's sponsorship/big-club/derby designations above, rather than waiting for someone to happen to edit
+            one of that season's fixture rows.
           </p>
           {Array.isArray(syncStatus) && (
             <p className="text-[10px]">

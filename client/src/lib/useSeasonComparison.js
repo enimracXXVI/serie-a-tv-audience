@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useFixtures } from './useFixtures.js';
 import { fetchSeasonFixtures } from './seasonFixtures.js';
 import { enrichFixture, teamsInFixtures, applySeasonTeamAttributes } from './teams.js';
-import { useOtherClubs } from './useOtherClubs.jsx';
-import { useSeasonTeamAttributes } from './useSeasonTeamAttributes.jsx';
+import { useClubs } from './useClubs.jsx';
+import { useTeamSeasons } from './useTeamSeasons.jsx';
 import { computeAllTeamMetrics } from './dashboardMetrics.js';
-import { SEASONS } from './seasons.js';
+import { useSeasons } from './useSeasons.jsx';
 
 // Summary-level, season-by-season comparison (league-wide total audience and
 // home avg, plus a focused club's own home avg and total audience) -
@@ -15,7 +15,8 @@ import { SEASONS } from './seasons.js';
 // season.
 export function useSeasonComparison(teams, includeSimulcast, includeOther, focusedSlug) {
   const live = useFixtures([], teams);
-  const archiveSeasons = useMemo(() => SEASONS.filter((s) => s.tab), []);
+  const { seasons } = useSeasons();
+  const archiveSeasons = useMemo(() => seasons.filter((s) => s.tab), [seasons]);
   const [archiveRows, setArchiveRows] = useState({});
   const [archiveErrors, setArchiveErrors] = useState({});
   const [archiveLoading, setArchiveLoading] = useState(true);
@@ -45,19 +46,18 @@ export function useSeasonComparison(teams, includeSimulcast, includeOther, focus
     };
   }, [archiveSeasons]);
 
-  const teamByName = useMemo(() => new Map(teams.map((t) => [t.staticName, t])), [teams]);
-  const { byName: otherClubsByName } = useOtherClubs();
-  const { rows: seasonAttributeRows } = useSeasonTeamAttributes();
+  const { bySlug: clubsBySlug, byName: clubsByName } = useClubs();
+  const { rows: teamSeasonRows } = useTeamSeasons();
 
-  const seasons = useMemo(() => {
-    return SEASONS.map((s) => {
+  const seasonSummaries = useMemo(() => {
+    return seasons.map((s) => {
       const isCurrent = !s.tab;
       const fixtures = isCurrent
         ? live.fixtures
         : applySeasonTeamAttributes(
-            (archiveRows[s.tab] ?? []).map((r) => enrichFixture(r, teamByName, otherClubsByName)),
+            (archiveRows[s.tab] ?? []).map((r) => enrichFixture(r, clubsBySlug, clubsByName)),
             s.label,
-            seasonAttributeRows
+            teamSeasonRows
           );
       const loading = isCurrent ? live.loading : archiveLoading;
       const error = isCurrent ? live.error : (archiveErrors[s.tab] ?? null);
@@ -102,20 +102,21 @@ export function useSeasonComparison(teams, includeSimulcast, includeOther, focus
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    seasons,
     live.fixtures,
     live.loading,
     live.error,
     archiveRows,
     archiveLoading,
     archiveErrors,
-    teamByName,
-    otherClubsByName,
-    seasonAttributeRows,
+    clubsBySlug,
+    clubsByName,
+    teamSeasonRows,
     teams,
     includeSimulcast,
     includeOther,
     focusedSlug,
   ]);
 
-  return { seasons, loading: live.loading || archiveLoading };
+  return { seasons: seasonSummaries, loading: live.loading || archiveLoading };
 }

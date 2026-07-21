@@ -55,8 +55,8 @@ can be blocked by a corporate proxy the way `workers.dev` was:
 - Club crests are generated shield badges (`scripts/generate-crests.mjs`)
   built from each club's real primary/secondary colors — this dev sandbox has
   no outbound access to fetch actual crest artwork. Drop real PNG/SVG logos
-  into `client/public/crests/<team-slug>.svg` (see `client/src/data/teams.json`
-  for slugs) to replace them; no code changes needed.
+  into `client/public/crests/<team-slug>.svg` (see the `teams` sheet tab for
+  slugs) to replace them; no code changes needed.
 
 I already created and seeded the Google Sheet in your Drive:
 https://docs.google.com/spreadsheets/d/1h3ZN2H5_ISzLUCW_AtbP2nFSRoMf7htwL8PYYAtRq4o/edit
@@ -124,19 +124,19 @@ broadcaster that is can now vary fixture to fixture), and
 
 The Q-V columns are only editable from the home page's **Sponsors** tab (per
 matchday card), and only show checkboxes for whichever side of a fixture is a
-club marked `sponsored` in the `teams` tab (see below). Whatever's checked
-shows up as a small badge on that fixture everywhere it's displayed — home
-page, combined calendars, single-team calendars — regardless of sign-in.
+club marked `sponsored` for that season in the `teamSeasons` tab (see below).
+Whatever's checked shows up as a small badge on that fixture everywhere it's
+displayed — home page, combined calendars, single-team calendars — regardless
+of sign-in.
 
 W-X aren't editable anywhere in the app - they're a read-only mirror of what
-the `teams` tab's `bigClub`/`derbyRival` settings (and, for a past season, the
-`seasonTeamAttributes` tab - see below) compute for that fixture, written
-there so you can see/filter/reference it directly in the sheet instead of
-only inside the app. They get refreshed automatically whenever that fixture
-is edited from any of the home page's tabs, and you can also click **Sync big
-match / derby tags - all seasons** in Settings' **Past-season sponsorship /
-big match / derby** panel (signed in) to write them for the live season and
-every configured archive season's own tab in one go - useful right after
+the `teamSeasons` tab's `bigClub`/`derbyRival` settings for that season
+compute for that fixture, written there so you can see/filter/reference it
+directly in the sheet instead of only inside the app. They get refreshed
+automatically whenever that fixture is edited from any of the home page's
+tabs, and you can also click **Sync big match / derby tags - all seasons** in
+Settings' **Sponsorship / big match / derby** panel (signed in) to write them
+for every configured season's own tab in one go - useful right after
 changing a club's `bigClub`/`derbyRival` (live or past-season), so historical
 rows update immediately instead of waiting for their next edit. An archive
 season whose tab doesn't exist yet is reported as failed rather than aborting
@@ -144,72 +144,80 @@ the sync for every other season.
 
 ### Settings panel layout
 
-The hamburger menu's **Settings** view has grown into several panels (Serie
-A clubs, other clubs, past-season sponsorship/big-match/derby, the
-Serie A logo, competitions, broadcasters) - each one is a
-collapsible section, collapsed by default, so opening Settings shows a short
-scannable list of section names rather than every panel's full contents at
-once. Click a section's title to expand it.
+The hamburger menu's **Settings** view has grown into several panels
+(teams, sponsorship/big-match/derby, competitions, broadcasters) - each one
+is a collapsible section, collapsed by default, so opening Settings shows a
+short scannable list of section names rather than every panel's full
+contents at once. Click a section's title to expand it.
 
-### Team settings tab (name/short/colours/sponsorship)
+### The `teams` tab - every club in one place
 
-The hamburger menu's **Settings** panel edits a second tab, named `teams`,
-that doesn't exist yet in the seeded sheet — add it yourself:
+Every club the app knows about - the current Serie A roster and everyone
+else (a former Serie A club, a domestic cup opponent, a European cup
+opponent) - lives in a single sheet tab named `teams`, one shape for all of
+them. There's no separate bundled roster file and no second "other clubs"
+tab anymore; a club's `scope` decides which group it belongs to.
 
-1. Add a new sheet tab named exactly `teams`.
-2. Put this header row in row 1: `slug`, `name`, `short`, `primary`,
-   `secondary`, `crestUrl`, `sponsored`, `matchdaySponsors`, `playerMascots`,
-   `walkabouts`, `bigClub`, `derbyRival`.
-3. Select cell A2 and paste this block (one row per club, tab-separated —
-   copy it as-is and Sheets will split it into columns automatically):
+Header row: `slug`, `name`, `short`, `primary`, `secondary`, `crestUrl`,
+`scope`.
+
+- `slug` is the row's **key** - pick something short and URL-safe
+  (`inter`, `real-madrid`) and never change it once fixtures reference it.
+  This is what makes renaming a club safe (see below) - the app matches a
+  fixture's `home`/`away` cell to a club by slug first, so the display
+  `name` can change freely without breaking historical matching.
+- `name` is the display name - shown everywhere, and what a **new** fixture
+  or cup fixture's `home`/`away` cell resolves against if it was typed by
+  hand rather than picked from the app's own dropdown (which always writes
+  the slug). Rename a club any time from Settings; it's always safe going
+  forward.
+- `short`, `primary`, `secondary` - 3-letter code and hex colours, shown on
+  mobile / used for chart lines and borders.
+- `crestUrl` - same `=IMAGE("url")`-or-plain-URL rule as everywhere else in
+  this app (see below).
+- `scope` - `current` (playing Serie A this season), `national` (a former
+  Serie A club, or a domestic-cup-only opponent), or `european` (a
+  continental-only opponent). Decides three things: which group a club
+  shows up under in Settings, whether it's offered in the Serie A fixture
+  picker (`current` only), and which clubs are offered as cup-fixture
+  opponents for a given competition (see "Cups" below - a `current` club is
+  always offered regardless of competition, a `national`/`european` club
+  only for a matching-scope competition).
+
+Paste this seed block into A2 to start with the current 20-club roster (one
+row per club, tab-separated - copy it as-is and Sheets will split it into
+columns automatically; fill in `crestUrl` from Settings once you're signed
+in, and add any past/opponent clubs you need as their own rows with `scope`
+set to `national`/`european`):
 
 ```
-atalanta	Atalanta	ATA	#1E71B8	#000000
-bologna	Bologna	BOL	#8B1D2C	#1B3E7A
-cagliari	Cagliari	CAG	#C8102E	#00205B
-como	Como	COM	#0066B3	#FFFFFF
-fiorentina	Fiorentina	FIO	#482E92	#FFFFFF
-frosinone	Frosinone	FRO	#FFD400	#003DA5
-genoa	Genoa	GEN	#C8102E	#00205B
-inter	Inter	INT	#003DA5	#000000
-juventus	Juventus	JUV	#000000	#FFFFFF
-lazio	Lazio	LAZ	#87D8F7	#FFFFFF
-lecce	Lecce	LEC	#FFD100	#C8102E
-milan	Milan	MIL	#FB090B	#000000
-monza	Monza	MON	#C8102E	#FFFFFF
-napoli	Napoli	NAP	#12A0D7	#003DA5
-parma	Parma	PAR	#FFD400	#003DA5
-roma	Roma	ROM	#8E1F2F	#F0BC42
-sassuolo	Sassuolo	SAS	#00A650	#000000
-torino	Torino	TOR	#7B1E3A	#FFFFFF
-udinese	Udinese	UDI	#000000	#FFFFFF
-venezia	Venezia	VEN	#FF6600	#000000
+atalanta	Atalanta	ATA	#1E71B8	#000000		current
+bologna	Bologna	BOL	#8B1D2C	#1B3E7A		current
+cagliari	Cagliari	CAG	#C8102E	#00205B		current
+como	Como	COM	#0066B3	#FFFFFF		current
+fiorentina	Fiorentina	FIO	#482E92	#FFFFFF		current
+frosinone	Frosinone	FRO	#FFD400	#003DA5		current
+genoa	Genoa	GEN	#C8102E	#00205B		current
+inter	Inter	INT	#003DA5	#000000		current
+juventus	Juventus	JUV	#000000	#FFFFFF		current
+lazio	Lazio	LAZ	#87D8F7	#FFFFFF		current
+lecce	Lecce	LEC	#FFD100	#C8102E		current
+milan	Milan	MIL	#FB090B	#000000		current
+monza	Monza	MON	#C8102E	#FFFFFF		current
+napoli	Napoli	NAP	#12A0D7	#003DA5		current
+parma	Parma	PAR	#FFD400	#003DA5		current
+roma	Roma	ROM	#8E1F2F	#F0BC42		current
+sassuolo	Sassuolo	SAS	#00A650	#000000		current
+torino	Torino	TOR	#7B1E3A	#FFFFFF		current
+udinese	Udinese	UDI	#000000	#FFFFFF		current
+venezia	Venezia	VEN	#FF6600	#000000		current
 ```
 
-`slug` is the join key back to `client/src/data/teams.json` — don't edit it.
-Everything else is fair game from the Settings panel once you're signed in:
-rename a club, change its short code, primary/secondary colours or crest, and
-flip **We sponsor this team** on to reveal three counters — matchday
-sponsors, player mascots,
-and walkabouts — for tracking your company's in-stadium sponsorship activity
-at that club. Leave `sponsored`/the three counts blank for clubs you don't
-sponsor. Every edit here shows up immediately across the whole app (fixture
-rows, crests, branded pages) for anyone with the app open in a browser tab —
-no reload needed — though it's a one-way sync: someone else's browser only
-picks up your change the next time they load the app, there's no live
-push between devices.
-
-`bigClub` and `derbyRival` drive automatic match highlighting - neither is
-stored per fixture, both are worked out live from the two teams involved:
-- **Big match**: flip `bigClub` on for any club considered a marquee side:
-  whenever two `bigClub` clubs play each other, that fixture is a big match.
-- **Derby**: pick a `derbyRival` for a club (a dropdown of every other club in
-  Settings) and a fixture only counts as a derby between those two *specific*
-  clubs - e.g. Roma's rival set to Lazio means Roma-Lazio is a derby, but
-  Roma-Milan isn't, even if Milan has its own derby rival set elsewhere.
-
-Both show up as a small coloured left border plus a DERBY/BIG label on the
-fixture, everywhere it's displayed.
+Managed from the hamburger menu's **Settings** panel's **Teams** section -
+three collapsible groups (**Current roster** / **National** / **European**,
+by `scope`), each an expandable row with the same fields as above plus a
+**Delete club** button. Promoting/relegating a club is just changing its
+`scope`, not moving it between tabs or editing a code file.
 
 `crestUrl` replaces the generated placeholder shield with a real badge.
 Editing it from the Settings panel writes an `=IMAGE("url")` formula into the
@@ -230,10 +238,81 @@ API at all (there's no field for it, confirmed via their own open issue
 tracker), so that specific path can't work here. Stick to `=IMAGE("url")` or
 a plain URL in the cell.
 
-Renaming a club here is safe for existing fixtures: matching against the
-`fixtures` tab's `home`/`away` text is keyed internally to each club's
-original bundled name, not whatever you rename it to, so historical rows
-keep resolving correctly either way.
+**Migrating from the old `teams.json` + `teams`/`otherClubs` tab split:** if
+you're upgrading from before this change, do this once:
+
+1. Rename the old `otherClubs` tab to `teams` (Sheets → right-click the tab
+   → Rename) - it already has `slug`/`scope` columns in the right shape.
+2. Add a row for each of the current 20 Serie A clubs (the seed block above),
+   copying over any live overrides (renamed name, custom colours/crest) from
+   the old `teams` tab before you clear it, with `scope` set to `current`.
+3. Copy each existing row's `sponsored`/`bigClub`/`derbyRival`/
+   `matchdaySponsors`/`playerMascots`/`walkabouts` value (if any) into the
+   new `teamSeasons` tab instead - see below, this is where those fields
+   live now, for every season including the current one.
+4. Delete the old `teams.json`-driven columns/tab once you've confirmed the
+   app looks right - nothing reads them anymore.
+
+Existing `fixtures`/`cupFixtures`/archive rows need **no changes at all** -
+a fixture written before this change still has a club's old *name* text in
+its `home`/`away` cell, and the app still resolves that correctly (name is
+checked as a fallback whenever a slug isn't found), so there's nothing to
+migrate there. The only thing name-matching can't survive is renaming a
+club whose *old* fixture rows were never touched - if you rename a club and
+want its full history bullet-proofed against a future rename too, a one-time
+Find & Replace in the sheet (old name text → its slug) across
+`fixtures`/`cupFixtures`/archive tabs is the belt-and-suspenders option, but
+isn't required for anything to keep working today.
+
+### `teamSeasons` tab - sponsorship / big-match / derby, per season
+
+**Sponsored**, **big club**, **derby rival**, and the sponsor-activation
+caps (**matchday sponsors**, **player mascots**, **walkabouts**) are
+season-scoped facts about a club, not permanent attributes - a club
+sponsored in 24/25 isn't necessarily sponsored now, or vice versa, and that
+must not silently flip to "sponsored in every season" or "never sponsored in
+the past" just because this season's Settings say so. One tab, one
+mechanism, covers every season including the current one - there's no
+separate "live" version of these fields on the `teams` tab anymore.
+
+Add a `teamSeasons` tab (doesn't exist in the seeded sheet - add it
+yourself) with header row: `id`, `season`, `slug`, `sponsored`, `bigClub`,
+`derbyRival`, `matchdaySponsors`, `playerMascots`, `walkabouts`.
+
+- `id` - always `season::slug` (e.g. `26/27::roma`) - the app fills this in
+  for you when you save from Settings; only worth knowing if you're pasting
+  rows directly.
+- `season` - must match a label in the `seasons` tab (see below), e.g.
+  `26/27` or `24/25`.
+- `slug` - the club's `teams` tab slug.
+- `sponsored`, `bigClub` - TRUE/FALSE (tolerant parsing - a real checkbox or
+  plain "TRUE"/"true" text both work).
+- `derbyRival` - another club's **slug** (not a name) - whichever club
+  counts as this one's derby rival *for that season*.
+- `matchdaySponsors`, `playerMascots`, `walkabouts` - counters for tracking
+  your company's in-stadium sponsorship activity at that club that season;
+  leave blank for a club you don't sponsor that season.
+
+A club with **no row** for a given season shows as not sponsored, not a big
+club, no derby rival, no caps for that season - there's no fallback to any
+other season, by design. Managed from the hamburger menu's **Settings**
+panel's **Sponsorship / big match / derby** section: pick any season
+(current or archive) from the dropdown, and every club that actually played
+it that season gets an expandable row with these fields.
+
+`bigClub` and `derbyRival` drive automatic match highlighting - neither is
+stored per fixture, both are worked out live from the two teams involved for
+whichever season is being viewed:
+- **Big match**: flip `bigClub` on for any club considered a marquee side
+  that season: whenever two `bigClub` clubs play each other, that fixture is
+  a big match.
+- **Derby**: pick a `derbyRival` for a club and a fixture only counts as a
+  derby between those two *specific* clubs that season - e.g. Roma's rival
+  set to Lazio means Roma-Lazio is a derby, but Roma-Milan isn't, even if
+  Milan has its own derby rival set elsewhere.
+
+Both show up as a small coloured left border plus a DERBY/BIG label on the
+fixture, everywhere it's displayed.
 
 ## Adding fixtures from the app
 
@@ -250,137 +329,52 @@ two clubs, submit again.
 ## Past seasons
 
 The **Standings** and **Fixtures** (home) pages have a season dropdown next
-to their header, defaulting to the current, live 26/27 season. Past seasons
-are read-only archives, not sheet-editable settings - configured in
-`client/src/lib/seasons.js`, a small hardcoded list rather than another
-Settings panel, since this changes at most once a year:
+to their header, defaulting to the current, live season. Past seasons are
+read-only archives - which seasons exist, and which archive fixtures tab
+each one reads from, is itself a sheet tab now (`seasons`), not a hardcoded
+list:
 
-```js
-export const SEASONS = [
-  { label: '26/27', tab: null },
-  { label: '25/26', tab: 'fixtures_25_26' },
-  { label: '24/25', tab: 'fixtures_24_25' },
-];
+Add a `seasons` tab (doesn't exist in the seeded sheet - add it yourself)
+with header row: `label`, `tab`, `current`.
+
+```
+26/27		TRUE
+25/26	fixtures_25_26	FALSE
+24/25	fixtures_24_25	FALSE
 ```
 
-`tab: null` means "the current season" - it reads the live, editable
-`fixtures` tab exactly like every page already does. Any other entry points
-at a separate tab with **the exact same header row as `fixtures`** (columns
-A-X above: id, matchday, day, date, home, away, homeScore, awayScore,
-daznAudience, skyAudience, kickoffTime, updatedAt, otherBroadcaster, addedTime1H,
-addedTime2H, daznSimulcastAudience, homeMatchdaySponsor, homePlayerMascot,
-homeWalkabout, awayMatchdaySponsor, awayPlayerMascot, awayWalkabout,
-isBigMatch, isDerby). Neither archive tab exists yet in the seeded sheet -
-create `fixtures_25_26` and `fixtures_24_25` yourself (header row + past
-results pasted in) for last season and the one before it. Every season
-listed in `SEASONS` is shown in the dropdown regardless of whether its tab
-exists, so only add an entry once the matching tab is there with data in
-it - picking one whose tab is missing or malformed shows a load error
-instead of data.
+- `label` - shown in every season dropdown, e.g. `26/27`.
+- `tab` - blank for the live season (reads the editable `fixtures` tab like
+  every page already does); an archive season points at a separate tab with
+  **the exact same header row as `fixtures`** (id, matchday, day, date,
+  home, away, homeScore, awayScore, daznAudience, skyAudience, kickoffTime,
+  updatedAt, otherBroadcaster, addedTime1H, addedTime2H,
+  daznSimulcastAudience, homeMatchdaySponsor, homePlayerMascot,
+  homeWalkabout, awayMatchdaySponsor, awayPlayerMascot, awayWalkabout,
+  isBigMatch, isDerby). Neither archive tab exists yet in the seeded sheet -
+  create `fixtures_25_26` and `fixtures_24_25` yourself (header row + past
+  results pasted in).
+- `current` - TRUE on exactly one row, the live season.
+
+If this tab doesn't exist yet (or is empty), the app falls back to a single
+built-in `26/27` (current) season so it isn't hard-broken before you set it
+up - add the tab whenever you're ready, not before. Every row is shown in
+the dropdown regardless of whether its `tab` exists, so only add a row once
+its tab is there with data in it - picking one whose tab is missing or
+malformed shows a load error instead of data.
 
 Selecting a past season switches Standings/Fixtures to show that season's
 data, view-only - no editing controls (Add fixture, Sync tags, score/audience
 edit tabs) appear, since these tabs are never written to by the app. Adding a
 future season later is the same pattern: add a tab with that header row, add
-one entry to `SEASONS`.
+one row to `seasons` - no code change needed, unlike before.
 
 The table and charts on Standings (and every per-club section on the
 Dashboard - see below) compute a past season's own club list from whoever
-actually appears in its fixtures, not from the current 20-club roster - a
+actually appears in its fixtures, not from the current Serie A roster - a
 club that's been promoted or relegated since then still gets a correct
 record and shows up everywhere it should for the season it actually played
-in. Don't add a club to the `teams` tab just to make a past season display
-correctly - anything in `teams` is treated as part of the *current* Serie A
-season everywhere else in the app (team pickers, the Dashboard's Focus
-club dropdown for the current season, etc.), so a club there that isn't
-actually playing this season would incorrectly get offered as a current
-one. Use the `otherClubs` tab instead (below) for that club's branding.
-
-### Branding for clubs not in the current roster (`otherClubs` tab)
-
-By default, a club that's not in the current 20-club roster gets a plain
-monogram badge and a neutral grey line/bar colour wherever it shows up -
-correct numbers, generic look. To give it a real crest and colours instead,
-add an `otherClubs` tab (doesn't exist in the seeded sheet - add it
-yourself) with header row: `name`, `short`, `crestUrl`, `primary`,
-`secondary`, `scope`, `slug`. One tab, one shape, for every club that isn't a
-current Serie A club - a club that used to play Serie A but doesn't now, a
-Serie B side in an early Coppa Italia round, any European club in a UEFA
-tie (this replaces the former separate `pastTeams`/`cupTeams` tabs, which
-had different shapes for the same underlying concept - see the migration
-note below if you already have data in either).
-
-- `name` must match **exactly** how that club appears in a fixture's
-  `home`/`away` columns (this tab is keyed by name, not a slug, since name
-  is the only thing available to match a fixture against).
-- `short`, `crestUrl`, `primary`, `secondary` - same meaning as the main
-  `teams` tab's own columns. Same `=IMAGE("url")`-or-plain-URL rule for
-  `crestUrl`.
-- `scope` - `national` or `european`. Decides which clubs are offered as
-  cup opponents for a given competition (see "Cups" below) - a former
-  Serie A club or a domestic cup opponent is `national`, a UEFA opponent is
-  `european`. Has no effect outside the cup fixture form; a club used only
-  in archive Serie A seasons can be either, it's never filtered by scope
-  there.
-
-- `slug` is optional - leave it blank and it's synthesized from `name` the
-  same way it always has been, which is right for almost every row. Filling
-  it in yourself is only worth doing for a specific reason (matching a
-  bundled crest SVG's filename, or getting ahead of a possible future merge
-  of this tab into `teams`) - most rows never need it.
-
-Managed from the hamburger menu's **Settings** panel's **Other clubs**
-section (collapsible **National**/**European** groups, same expandable-row
-shape as the main **Serie A clubs** panel).
-
-This tab is also the right place for a club that's *about* to be current -
-freshly promoted, fixtures already being added for the new season, but you
-haven't updated `teams.json` yet (see below) - it's consulted as a fallback
-for any club not found in the current roster, regardless of whether that's
-because it's no longer current or not yet current.
-
-**Migrating from separate `pastTeams`/`cupTeams` tabs:** if you already have
-either of those tabs from before this change, copy their rows into the new
-`otherClubs` tab by hand (typically a handful of rows total, not worth
-scripting): from `pastTeams`, copy `name`/`short`/`crestUrl`/`primary`/
-`secondary` as-is and set `scope` to `national`. From `cupTeams`, copy the
-same four columns and set `scope` to `national` if its old `competition`
-value was a domestic competition, `european` if it was a UEFA one. Delete
-the old `pastTeams`/`cupTeams` tabs once you've confirmed the app looks
-right with the new one in place - the app no longer reads either.
-
-### Sponsored / big-match / derby designations per past season (`seasonTeamAttributes` tab)
-
-**Sponsored**, **big club**, and **derby rival** in the main **Team
-settings** panel are global, current-season-only flags - whatever they say
-today is what they say, full stop. That's wrong for a past season: a club
-sponsored in 24/25 isn't necessarily sponsored now, or vice versa, and that
-must not silently flip to "sponsored in every season" or "never sponsored in
-the past" just because today's Settings say so.
-
-Add a `seasonTeamAttributes` tab (doesn't exist in the seeded sheet - add it
-yourself) with header row: `id`, `season`, `name`, `sponsored`, `bigClub`,
-`derbyRival`.
-
-- `id` - always `season::name` (e.g. `24/25::AS Roma`) - the app fills this
-  in for you when you save from Settings; only worth knowing if you're
-  pasting rows directly.
-- `season` - must match a label in `SEASONS` (`client/src/lib/seasons.js`),
-  e.g. `24/25`.
-- `name` - the club's fixture-matching text, same convention as `otherClubs`.
-- `sponsored`, `bigClub` - TRUE/FALSE (same tolerant parsing as `isBigMatch` -
-  a real checkbox or plain "TRUE"/"true" text both work).
-- `derbyRival` - another club's `name` (not a slug) - whichever club counts
-  as this one's derby rival *for that season*.
-
-A club with **no row** for a given season shows as not sponsored, not a big
-club, with no derby rival for that season - there's no fallback to the live
-`teams` tab, by design. Managed from the hamburger menu's **Settings** panel's **Past-season
-sponsorship / big match / derby** section: pick an archive season, and every
-club that actually played it gets an expandable row with the same three
-fields as the main **Serie A clubs** panel, except scoped to that season
-only. The live season is never shown here - keep using **Serie A clubs**
-for that, exactly as before.
+in, even if its `teams` row's `scope` has since changed away from `current`.
 
 The Dashboard also has a season dropdown, same as Standings/Fixtures -
 switching it changes every section on the page (stat tiles, ranked bar
@@ -404,42 +398,24 @@ it too.
 
 ### Rolling over to a new season (promotion/relegation)
 
-The current 20-club roster (`client/src/data/teams.json`, plus the bundled
-crest SVGs in `client/public/crests/`) is a static file, not a sheet tab -
-that's a deliberate simplicity trade-off, since it changes once a year at
-most, and everything else in the app (team pickers, current-season Focus
-club dropdowns, Settings) treats it as "this is who's playing this
-season." When a new season starts with different clubs, there's no
-self-service way around a small code change - here's the recommended
-order:
+Entirely a sheet operation now - no code change or redeploy needed:
 
-1. **Before wiping the outgoing season's data**: for each of the 3
-   relegated clubs, add a row to the `otherClubs` tab (name/short/crestUrl/
-   primary/secondary/scope - see above, scope `national`) if it doesn't have
-   one already, so its branding is preserved once it's no longer in
-   `teams.json`.
-2. **Archive the just-finished season**: copy the live `fixtures` tab's
+1. **Relegate the 3 outgoing clubs**: on their `teams` rows, change `scope`
+   from `current` to `national` - their branding stays exactly as it was,
+   they just stop being offered as a Serie A fixture opponent and move to
+   the **National** group in Settings.
+2. **Promote the 3 incoming clubs**: add a `teams` row for each (or change
+   an existing `national` row's `scope` back to `current`, if it's a club
+   that was relegated before), with `scope` set to `current`.
+3. **Archive the just-finished season**: copy the live `fixtures` tab's
    contents into a new tab (e.g. `fixtures_26_27`), then clear the live
-   `fixtures` tab and paste in the new season's fixture list. Add a
-   matching entry to `SEASONS` in `client/src/lib/seasons.js` (new archive
-   entry for the season that just ended, and update `CURRENT_SEASON`'s
-   label to the new one - `tab: null` always stays on whichever entry is
-   first/current).
-3. **Update the roster**: edit `teams.json` to swap the 3 relegated slugs
-   for the 3 promoted ones (colours, short code - real crest art if you
-   have it, otherwise `scripts/generate-crests.mjs` can generate a
-   placeholder shield from a club's primary/secondary colours). This step
-   needs a code change/PR, same as any other edit to a bundled file.
-4. Promoted clubs' `sponsored`/`bigClub`/`derbyRival` Settings all default
-   to unset - revisit them in Settings once the roster's updated.
-
-Steps 3-4 are the only ones that need an actual code change; steps 1-2 are
-just sheet edits, same as any other season-to-season data entry. If this
-manual step becomes a real yearly pain point, the roster itself could be
-made sheet-editable (drop the static `teams.json` base list entirely, let
-`teams` be the sole source of truth) - a bigger change than anything above,
-worth doing only if the once-a-year code change actually turns out to be
-a recurring annoyance rather than a five-minute task.
+   `fixtures` tab and paste in the new season's fixture list. Add a matching
+   row to the `seasons` tab (new archive row for the season that just ended,
+   `current` set to TRUE on the new season's row and FALSE on the old one).
+4. Promoted clubs' `sponsored`/`bigClub`/`derbyRival`/caps all default to
+   unset for the new season - set them from the **Sponsorship / big match /
+   derby** Settings panel once the roster's updated (pick the new season
+   from its dropdown).
 
 ### Serie A logo (`appSettings` tab)
 
@@ -454,24 +430,24 @@ Leave it unset to show just the plain text title, as before this feature.
 ## Cups (Coppa Italia / Champions League / Europa League / Conference League)
 
 These don't fit the Serie A schema - no round-robin, no fixed 38-matchday
-table, and opponents aren't limited to the 20-club roster - so they live in
-three separate tabs instead of extending `fixtures`/`teams` (the
-`broadcasters` tab is the one exception - it's shared with the main Serie A
-calendar, see above; non-Serie-A club branding is shared too, via the
-`otherClubs` tab documented above). None of these exist in the seeded sheet
-- add them yourself if you want to track cup competitions:
+table, and opponents aren't limited to the current roster - so they live in
+their own tabs instead of extending `fixtures` (the `broadcasters` tab is
+the one exception - it's shared with the main Serie A calendar, see above;
+club branding is shared too, via the unified `teams` tab documented above).
+None of these exist in the seeded sheet - add them yourself if you want to
+track cup competitions:
 
 **1. `competitions` tab** - which competitions exist, their logo, and their
 scope, so a fixture list/form can show a badge instead of a plain text label
-and know which `otherClubs` to offer as opponents. Header row: `value`,
-`label`, `logoUrl`, `scope`. `value` is the stable key `cupFixtures.competition`
+and know which `teams` to offer as opponents. Header row: `value`, `label`,
+`logoUrl`, `scope`. `value` is the stable key `cupFixtures.competition`
 points at - don't rename it once you've used it elsewhere. `scope` is
-`national` or `european` - decides which `otherClubs` rows (see above) show
-up as opponent options for that competition in the Add fixture form; a
-blank/missing cell reads as `national` (a one-time fallback for a
-competition added before this column existed). Paste this seed block into
-A2 to start with the four you'd expect (`logoUrl` blank, fill in from
-Settings):
+`national` or `european` - decides which non-current clubs show up as
+opponent options for that competition in the Add fixture form (a current
+Serie A club is always offered regardless); a blank/missing cell reads as
+`national` (a one-time fallback for a competition added before this column
+existed). Paste this seed block into A2 to start with the four you'd expect
+(`logoUrl` blank, fill in from Settings):
 
 ```
 CoppaItalia	Coppa Italia		national
@@ -497,34 +473,32 @@ just a plain dropdown choice.
 `competition`, `round`, `home`, `away`, `neutralVenue`, `date`,
 `kickoffTime`, `homeScore`, `awayScore`, `audience`, `broadcaster`,
 `addedTime1H`, `addedTime2H`, `season`, `etHomeScore`, `etAwayScore`,
-`penHomeScore`, `penAwayScore`. `home` and `away` are club **name** text
-(exactly like the main `fixtures` tab's own `home`/`away`, and like
-`otherClubs`' `name` column) - there's no "your club vs the opponent"
-distinction, both are just whichever two clubs actually played, resolved the
-same way for either side: the current `teams` roster first (live crest,
-colours, and - per season, see below - sponsorship), then `otherClubs`, then
-a plain placeholder. This is what lets two of your own sponsored clubs meet
-each other correctly, and lets a Serie A opponent's crest/colours show up
-without ever having to duplicate that club into `otherClubs`. `round` is
-free text (`Round of 16`, `Group A`, whatever your
-competition calls it - there's no fixed round list, a group stage and a
-knockout draw both just work); `neutralVenue` is TRUE/FALSE, for the rare
-match (typically a final) at neither club's own ground. There's no
-sponsor-activation (matchday sponsor/player mascot/walkabout) tracking here
-(that was a deliberate call - those are tracked per Serie A home game only),
-just audience and added time - though a sponsored club's name IS
-highlighted (bold + a small dot), same as everywhere else in the app.
+`penHomeScore`, `penAwayScore`. `home`/`away` hold a club's `teams`-tab
+**slug** for anything added through the app (a plain club **name** still
+works too - typed by hand, or a row written before the slug-based rewrite -
+the app checks slug first, then falls back to matching by name). There's no
+"your club vs the opponent" distinction, both are just whichever two clubs
+actually played, resolved the same way for either side - this is what lets
+two of your own sponsored clubs meet each other correctly, and lets any
+club's crest/colours show up as long as it has a `teams` row. `round` is
+free text (`Round of 16`, `Group A`, whatever your competition calls it -
+there's no fixed round list, a group stage and a knockout draw both just
+work); `neutralVenue` is TRUE/FALSE, for the rare match (typically a final)
+at neither club's own ground. There's no sponsor-activation (matchday
+sponsor/player mascot/walkabout) tracking here (that was a deliberate call -
+those are tracked per Serie A home game only), just audience and added
+time - though a sponsored club's name IS highlighted (bold + a small dot),
+same as everywhere else in the app.
 
-`season` matches a label in `SEASONS` (`client/src/lib/seasons.js`), e.g.
-`26/27` - a blank cell reads as the current season (a one-time fallback for
-rows added before this column existed; the app always writes a real label
-from now on). Unlike Serie A, cup fixtures for every season live in this one
-tab rather than one tab per season - cup volume is small enough that a
-separate archive tab per season would just be overhead. Sponsorship
-highlighting is season-scoped too, exactly like the main calendar: the
-current season reads live `teams` Settings, a past season reads the
-`seasonTeamAttributes` tab (only the `sponsored` field is used for cup
-fixtures - `bigClub`/`derbyRival` don't apply here).
+`season` matches a label in the `seasons` tab (see "Past seasons" above),
+e.g. `26/27` - a blank cell reads as the current season (a one-time
+fallback for rows added before this column existed; the app always writes a
+real label from now on). Unlike Serie A, cup fixtures for every season live
+in this one tab rather than one tab per season - cup volume is small enough
+that a separate archive tab per season would just be overhead. Sponsorship
+highlighting is season-scoped too, exactly like the main calendar, reading
+the `teamSeasons` tab for whichever season is selected (only the `sponsored`
+field is used for cup fixtures - `bigClub`/`derbyRival` don't apply here).
 
 **Two-legged ties**: add both legs as two ordinary rows (same `competition`,
 `round`, `season`, and the same two clubs in `home`/`away` - swapped between
@@ -551,17 +525,16 @@ kind of expandable edit tabs as the main calendar (kickoff details; result,
 added time, audience and broadcaster). **Signed in, on the current season**,
 **Add fixture** opens a form to create a new cup fixture without touching
 the sheet directly - pick the competition, round, then a home club and an
-away club, each from the exact same combined list (every current Serie A
-club plus every `otherClubs` entry whose `scope` matches this competition),
-or add a brand new one inline, right there in the form, for either side;
-it's still fine to add a cup fixture by pasting a row into the sheet
-directly instead, whichever's quicker for what you're doing. **Past cup
-seasons are frozen** - no Add fixture, no editing an existing row - same
+away club, each from the exact same combined list (every current-scope
+`teams` row plus every `national`/`european` row whose scope matches this
+competition), or add a brand new one inline, right there in the form, for
+either side; it's still fine to add a cup fixture by pasting a row into the
+sheet directly instead, whichever's quicker for what you're doing. **Past
+cup seasons are frozen** - no Add fixture, no editing an existing row - same
 precedent as Serie A's archive tabs. Backfilling an already-completed cup
 season (a past Coppa Italia bracket, say) is a direct sheet paste: add rows
 to `cupFixtures` with that season's label filled in by hand, the same way
-Serie A archive tabs, `otherClubs`, and `seasonTeamAttributes` are all
-populated for history.
+Serie A archive tabs and `teamSeasons` are all populated for history.
 
 ### Migrating from the old `ourClub`/`opponent` shape
 
@@ -586,9 +559,10 @@ Name current version, or just duplicate the tabs) - this script overwrites
 
 This script still writes its output to a `cupTeams` tab (the shape that
 existed when it was written) - the app itself no longer reads that tab, so
-if you're running this old migration today, follow it with the
-`pastTeams`/`cupTeams` → `otherClubs` migration described above to get that
-data into the tab the app actually uses.
+if you're running this old migration today, copy `cupTeams`' rows into the
+unified `teams` tab by hand afterwards (name/short/crestUrl/primary/
+secondary as-is, `scope` set to `national`/`european` depending on its old
+`competition`) to get that data into the tab the app actually uses.
 
 ## Standing Tiebreakers
 If after all 38 games, two teams are tied on points for either first place or for 17th (the last safety spot), the outcome is decided by a single-legged play-off match. This match consists of 90 minutes of regulation time followed by penalties if necessary (no extra time). The game is to be held at a neutral venue, with the designated "home" team determined by the performance-based criteria listed below. In cases where there are at least three teams tied for one of these positions, a mini table is created using the same tiebreakers to determine which two teams will play in the decider. For ties concerning all other league positions, the following tiebreakers are applied:

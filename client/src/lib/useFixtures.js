@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchFixtures, updateFixtureRow, appendFixtureRow, deleteFixtureRow } from './sheets.js';
-import { enrichFixture } from './teams.js';
-import { useOtherClubs } from './useOtherClubs.jsx';
+import { enrichFixture, applySeasonTeamAttributes } from './teams.js';
+import { useClubs } from './useClubs.jsx';
+import { useTeamSeasons } from './useTeamSeasons.jsx';
+import { useSeasons } from './useSeasons.jsx';
 import { computeDayOfWeek } from './matchdays.js';
 
 export function useFixtures(teamSlugs, teams) {
@@ -29,20 +31,23 @@ export function useFixtures(teamSlugs, teams) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
-  // Keyed by each club's immutable bundled name, not its current (possibly
-  // renamed) display name - see teams.js's enrichFixture.
-  const teamByName = useMemo(() => new Map(teams.map((t) => [t.staticName, t])), [teams]);
-  const { byName: otherClubsByName } = useOtherClubs();
+  const { bySlug: clubsBySlug, byName: clubsByName } = useClubs();
+  const { currentSeason } = useSeasons();
+  const { rows: teamSeasonRows } = useTeamSeasons();
 
   const fixtures = useMemo(() => {
-    let enriched = rawFixtures.map((r) => enrichFixture(r, teamByName, otherClubsByName));
+    let enriched = rawFixtures.map((r) => enrichFixture(r, clubsBySlug, clubsByName));
+    // sponsored/bigClub/derbyRival/caps are season-scoped now, not part of
+    // the club object itself - the live season gets its own row(s) in
+    // teamSeasons exactly like every archive season does (see teams.js).
+    enriched = applySeasonTeamAttributes(enriched, currentSeason.label, teamSeasonRows);
     if (teamSlugs.length > 0) {
       const wanted = new Set(teamSlugs);
       enriched = enriched.filter((f) => wanted.has(f.home.slug) || wanted.has(f.away.slug));
     }
     return enriched;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rawFixtures, teamByName, otherClubsByName]);
+  }, [rawFixtures, clubsBySlug, clubsByName, currentSeason.label, teamSeasonRows]);
 
   const updateFixture = useCallback(
     async (id, fields, accessToken) => {
@@ -76,15 +81,15 @@ export function useFixtures(teamSlugs, teams) {
     [fixtures]
   );
 
-  // home/away are stored (and matched) as each club's immutable staticName,
-  // not its current display name - see teams.js's enrichFixture.
+  // home/away are stored as the picked club's slug (see clubs.js/teams.js
+  // for why slug, not name text, is the durable identity now).
   const createFixture = useCallback(async ({ matchday, homeSlug, awaySlug, date, kickoffTime }, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
-    const home = teams.find((t) => t.slug === homeSlug);
-    const away = teams.find((t) => t.slug === awaySlug);
-    if (!home || !away) throw new Error('Pick both a home and an away club.');
+    if (!teams.some((t) => t.slug === homeSlug) || !teams.some((t) => t.slug === awaySlug)) {
+      throw new Error('Pick both a home and an away club.');
+    }
     const created = await appendFixtureRow(
-      { matchday, home: home.staticName, away: away.staticName, date, kickoffTime },
+      { matchday, home: homeSlug, away: awaySlug, date, kickoffTime },
       accessToken
     );
     setRawFixtures((prev) => [...prev, created]);

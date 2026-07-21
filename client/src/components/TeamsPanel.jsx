@@ -2,23 +2,12 @@ import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
 import ColorField from './ColorField.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
-import { useOtherClubs } from '../lib/useOtherClubs.jsx';
+import { useClubs } from '../lib/useClubs.jsx';
+import { clubScope, slugify } from '../lib/clubs.js';
 import { callWithReauth } from '../lib/reauth.js';
 
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9] placeholder:text-white/30';
-
-function slugify(name) {
-  return String(name)
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-}
-
-function scopeOf(club) {
-  return club?.scope === 'european' ? 'european' : 'national';
-}
 
 function Field({ label, children }) {
   return (
@@ -47,16 +36,27 @@ function TextField({ label, value, onCommit, maxLength, uppercase = false, width
   );
 }
 
-function OtherClubRow({ club, session, saveOtherClub, removeOtherClub }) {
+function ScopeField({ value, onCommit }) {
+  return (
+    <Field label="Scope">
+      <select value={clubScope({ scope: value })} onChange={(e) => onCommit(e.target.value)} className={`${inputClass} w-32`}>
+        <option value="current">Current roster</option>
+        <option value="national">National</option>
+        <option value="european">European</option>
+      </select>
+    </Field>
+  );
+}
+
+function ClubRow({ club, session, saveClub, removeClub }) {
   const [expanded, setExpanded] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const previewClub = { ...club, slug: club.slug || slugify(club.name) };
 
   async function commit(fields) {
     setSaveError(null);
     try {
-      await callWithReauth(session, (token) => saveOtherClub(club.name, fields, token));
+      await callWithReauth(session, (token) => saveClub(club.slug, fields, token));
     } catch (err) {
       setSaveError(err.message);
     }
@@ -69,7 +69,7 @@ function OtherClubRow({ club, session, saveOtherClub, removeOtherClub }) {
     setDeleting(true);
     setSaveError(null);
     try {
-      await callWithReauth(session, (token) => removeOtherClub(club.name, token));
+      await callWithReauth(session, (token) => removeClub(club.slug, token));
     } catch (err) {
       setSaveError(err.message);
       setDeleting(false);
@@ -79,7 +79,7 @@ function OtherClubRow({ club, session, saveOtherClub, removeOtherClub }) {
   return (
     <div className="rounded-lg bg-white/5">
       <button onClick={() => setExpanded((e) => !e)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left">
-        <Crest team={previewClub} size={26} />
+        <Crest team={club} size={26} />
         <span className="flex-1 text-sm font-bold text-white">{club.name}</span>
         <span className="text-xs font-semibold text-white/40">{club.short}</span>
         <span className="text-white/40">{expanded ? '▾' : '▸'}</span>
@@ -90,6 +90,7 @@ function OtherClubRow({ club, session, saveOtherClub, removeOtherClub }) {
           {session.signedIn ? (
             <>
               <div className="flex flex-wrap gap-2">
+                <TextField label="Name" value={club.name} onCommit={(v) => commit({ name: v })} />
                 <TextField
                   label="Short code"
                   value={club.short}
@@ -99,35 +100,14 @@ function OtherClubRow({ club, session, saveOtherClub, removeOtherClub }) {
                 />
                 <ColorField label="Primary colour" value={club.primary} onCommit={(v) => commit({ primary: v })} />
                 <ColorField label="Secondary colour" value={club.secondary} onCommit={(v) => commit({ secondary: v })} />
-                <Field label="Scope">
-                  <select
-                    value={scopeOf(club)}
-                    onChange={(e) => commit({ scope: e.target.value })}
-                    className={`${inputClass} w-32`}
-                  >
-                    <option value="national">National</option>
-                    <option value="european">European</option>
-                  </select>
-                </Field>
+                <ScopeField value={club.scope} onCommit={(v) => commit({ scope: v })} />
               </div>
-              <div className="flex flex-wrap items-end gap-2">
-                <TextField
-                  label="Crest image URL"
-                  value={club.crestUrl}
-                  width="w-full sm:w-64"
-                  onCommit={(v) => commit({ crestUrl: v })}
-                />
-                <TextField
-                  label="Slug (optional)"
-                  value={club.slug}
-                  width="w-36"
-                  onCommit={(v) => commit({ slug: v })}
-                />
-              </div>
-              <p className="text-[10px] text-white/30">
-                Slug is only worth setting if you want a specific value - leave it blank and it's derived from the
-                name automatically.
-              </p>
+              <TextField
+                label="Crest image URL"
+                value={club.crestUrl}
+                width="w-full"
+                onCommit={(v) => commit({ crestUrl: v })}
+              />
               {saveError && (
                 <p className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-xs text-red-300">
                   {saveError}
@@ -145,7 +125,6 @@ function OtherClubRow({ club, session, saveOtherClub, removeOtherClub }) {
             <div className="flex flex-col gap-1 text-xs text-white/50">
               <span>Primary colour: {club.primary || '-'}</span>
               <span>Secondary colour: {club.secondary || '-'}</span>
-              <span>Scope: {scopeOf(club) === 'european' ? 'European' : 'National'}</span>
             </div>
           )}
         </div>
@@ -154,7 +133,7 @@ function OtherClubRow({ club, session, saveOtherClub, removeOtherClub }) {
   );
 }
 
-function AddClubForm({ session, createOtherClub }) {
+function AddClubForm({ session, createClub }) {
   const [name, setName] = useState('');
   const [crestUrl, setCrestUrl] = useState('');
   const [scope, setScope] = useState('national');
@@ -165,12 +144,12 @@ function AddClubForm({ session, createOtherClub }) {
     setCreateError(null);
     const trimmed = name.trim();
     if (!trimmed) {
-      setCreateError('Enter a club name - it must match exactly how it appears in a fixture.');
+      setCreateError('Enter a club name - it must match exactly how it appears in a fixture (unless the fixture is created from the app, which uses the slug below automatically).');
       return;
     }
     try {
       await callWithReauth(session, (token) =>
-        createOtherClub(
+        createClub(
           {
             name: trimmed,
             slug: slugify(trimmed),
@@ -198,7 +177,7 @@ function AddClubForm({ session, createOtherClub }) {
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Club name (exact match)"
+          placeholder="Club name"
           className={`${inputClass} w-48`}
         />
         <input
@@ -209,6 +188,7 @@ function AddClubForm({ session, createOtherClub }) {
           className={`${inputClass} w-48`}
         />
         <select value={scope} onChange={(e) => setScope(e.target.value)} className={inputClass}>
+          <option value="current">Current roster</option>
           <option value="national">National</option>
           <option value="european">European</option>
         </select>
@@ -221,34 +201,39 @@ function AddClubForm({ session, createOtherClub }) {
   );
 }
 
-export default function OtherClubsPanel({ session }) {
-  const { otherClubs, loading, saveOtherClub, createOtherClub, removeOtherClub } = useOtherClubs();
-  const national = useMemo(() => otherClubs.filter((c) => scopeOf(c) === 'national'), [otherClubs]);
-  const european = useMemo(() => otherClubs.filter((c) => scopeOf(c) === 'european'), [otherClubs]);
+export default function TeamsPanel({ session }) {
+  const { clubs, loading, error, saveClub, createClub, removeClub } = useClubs();
+  const current = useMemo(() => clubs.filter((c) => clubScope(c) === 'current'), [clubs]);
+  const national = useMemo(() => clubs.filter((c) => clubScope(c) === 'national'), [clubs]);
+  const european = useMemo(() => clubs.filter((c) => clubScope(c) === 'european'), [clubs]);
 
   return (
     <div className="flex flex-col gap-3">
       <p className="text-xs text-white/40">
-        Branding for any club that isn't in the current 20-club roster - a former Serie A club, a domestic cup
-        opponent (national) or a European cup opponent (european). The name must match exactly how that club appears
-        in a fixture.
+        Every club the app knows about - the current Serie A roster and everyone else (a former Serie A club, a
+        domestic cup opponent, a European cup opponent) - in one place. "Scope" decides which group a club shows up
+        in and which cup fixtures offer it as an opponent.
       </p>
-      {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit other clubs.</p>}
+      {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit clubs.</p>}
       {loading ? (
         <p className="text-sm text-white/40">Loading…</p>
+      ) : error ? (
+        <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">{error}</p>
       ) : (
         <div className="flex flex-col gap-3">
+          <CollapsibleSection title={`Current roster (${current.length})`}>
+            <div className="flex flex-col gap-1.5">
+              {current.length === 0 && <p className="text-xs text-white/40">None added yet.</p>}
+              {current.map((c) => (
+                <ClubRow key={c.slug} club={c} session={session} saveClub={saveClub} removeClub={removeClub} />
+              ))}
+            </div>
+          </CollapsibleSection>
           <CollapsibleSection title={`National (${national.length})`}>
             <div className="flex flex-col gap-1.5">
               {national.length === 0 && <p className="text-xs text-white/40">None added yet.</p>}
               {national.map((c) => (
-                <OtherClubRow
-                  key={c.name}
-                  club={c}
-                  session={session}
-                  saveOtherClub={saveOtherClub}
-                  removeOtherClub={removeOtherClub}
-                />
+                <ClubRow key={c.slug} club={c} session={session} saveClub={saveClub} removeClub={removeClub} />
               ))}
             </div>
           </CollapsibleSection>
@@ -256,17 +241,11 @@ export default function OtherClubsPanel({ session }) {
             <div className="flex flex-col gap-1.5">
               {european.length === 0 && <p className="text-xs text-white/40">None added yet.</p>}
               {european.map((c) => (
-                <OtherClubRow
-                  key={c.name}
-                  club={c}
-                  session={session}
-                  saveOtherClub={saveOtherClub}
-                  removeOtherClub={removeOtherClub}
-                />
+                <ClubRow key={c.slug} club={c} session={session} saveClub={saveClub} removeClub={removeClub} />
               ))}
             </div>
           </CollapsibleSection>
-          {session.signedIn && <AddClubForm session={session} createOtherClub={createOtherClub} />}
+          {session.signedIn && <AddClubForm session={session} createClub={createClub} />}
         </div>
       )}
     </div>

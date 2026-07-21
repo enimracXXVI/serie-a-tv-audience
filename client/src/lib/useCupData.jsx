@@ -4,11 +4,11 @@ import { fetchCompetitions, updateCompetition, addCompetition, DEFAULT_COMPETITI
 
 const CupDataContext = createContext(null);
 
-// Shared across the whole app (like TeamsProvider) so an edit made in
+// Shared across the whole app (like ClubsProvider) so an edit made in
 // Settings - a new broadcaster, a competition logo - is immediately visible
-// wherever cup fixtures are shown, without a reload. Non-Serie-A club data
-// (branding, scope) lives in its own OtherClubsProvider (useOtherClubs.jsx),
-// not here - this provider only covers broadcasters and competitions.
+// wherever cup fixtures are shown, without a reload. Club data (branding,
+// scope) lives in its own ClubsProvider (useClubs.jsx), not here - this
+// provider only covers broadcasters and competitions.
 export function CupDataProvider({ children }) {
   const [broadcasters, setBroadcasters] = useState([]);
   const [competitions, setCompetitions] = useState(DEFAULT_COMPETITIONS);

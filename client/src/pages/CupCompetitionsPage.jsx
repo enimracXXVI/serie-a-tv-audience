@@ -1,21 +1,20 @@
 import { useMemo, useState } from 'react';
-import { useTeams } from '../lib/useTeams.jsx';
 import { useCupData } from '../lib/useCupData.jsx';
 import { useCupFixtures } from '../lib/useCupFixtures.js';
-import { useOtherClubs } from '../lib/useOtherClubs.jsx';
+import { useClubs } from '../lib/useClubs.jsx';
 import { useSession } from '../lib/useSession.jsx';
 import { useSeasonParam } from '../lib/useSeasonParam.js';
+import { useSeasons } from '../lib/useSeasons.jsx';
 import { callWithReauth } from '../lib/reauth.js';
-import { CURRENT_SEASON } from '../lib/seasons.js';
 import SeasonSelector from '../components/SeasonSelector.jsx';
 import CupRoundGroup from '../components/CupRoundGroup.jsx';
 import AddCupFixtureForm from '../components/AddCupFixtureForm.jsx';
 
 export default function CupCompetitionsPage() {
-  const { teams } = useTeams();
-  const { otherClubs, createOtherClub } = useOtherClubs();
+  const { clubs, createClub } = useClubs();
   const { broadcasters, competitions, loading: cupDataLoading } = useCupData();
   const [season, setSeason] = useSeasonParam();
+  const { currentSeason } = useSeasons();
   const {
     fixtures,
     loading: fixturesLoading,
@@ -23,7 +22,7 @@ export default function CupCompetitionsPage() {
     updateFixture,
     createFixture,
     deleteFixture,
-  } = useCupFixtures(teams, season);
+  } = useCupFixtures(season);
   const session = useSession();
   const [showAddForm, setShowAddForm] = useState(false);
   const [updateError, setUpdateError] = useState(null);
@@ -34,7 +33,7 @@ export default function CupCompetitionsPage() {
   // Past cup seasons are frozen once they're no longer current - same
   // precedent as Serie A's archive tabs - backfilling an already-completed
   // season is a direct sheet paste (see README) instead.
-  const canEdit = session.signedIn && season.label === CURRENT_SEASON.label;
+  const canEdit = session.signedIn && season.label === currentSeason.label;
 
   const loading = cupDataLoading || fixturesLoading;
 
@@ -75,7 +74,7 @@ export default function CupCompetitionsPage() {
   }
 
   async function handleCreateOpponent(fields) {
-    await callWithReauth(session, (token) => createOtherClub(fields, token));
+    await callWithReauth(session, (token) => createClub(fields, token));
   }
 
   async function handleDelete(id) {
@@ -113,8 +112,7 @@ export default function CupCompetitionsPage() {
       <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-6">
         {canEdit && showAddForm && (
           <AddCupFixtureForm
-            teams={teams}
-            otherClubs={otherClubs}
+            clubs={clubs}
             competitions={competitions}
             onCreate={handleCreate}
             onCreateOpponent={handleCreateOpponent}
