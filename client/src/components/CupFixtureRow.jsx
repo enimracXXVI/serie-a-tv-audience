@@ -55,7 +55,11 @@ function ScoreDisplay({ homeScore, awayScore, note }) {
   );
 }
 
-function DetailsFields({ fixture, onUpdate }) {
+// Field grouping mirrors Serie A's FixtureRow tabs (Kickoff / Result / Added
+// time / Audience) so the two fixture types feel like the same app - see
+// CupRoundGroup for where these tabs are actually rendered (round header,
+// same position as MatchdayGroup's tab row).
+function KickoffFields({ fixture, onUpdate, broadcasters }) {
   return (
     <div className="flex flex-wrap items-end gap-2">
       <Field label="Date">
@@ -74,6 +78,20 @@ function DetailsFields({ fixture, onUpdate }) {
           onChange={(e) => onUpdate(fixture.id, { kickoffTime: e.target.value || null })}
         />
       </Field>
+      <Field label="Broadcaster">
+        <select
+          value={fixture.broadcaster ?? ''}
+          className={`${inputClass} w-40`}
+          onChange={(e) => onUpdate(fixture.id, { broadcaster: e.target.value || null })}
+        >
+          <option value="">None</option>
+          {broadcasters.map((b) => (
+            <option key={b.name} value={b.name}>
+              {b.name}
+            </option>
+          ))}
+        </select>
+      </Field>
       <label className="flex items-center gap-2 pb-1.5">
         <input
           type="checkbox"
@@ -87,7 +105,7 @@ function DetailsFields({ fixture, onUpdate }) {
   );
 }
 
-function ResultFields({ fixture, onUpdate, broadcasters }) {
+function ResultFields({ fixture, onUpdate }) {
   return (
     <div className="flex flex-wrap items-end gap-2">
       <NumberField label="Home score" value={fixture.homeScore} onCommit={(v) => onUpdate(fixture.id, { homeScore: v })} />
@@ -116,29 +134,38 @@ function ResultFields({ fixture, onUpdate, broadcasters }) {
         placeholder="if shootout"
         onCommit={(v) => onUpdate(fixture.id, { penAwayScore: v })}
       />
-      <NumberField label="Added time 1H" value={fixture.addedTime1H} placeholder="min" onCommit={(v) => onUpdate(fixture.id, { addedTime1H: v })} />
-      <NumberField label="Added time 2H" value={fixture.addedTime2H} placeholder="min" onCommit={(v) => onUpdate(fixture.id, { addedTime2H: v })} />
-      <NumberField label="Audience" value={fixture.audience} placeholder="viewers" onCommit={(v) => onUpdate(fixture.id, { audience: v })} />
-      <Field label="Broadcaster">
-        <select
-          value={fixture.broadcaster ?? ''}
-          className={`${inputClass} w-40`}
-          onChange={(e) => onUpdate(fixture.id, { broadcaster: e.target.value || null })}
-        >
-          <option value="">None</option>
-          {broadcasters.map((b) => (
-            <option key={b.name} value={b.name}>
-              {b.name}
-            </option>
-          ))}
-        </select>
-      </Field>
     </div>
   );
 }
 
-export default function CupFixtureRow({ fixture, onUpdate, canEdit, broadcasters }) {
-  const [activeTab, setActiveTab] = useState(null);
+function AddedTimeFields({ fixture, onUpdate }) {
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <NumberField
+        label="Added time 1H"
+        value={fixture.addedTime1H}
+        placeholder="min"
+        onCommit={(v) => onUpdate(fixture.id, { addedTime1H: v })}
+      />
+      <NumberField
+        label="Added time 2H"
+        value={fixture.addedTime2H}
+        placeholder="min"
+        onCommit={(v) => onUpdate(fixture.id, { addedTime2H: v })}
+      />
+    </div>
+  );
+}
+
+function AudienceFields({ fixture, onUpdate }) {
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <NumberField label="Audience" value={fixture.audience} placeholder="viewers" onCommit={(v) => onUpdate(fixture.id, { audience: v })} />
+    </div>
+  );
+}
+
+export default function CupFixtureRow({ fixture, onUpdate, canEdit, editMode, broadcasters }) {
   const dateShort = formatDateShort(fixture.date);
   const broadcaster = broadcasters.find((b) => b.name === fixture.broadcaster);
   const outcome = resolveCupFixtureOutcome(fixture);
@@ -191,26 +218,12 @@ export default function CupFixtureRow({ fixture, onUpdate, canEdit, broadcasters
           </div>
         </div>
 
-        {canEdit && (
-          <div className="mt-1.5 flex gap-1">
-            {['details', 'result'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab((t) => (t === tab ? null : tab))}
-                className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-                  activeTab === tab ? 'bg-[#0f1e54] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                }`}
-              >
-                {tab === 'details' ? 'Kickoff' : 'Result & audience'}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {canEdit && activeTab && (
+        {canEdit && editMode && (
           <div className="mt-2 flex flex-col gap-2 rounded-lg bg-gray-50 p-2.5">
-            {activeTab === 'details' && <DetailsFields fixture={fixture} onUpdate={onUpdate} />}
-            {activeTab === 'result' && <ResultFields fixture={fixture} onUpdate={onUpdate} broadcasters={broadcasters} />}
+            {editMode === 'kickoff' && <KickoffFields fixture={fixture} onUpdate={onUpdate} broadcasters={broadcasters} />}
+            {editMode === 'result' && <ResultFields fixture={fixture} onUpdate={onUpdate} />}
+            {editMode === 'addedTime' && <AddedTimeFields fixture={fixture} onUpdate={onUpdate} />}
+            {editMode === 'audience' && <AudienceFields fixture={fixture} onUpdate={onUpdate} />}
           </div>
         )}
       </div>

@@ -14,6 +14,27 @@ function slugify(name) {
     .replace(/(^-|-$)/g, '');
 }
 
+function ColorField({ label, value, onCommit }) {
+  const [draft, setDraft] = useState(value ?? '#000000');
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">{label}</span>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            onCommit(e.target.value);
+          }}
+          className="h-8 w-10 cursor-pointer rounded border border-white/20 bg-transparent p-0.5"
+        />
+        <span className="text-xs text-white/50">{draft}</span>
+      </div>
+    </label>
+  );
+}
+
 function CupTeamRow({ team, session, saveCupTeam }) {
   const [crestUrl, setCrestUrl] = useState(team.crestUrl ?? '');
   const [error, setError] = useState(null);
@@ -23,18 +44,22 @@ function CupTeamRow({ team, session, saveCupTeam }) {
   // same idiom PastTeamsPanel uses for the identical reason.
   const previewTeam = { ...team, slug: slugify(team.name) };
 
-  async function commit() {
-    if (crestUrl === (team.crestUrl ?? '')) return;
+  async function commit(fields) {
     setError(null);
     try {
-      await callWithReauth(session, (token) => saveCupTeam(team.name, { crestUrl }, token));
+      await callWithReauth(session, (token) => saveCupTeam(team.name, fields, token));
     } catch (err) {
       setError(err.message);
     }
   }
 
+  async function commitCrestUrl() {
+    if (crestUrl === (team.crestUrl ?? '')) return;
+    await commit({ crestUrl });
+  }
+
   return (
-    <div className="flex flex-col gap-1 rounded-lg bg-white/5 px-3 py-2">
+    <div className="flex flex-col gap-2 rounded-lg bg-white/5 px-3 py-2">
       <div className="flex items-center gap-2">
         <Crest team={previewTeam} size={22} />
         <span className="text-sm font-semibold text-white">{team.name}</span>
@@ -43,10 +68,14 @@ function CupTeamRow({ team, session, saveCupTeam }) {
         type="text"
         value={crestUrl}
         onChange={(e) => setCrestUrl(e.target.value)}
-        onBlur={commit}
+        onBlur={commitCrestUrl}
         placeholder="Crest image URL"
         className={`${inputClass} w-full`}
       />
+      <div className="flex flex-wrap gap-2">
+        <ColorField label="Primary colour" value={team.primary} onCommit={(v) => commit({ primary: v })} />
+        <ColorField label="Secondary colour" value={team.secondary} onCommit={(v) => commit({ secondary: v })} />
+      </div>
       {error && <p className="text-xs text-red-300">{error}</p>}
     </div>
   );

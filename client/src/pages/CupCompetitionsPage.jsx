@@ -2,17 +2,17 @@ import { useMemo, useState } from 'react';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useCupData } from '../lib/useCupData.jsx';
 import { useCupFixtures } from '../lib/useCupFixtures.js';
-import { useSession } from '../lib/useSession.js';
+import { usePastTeams } from '../lib/usePastTeams.jsx';
+import { useSession } from '../lib/useSession.jsx';
 import { callWithReauth } from '../lib/reauth.js';
 import { CURRENT_SEASON } from '../lib/seasons.js';
 import SeasonSelector from '../components/SeasonSelector.jsx';
-import CupFixtureRow from '../components/CupFixtureRow.jsx';
-import CupTieGroup from '../components/CupTieGroup.jsx';
+import CupRoundGroup from '../components/CupRoundGroup.jsx';
 import AddCupFixtureForm from '../components/AddCupFixtureForm.jsx';
-import { groupIntoTies, tieKeyFor } from '../lib/cupFixtures.js';
 
 export default function CupCompetitionsPage() {
   const { teams } = useTeams();
+  const { pastTeams } = usePastTeams();
   const { cupTeams, broadcasters, competitions, loading: cupDataLoading, createCupTeam } = useCupData();
   const [season, setSeason] = useState(CURRENT_SEASON);
   const { fixtures, loading: fixturesLoading, error: fixturesError, updateFixture, createFixture } = useCupFixtures(
@@ -23,6 +23,9 @@ export default function CupCompetitionsPage() {
   const session = useSession();
   const [showAddForm, setShowAddForm] = useState(false);
   const [updateError, setUpdateError] = useState(null);
+  // Which competitions are collapsed - starts empty (everything expanded);
+  // a competition only enters this set once the user explicitly collapses it.
+  const [collapsed, setCollapsed] = useState(() => new Set());
 
   // Past cup seasons are frozen once they're no longer current - same
   // precedent as Serie A's archive tabs - backfilling an already-completed
@@ -42,6 +45,17 @@ export default function CupCompetitionsPage() {
     }
     return byCompetition;
   }, [fixtures]);
+
+  const visibleCompetitions = competitions.filter((c) => grouped.has(c.value));
+
+  function toggleCollapsed(value) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return next;
+    });
+  }
 
   async function handleUpdate(id, fields) {
     try {
@@ -93,6 +107,7 @@ export default function CupCompetitionsPage() {
         {canEdit && showAddForm && (
           <AddCupFixtureForm
             teams={teams}
+            pastTeams={pastTeams}
             cupTeams={cupTeams}
             competitions={competitions}
             onCreate={handleCreate}
@@ -113,44 +128,56 @@ export default function CupCompetitionsPage() {
             No cup fixtures yet - sign in and use “Add fixture” above, or add a row directly to the cupFixtures sheet tab.
           </p>
         ) : (
-          competitions
-            .filter((c) => grouped.has(c.value))
-            .map((c) => (
-              <div key={c.value} className="flex flex-col gap-3">
-                <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-white/60">
-                  {c.logoUrl && <img src={c.logoUrl} alt="" className="h-4 max-w-[60px] object-contain" />}
-                  {c.label}
-                </h2>
-              {[...grouped.get(c.value).entries()].map(([round, roundFixtures]) => (
-                <div key={round} className="overflow-hidden rounded-2xl shadow-lg shadow-black/20">
-                  <div className="bg-[#0f1e54] px-3 py-2 text-xs font-bold uppercase tracking-wide text-white/70">{round}</div>
-                  <div className="flex flex-col divide-y divide-gray-100">
-                    {groupIntoTies(roundFixtures).map((legs) =>
-                      legs.length === 2 ? (
-                        <CupTieGroup
-                          key={tieKeyFor(legs[0])}
-                          legs={legs}
-                          onUpdate={handleUpdate}
-                          canEdit={canEdit}
-                          broadcasters={broadcasters}
-                        />
-                      ) : (
-                        legs.map((f) => (
-                          <CupFixtureRow
-                            key={f.id}
-                            fixture={f}
-                            onUpdate={handleUpdate}
-                            canEdit={canEdit}
-                            broadcasters={broadcasters}
-                          />
-                        ))
-                      )
+          <>
+            {visibleCompetitions.length > 1 && (
+              <div id="cup-nav" className="scroll-mt-4 flex flex-wrap items-center gap-1.5">
+                {visibleCompetitions.map((c) => (
+                  <a
+                    key={c.value}
+                    href={`#competition-${c.value}`}
+                    className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-white/20"
+                  >
+                    {c.logoUrl && <img src={c.logoUrl} alt="" className="h-3.5 max-w-[40px] object-contain" />}
+                    {c.label}
+                  </a>
+                ))}
+              </div>
+            )}
+
+            {visibleCompetitions.map((c) => {
+              const isCollapsed = collapsed.has(c.value);
+              return (
+                <div key={c.value} id={`competition-${c.value}`} className="scroll-mt-4 flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => toggleCollapsed(c.value)}
+                      className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-white/60 hover:text-white/80"
+                    >
+                      <span className={`inline-block text-white/40 transition-transform ${isCollapsed ? '-rotate-90' : ''}`}>▾</span>
+                      {c.logoUrl && <img src={c.logoUrl} alt="" className="h-4 max-w-[60px] object-contain" />}
+                      {c.label}
+                    </button>
+                    {visibleCompetitions.length > 1 && (
+                      <a href="#cup-nav" className="text-xs font-semibold text-white/40 hover:text-white">
+                        ↑ Top
+                      </a>
                     )}
                   </div>
+                  {!isCollapsed &&
+                    [...grouped.get(c.value).entries()].map(([round, roundFixtures]) => (
+                      <CupRoundGroup
+                        key={round}
+                        round={round}
+                        fixtures={roundFixtures}
+                        onUpdate={handleUpdate}
+                        canEdit={canEdit}
+                        broadcasters={broadcasters}
+                      />
+                    ))}
                 </div>
-              ))}
-            </div>
-          ))
+              );
+            })}
+          </>
         )}
       </main>
     </div>

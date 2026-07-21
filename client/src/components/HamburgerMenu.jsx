@@ -8,7 +8,7 @@ import BroadcastersPanel from './BroadcastersPanel.jsx';
 import CompetitionsPanel from './CompetitionsPanel.jsx';
 import AppSettingsPanel from './AppSettingsPanel.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
-import { useSession } from '../lib/useSession.js';
+import { useSession } from '../lib/useSession.jsx';
 
 function HamburgerIcon() {
   return (

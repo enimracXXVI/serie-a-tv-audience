@@ -212,12 +212,12 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
   return (
     <div className="flex items-stretch" style={{ background: tagStyle.background }}>
       <div className="w-1.5 shrink-0" style={{ background: tagStyle.bar }} />
-      <div className="min-w-0 flex-1 px-2 py-2 sm:px-3 sm:py-2.5">
+      <div className="min-w-0 flex-1 px-2 py-1.5 sm:px-3 sm:py-2">
       <div className="flex items-center gap-1 sm:gap-2">
         {/* Fixed width AND height so a derby/big-match label never changes
             row height - every row is the same size whether it has 0, 1 or 2
             extra labels. */}
-        <div className="flex h-14 w-11 shrink-0 flex-col items-center justify-center text-center text-[8px] leading-tight text-gray-400 sm:w-14 sm:text-[10px]">
+        <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center text-center text-[8px] leading-tight text-gray-400 sm:w-14 sm:text-[10px]">
           {dateShort && <div className="whitespace-nowrap">{dateShort}</div>}
           {(fixture.day || fixture.kickoffTime) && (
             <div>{[fixture.day, fixture.kickoffTime].filter(Boolean).join(' ')}</div>
@@ -242,7 +242,7 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
               <span className="sm:hidden">{home.short ?? home.name}</span>
               <span className="hidden sm:inline">{home.name}</span>
             </span>
-            <Crest team={home} size={24} />
+            <Crest team={home} size={20} />
           </div>
 
           <div className="rounded-md px-1 py-1">
@@ -250,7 +250,7 @@ export default function FixtureRow({ fixture, onUpdate, highlightSlugs = [], can
           </div>
 
           <div className="flex items-center gap-1.5 min-w-0 sm:gap-2">
-            <Crest team={away} size={24} />
+            <Crest team={away} size={20} />
             <span className={`truncate text-xs sm:text-sm ${awayHighlighted ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}>
               <span className="sm:hidden">{away.short ?? away.name}</span>
               <span className="hidden sm:inline">{away.name}</span>
