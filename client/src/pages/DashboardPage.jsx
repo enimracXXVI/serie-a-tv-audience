@@ -30,6 +30,7 @@ import ActivationDonut from '../components/ActivationDonut.jsx';
 import OpponentAudienceChart from '../components/OpponentAudienceChart.jsx';
 import SeasonComparisonCard from '../components/SeasonComparisonCard.jsx';
 import ToggleSwitch from '../components/ToggleSwitch.jsx';
+import ScreenshotableCard from '../components/ScreenshotableCard.jsx';
 import { formatNumber } from '../lib/formatNumber.js';
 import { useCupData } from '../lib/useCupData.jsx';
 
@@ -279,20 +280,30 @@ export default function DashboardPage() {
           </p>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatTile label="Games played" value={playedGames.length} sub={`of ${fixtures.length} scheduled`} />
-              <StatTile label="League avg home audience" value={formatNumber(leagueAvgHome)} />
-              <StatTile label="Total audience (season)" value={formatNumber(totalAudience)} />
-              <StatTile label="Sponsored clubs' audience" value={formatNumber(sponsoredAudience)} sub="home games only" />
-            </div>
+            <ScreenshotableCard filename={`dashboard-stats-${season.label.replace('/', '-')}`} background="#0f1e54">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <StatTile label="Games played" value={playedGames.length} sub={`of ${fixtures.length} scheduled`} />
+                <StatTile label="League avg home audience" value={formatNumber(leagueAvgHome)} />
+                <StatTile label="Total audience (season)" value={formatNumber(totalAudience)} />
+                <StatTile label="Sponsored clubs' audience" value={formatNumber(sponsoredAudience)} sub="home games only" />
+              </div>
+            </ScreenshotableCard>
 
-            <SeasonComparisonCard seasons={comparisonSeasons} focusedTeam={focusedTeam} />
+            <ScreenshotableCard filename="dashboard-season-comparison">
+              <SeasonComparisonCard seasons={comparisonSeasons} focusedTeam={focusedTeam} />
+            </ScreenshotableCard>
 
-            <AudienceBarChart metrics={metrics} focusedSlug={focusedSlug} onFocus={setFocusedSlug} />
+            <ScreenshotableCard filename={`dashboard-audience-by-club-${season.label.replace('/', '-')}`}>
+              <AudienceBarChart metrics={metrics} focusedSlug={focusedSlug} onFocus={setFocusedSlug} />
+            </ScreenshotableCard>
 
-            <TeamMetricsTable metrics={metrics} focusedSlug={focusedSlug} onFocus={setFocusedSlug} />
+            <ScreenshotableCard filename={`dashboard-club-table-${season.label.replace('/', '-')}`}>
+              <TeamMetricsTable metrics={metrics} focusedSlug={focusedSlug} onFocus={setFocusedSlug} />
+            </ScreenshotableCard>
 
-            <SeasonTrendChart trend={seasonTrend} team={focusedTeam} />
+            <ScreenshotableCard filename={`dashboard-season-trend-${season.label.replace('/', '-')}`}>
+              <SeasonTrendChart trend={seasonTrend} team={focusedTeam} />
+            </ScreenshotableCard>
 
             <div>
               <p className="mb-2 text-xs font-semibold text-white/40">
@@ -301,37 +312,55 @@ export default function DashboardPage() {
                   : 'Scheduling patterns - all clubs (click a club above to narrow to just their games)'}
               </p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <AudienceByBucketChart title="Average audience by day of week" buckets={audienceByDay} />
-                <AudienceByBucketChart title="Average audience by kickoff time" buckets={audienceByKickoff} />
+                <ScreenshotableCard filename="dashboard-audience-by-day">
+                  <AudienceByBucketChart title="Average audience by day of week" buckets={audienceByDay} />
+                </ScreenshotableCard>
+                <ScreenshotableCard filename="dashboard-audience-by-kickoff">
+                  <AudienceByBucketChart title="Average audience by kickoff time" buckets={audienceByKickoff} />
+                </ScreenshotableCard>
               </div>
             </div>
 
             <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-              <DayTimeHeatmap rows={audienceByDayAndTime} />
+              <ScreenshotableCard filename="dashboard-day-kickoff-heatmap">
+                <DayTimeHeatmap rows={audienceByDayAndTime} />
+              </ScreenshotableCard>
               <div className="flex flex-col gap-4">
-                <TagPremiumCard premium={tagPremium} />
-                <RemainingScheduleCard remaining={remainingSchedule} team={focusedTeam} />
+                <ScreenshotableCard filename="dashboard-tag-premium">
+                  <TagPremiumCard premium={tagPremium} />
+                </ScreenshotableCard>
+                <ScreenshotableCard filename="dashboard-remaining-schedule">
+                  <RemainingScheduleCard remaining={remainingSchedule} team={focusedTeam} />
+                </ScreenshotableCard>
               </div>
             </div>
 
             <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-              <DayTimeBreakdownTable rows={audienceByDayAndTime} />
-              <TopGamesList
-                fixtures={fixtures}
-                teams={effectiveTeams}
-                simulcastInfo={simulcastInfo}
-                includeSimulcast={includeSimulcast}
-                includeOther={includeOther}
-                focusedSlug={focusedSlug}
-              />
+              <ScreenshotableCard filename="dashboard-day-kickoff-breakdown">
+                <DayTimeBreakdownTable rows={audienceByDayAndTime} />
+              </ScreenshotableCard>
+              <ScreenshotableCard filename="dashboard-top-games">
+                <TopGamesList
+                  fixtures={fixtures}
+                  teams={effectiveTeams}
+                  simulcastInfo={simulcastInfo}
+                  includeSimulcast={includeSimulcast}
+                  includeOther={includeOther}
+                  focusedSlug={focusedSlug}
+                />
+              </ScreenshotableCard>
             </div>
 
             {/* These two need a focused club to show anything meaningful,
                 so they sit at the bottom rather than competing for space
                 with the league-wide sections above. */}
-            <OpponentAudienceChart team={focusedTeam} data={opponentAudience} />
+            <ScreenshotableCard filename="dashboard-opponent-audience">
+              <OpponentAudienceChart team={focusedTeam} data={opponentAudience} />
+            </ScreenshotableCard>
 
-            <ActivationAudienceCard team={focusedTeam} activations={activationAudience} />
+            <ScreenshotableCard filename="dashboard-activation-audience">
+              <ActivationAudienceCard team={focusedTeam} activations={activationAudience} />
+            </ScreenshotableCard>
           </>
         )}
       </main>
