@@ -15,6 +15,12 @@ const NUMERIC_FIELDS = new Set([
   'addedTime1H',
   'addedTime2H',
   'daznSimulcastAudience',
+  'audience',
+  'etHomeScore',
+  'etAwayScore',
+  'penHomeScore',
+  'penAwayScore',
+  'extraLedMinutes',
 ]);
 const BOOLEAN_FIELDS = new Set([
   'homeMatchdaySponsor',
@@ -25,6 +31,8 @@ const BOOLEAN_FIELDS = new Set([
   'awayWalkabout',
   'isBigMatch',
   'isDerby',
+  'neutralVenue',
+  'penaltyTaken',
 ]);
 
 function excelSerialToISODate(serial) {

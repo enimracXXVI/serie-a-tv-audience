@@ -1,7 +1,6 @@
 import { SPREADSHEET_ID, GOOGLE_API_KEY } from './config.js';
 import { columnIndexToLetter, buildHeaderIndex, cell, getSheetId } from './sheetsCommon.js';
 import { computeMatchTags } from './matchTags.js';
-import { computeDayOfWeek } from './matchdays.js';
 
 const NUMERIC_FIELDS = new Set([
   'id',
@@ -13,6 +12,16 @@ const NUMERIC_FIELDS = new Set([
   'addedTime1H',
   'addedTime2H',
   'daznSimulcastAudience',
+  // Cup-only fields - blank on every Serie A row (see isSerieARow in
+  // competitions.js for how a row is told apart).
+  'audience',
+  'etHomeScore',
+  'etAwayScore',
+  'penHomeScore',
+  'penAwayScore',
+  // LED perimeter-board tracking, Serie A rows only (same "home game only"
+  // scope as the matchday sponsor/mascot/walkabout fields below).
+  'extraLedMinutes',
 ]);
 const BOOLEAN_FIELDS = new Set([
   'homeMatchdaySponsor',
@@ -23,6 +32,8 @@ const BOOLEAN_FIELDS = new Set([
   'awayWalkabout',
   'isBigMatch',
   'isDerby',
+  'neutralVenue',
+  'penaltyTaken',
 ]);
 const EDITABLE_FIELDS = [
   'date',
@@ -44,6 +55,19 @@ const EDITABLE_FIELDS = [
   'awayWalkabout',
   'isBigMatch',
   'isDerby',
+  // Cup-only, edited post-creation from a cup fixture's own edit tabs -
+  // competition/round/home/away aren't here, same as matchday/home/away
+  // above: set once at creation, never edited afterwards.
+  'neutralVenue',
+  'broadcaster',
+  'audience',
+  'etHomeScore',
+  'etAwayScore',
+  'penHomeScore',
+  'penAwayScore',
+  // LED perimeter-board tracking, Serie A rows only.
+  'extraLedMinutes',
+  'penaltyTaken',
 ];
 
 // Every function here takes the live season's tab name explicitly (from
@@ -51,6 +75,12 @@ const EDITABLE_FIELDS = [
 // tab holding the current season's fixtures is renamed every season rollover
 // (e.g. fixtures_26_27 -> fixtures_27_28), driven entirely by the `seasons`
 // sheet tab now, not a value baked into the code.
+//
+// This same tab now holds BOTH Serie A fixtures and cup fixtures for that
+// season (moved out of the old, all-seasons-in-one standalone cupFixtures
+// tab) - a row's `competition` cell tells the two apart (see isSerieARow in
+// competitions.js). The field lists above are the union of both shapes;
+// whichever half doesn't apply to a given row is just left blank.
 
 // Cached after the first successful fetch so writes don't need their own
 // header lookup round-trip. Only ever holds one tab's worth of state at a
@@ -201,29 +231,26 @@ export async function updateFixtureRow(fixture, accessToken, sheetName) {
   return { ...fixture, updatedAt, missingFields: missing };
 }
 
-// Adds a brand-new fixture row (a matchday added one game at a time, from
-// the app, instead of the whole-season paste-into-the-sheet setup). id is
-// computed from a fresh read right before appending so two near-simultaneous
-// creates don't collide, matching the same append pattern as sheetTab.js.
-export async function appendFixtureRow({ matchday, home, away, date, kickoffTime }, accessToken, sheetName) {
+// Adds a brand-new fixture row (a matchday, or a cup tie, added one at a
+// time from the app instead of the whole-season paste-into-the-sheet setup).
+// Takes a plain fields object now rather than a fixed Serie-A-shaped
+// signature, since this same tab (and this same append) now also creates cup
+// fixture rows (competition/round/neutralVenue instead of matchday/day) -
+// the caller (useFixtures.js for Serie A, useCupFixtures.js for cups)
+// supplies whichever shape is its own. id is computed from a fresh read
+// right before appending so two near-simultaneous creates don't collide,
+// matching the same append pattern as sheetTab.js.
+export async function appendFixtureRow(fields, accessToken, sheetName) {
   const current = await fetchFixtures(sheetName);
   const headerIndex = headerIndexCache;
   const nextId = current.reduce((max, f) => Math.max(max, Number(f.id) || 0), 0) + 1;
 
-  const fields = {
-    id: nextId,
-    matchday,
-    day: computeDayOfWeek(date),
-    date: date || '',
-    home,
-    away,
-    kickoffTime: kickoffTime || '',
-  };
+  const allFields = { id: nextId, ...fields };
 
   const maxIdx = Math.max(...Object.values(headerIndex));
   const row = new Array(maxIdx + 1).fill('');
   const missing = [];
-  for (const [key, value] of Object.entries(fields)) {
+  for (const [key, value] of Object.entries(allFields)) {
     const idx = headerIndex[key];
     if (idx === undefined) {
       missing.push(key);
@@ -251,7 +278,7 @@ export async function appendFixtureRow({ matchday, home, away, date, kickoffTime
   // rowIndexCache accurate for this row without waiting on another fetch.
   rowIndexCache[nextId] = current.length + 2;
 
-  return { ...fields };
+  return { ...allFields };
 }
 
 // Actually removes the sheet row (rather than just clearing its cells) -

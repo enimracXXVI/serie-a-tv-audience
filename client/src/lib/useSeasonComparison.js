@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useFixtures } from './useFixtures.js';
 import { fetchSeasonFixtures } from './seasonFixtures.js';
 import { enrichFixture, teamsInFixtures, applySeasonTeamAttributes } from './teams.js';
+import { isSerieARow } from './competitions.js';
 import { useClubs } from './useClubs.jsx';
 import { useTeamSeasons } from './useTeamSeasons.jsx';
 import { computeAllTeamMetrics } from './dashboardMetrics.js';
@@ -57,7 +58,9 @@ export function useSeasonComparison(teams, includeSimulcast, includeOther, focus
       const fixtures = isCurrent
         ? live.fixtures
         : applySeasonTeamAttributes(
-            (archiveRows[s.tab] ?? []).map((r) => enrichFixture(r, clubsBySlug, clubsByName)),
+            // The archive tab now also holds that season's cup fixtures -
+            // filter to Serie A rows only.
+            (archiveRows[s.tab] ?? []).filter(isSerieARow).map((r) => enrichFixture(r, clubsBySlug, clubsByName)),
             s.label,
             teamSeasonRows
           );

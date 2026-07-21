@@ -104,6 +104,43 @@ function RemainingScheduleCard({ remaining, team }) {
   );
 }
 
+// Anchors for the floating desktop quick-nav below - one per major card/
+// section, in the same top-to-bottom order they appear on the page, so
+// clicking down the rail matches scrolling down the page.
+const NAV_SECTIONS = [
+  { id: 'dash-stats', label: 'Stats' },
+  { id: 'dash-comparison', label: 'Season comparison' },
+  { id: 'dash-ranked', label: 'Audience by club' },
+  { id: 'dash-table', label: 'Club table' },
+  { id: 'dash-trend', label: 'Season trend' },
+  { id: 'dash-scheduling', label: 'Scheduling patterns' },
+  { id: 'dash-heatmap', label: 'Heatmap' },
+  { id: 'dash-games', label: 'Top games' },
+  { id: 'dash-opponent', label: 'Home audience by opponent' },
+  { id: 'dash-activation', label: 'Sponsor activation' },
+];
+
+// Desktop only ("dashboard on desktop... a bit frustrating to have to
+// scroll up and down") - a slim dot rail rather than a full labelled menu,
+// since the page is long enough that ten full-width nav items would be
+// their own scrolling problem. Each dot expands into a text pill on hover,
+// matching the app's existing pill-button visual language rather than
+// introducing a new nav idiom.
+function QuickNav() {
+  return (
+    <nav aria-label="Jump to dashboard section" className="fixed left-3 top-1/2 z-30 hidden -translate-y-1/2 flex-col gap-1.5 lg:flex">
+      {NAV_SECTIONS.map((s) => (
+        <a key={s.id} href={`#${s.id}`} className="group flex items-center gap-2">
+          <span className="h-2 w-2 shrink-0 rounded-full bg-white/25 transition-colors group-hover:bg-[#1fd8c9]" />
+          <span className="max-w-0 overflow-hidden whitespace-nowrap rounded-full bg-[#0f1e54] py-1 text-[10px] font-bold text-white opacity-0 shadow-md transition-all group-hover:max-w-[220px] group-hover:px-2.5 group-hover:opacity-100">
+            {s.label}
+          </span>
+        </a>
+      ))}
+    </nav>
+  );
+}
+
 function ActivationAudienceCard({ team, activations }) {
   if (!team) {
     return (
@@ -235,6 +272,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen">
+      {!loading && !fixturesError && <QuickNav />}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-3">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 pr-36">
           <h1 className="text-lg font-black text-white sm:text-xl">
@@ -282,32 +320,42 @@ export default function DashboardPage() {
           </p>
         ) : (
           <>
-            <ScreenshotableCard filename={`dashboard-stats-${season.label.replace('/', '-')}`} background="#0f1e54">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <StatTile label="Games played" value={playedGames.length} sub={`of ${fixtures.length} scheduled`} />
-                <StatTile label="League avg home audience" value={formatNumber(leagueAvgHome)} />
-                <StatTile label="Total audience (season)" value={formatNumber(totalAudience)} />
-                <StatTile label="Sponsored clubs' audience" value={formatNumber(sponsoredAudience)} sub="home games only" />
-              </div>
-            </ScreenshotableCard>
+            <div id="dash-stats" className="scroll-mt-20">
+              <ScreenshotableCard filename={`dashboard-stats-${season.label.replace('/', '-')}`} background="#0f1e54">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <StatTile label="Games played" value={playedGames.length} sub={`of ${fixtures.length} scheduled`} />
+                  <StatTile label="League avg home audience" value={formatNumber(leagueAvgHome)} />
+                  <StatTile label="Total audience (season)" value={formatNumber(totalAudience)} />
+                  <StatTile label="Sponsored clubs' audience" value={formatNumber(sponsoredAudience)} sub="home games only" />
+                </div>
+              </ScreenshotableCard>
+            </div>
 
-            <ScreenshotableCard filename="dashboard-season-comparison">
-              <SeasonComparisonCard seasons={comparisonSeasons} focusedTeam={focusedTeam} />
-            </ScreenshotableCard>
+            <div id="dash-comparison" className="scroll-mt-20">
+              <ScreenshotableCard filename="dashboard-season-comparison">
+                <SeasonComparisonCard seasons={comparisonSeasons} focusedTeam={focusedTeam} />
+              </ScreenshotableCard>
+            </div>
 
-            <ScreenshotableCard filename={`dashboard-audience-by-club-${season.label.replace('/', '-')}`}>
-              <AudienceBarChart metrics={metrics} focusedSlug={focusedSlug} onFocus={setFocusedSlug} />
-            </ScreenshotableCard>
+            <div id="dash-ranked" className="scroll-mt-20">
+              <ScreenshotableCard filename={`dashboard-audience-by-club-${season.label.replace('/', '-')}`}>
+                <AudienceBarChart metrics={metrics} focusedSlug={focusedSlug} onFocus={setFocusedSlug} />
+              </ScreenshotableCard>
+            </div>
 
-            <ScreenshotableCard filename={`dashboard-club-table-${season.label.replace('/', '-')}`}>
-              <TeamMetricsTable metrics={metrics} focusedSlug={focusedSlug} onFocus={setFocusedSlug} />
-            </ScreenshotableCard>
+            <div id="dash-table" className="scroll-mt-20">
+              <ScreenshotableCard filename={`dashboard-club-table-${season.label.replace('/', '-')}`}>
+                <TeamMetricsTable metrics={metrics} focusedSlug={focusedSlug} onFocus={setFocusedSlug} />
+              </ScreenshotableCard>
+            </div>
 
-            <ScreenshotableCard filename={`dashboard-season-trend-${season.label.replace('/', '-')}`}>
-              <SeasonTrendChart trend={seasonTrend} team={focusedTeam} />
-            </ScreenshotableCard>
+            <div id="dash-trend" className="scroll-mt-20">
+              <ScreenshotableCard filename={`dashboard-season-trend-${season.label.replace('/', '-')}`}>
+                <SeasonTrendChart trend={seasonTrend} team={focusedTeam} />
+              </ScreenshotableCard>
+            </div>
 
-            <div>
+            <div id="dash-scheduling" className="scroll-mt-20">
               <p className="mb-2 text-xs font-semibold text-white/40">
                 {focusedTeam
                   ? `Scheduling patterns - ${focusedTeam.name}'s games only (click their row above to clear)`
@@ -323,7 +371,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+            <div id="dash-heatmap" className="scroll-mt-20 grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
               <ScreenshotableCard filename="dashboard-day-kickoff-heatmap">
                 <DayTimeHeatmap rows={audienceByDayAndTime} />
               </ScreenshotableCard>
@@ -337,7 +385,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+            <div id="dash-games" className="scroll-mt-20 grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
               <ScreenshotableCard filename="dashboard-day-kickoff-breakdown">
                 <DayTimeBreakdownTable rows={audienceByDayAndTime} />
               </ScreenshotableCard>
@@ -356,13 +404,17 @@ export default function DashboardPage() {
             {/* These two need a focused club to show anything meaningful,
                 so they sit at the bottom rather than competing for space
                 with the league-wide sections above. */}
-            <ScreenshotableCard filename="dashboard-opponent-audience">
-              <OpponentAudienceChart team={focusedTeam} data={opponentAudience} />
-            </ScreenshotableCard>
+            <div id="dash-opponent" className="scroll-mt-20">
+              <ScreenshotableCard filename="dashboard-opponent-audience">
+                <OpponentAudienceChart team={focusedTeam} data={opponentAudience} />
+              </ScreenshotableCard>
+            </div>
 
-            <ScreenshotableCard filename="dashboard-activation-audience">
-              <ActivationAudienceCard team={focusedTeam} activations={activationAudience} />
-            </ScreenshotableCard>
+            <div id="dash-activation" className="scroll-mt-20">
+              <ScreenshotableCard filename="dashboard-activation-audience">
+                <ActivationAudienceCard team={focusedTeam} activations={activationAudience} />
+              </ScreenshotableCard>
+            </div>
           </>
         )}
       </main>

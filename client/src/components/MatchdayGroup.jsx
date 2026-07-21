@@ -7,6 +7,7 @@ const TABS = [
   { key: 'addedTime', label: 'Added time' },
   { key: 'audience', label: 'Audience' },
   { key: 'sponsors', label: 'Sponsors' },
+  { key: 'led', label: 'LED' },
   { key: 'all', label: 'All' },
 ];
 

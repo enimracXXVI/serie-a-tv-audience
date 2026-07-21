@@ -1,6 +1,7 @@
 import { syncMatchTags } from './sheets.js';
 import { fetchSeasonFixtures } from './seasonFixtures.js';
 import { enrichFixture, applySeasonTeamAttributes } from './teams.js';
+import { isSerieARow } from './competitions.js';
 
 // Writes isBigMatch/isDerby to every configured season's own tab in one go -
 // the live tab plus every archive tab - so a change to a season's
@@ -15,7 +16,10 @@ export async function syncAllSeasonsMatchTags({ clubsBySlug, clubsByName, teamSe
   for (const season of seasons) {
     try {
       const raw = await fetchSeasonFixtures(season.tab);
-      let fixtures = raw.map((r) => enrichFixture(r, clubsBySlug, clubsByName));
+      // That tab now also holds this season's cup fixtures - big-match/derby
+      // tagging stays a Serie A-only concept (see CupFixtureRow), so only
+      // Serie A rows get isBigMatch/isDerby computed and written back.
+      let fixtures = raw.filter(isSerieARow).map((r) => enrichFixture(r, clubsBySlug, clubsByName));
       fixtures = applySeasonTeamAttributes(fixtures, season.label, teamSeasonRows);
       const count = await syncMatchTags(fixtures, accessToken, season.tab);
       results.push({ label: season.label, ok: true, count });

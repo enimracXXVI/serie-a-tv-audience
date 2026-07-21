@@ -64,6 +64,9 @@ export function TeamSeasonsProvider({ children }) {
         matchdaySponsors: '',
         playerMascots: '',
         walkabouts: '',
+        ledMinutes: '',
+        addedTimeLed: false,
+        penaltyLed: false,
         ...fields,
       };
       await createTeamSeason(allFields, accessToken);
