@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Crest from './Crest.jsx';
+import SimulcastBadge from './SimulcastBadge.jsx';
 import { formatNumber } from '../lib/formatNumber.js';
 import GameListModal from './GameListModal.jsx';
 
@@ -60,7 +61,7 @@ export default function OpponentAudienceChart({ team, data, simulcastInfo }) {
               />
             </div>
             <span className="w-16 shrink-0 text-right text-xs font-bold text-[#0f1e54]">{formatNumber(r.avg)}</span>
-            <span className="w-12 shrink-0 text-right text-[10px] text-gray-400">{r.count}g</span>
+            <SimulcastBadge fixture={r.games[0].fixture} simulcastInfo={simulcastInfo} />
           </button>
         ))}
       </div>

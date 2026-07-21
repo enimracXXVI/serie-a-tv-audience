@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import Crest from './Crest.jsx';
+import SimulcastBadge from './SimulcastBadge.jsx';
 import { formatNumber } from '../lib/formatNumber.js';
 
 function formatDate(dateStr) {
@@ -8,15 +9,15 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
 }
 
-// One row per game - the context a bare average/count hides: which two
-// clubs, when exactly, and whether this game shared its kickoff slot with
-// others (which directly affects its own audience, since a shared slot
-// splits attention across every game in it).
+// One row per game - the context a bare average/count hides: which
+// matchday, which two clubs, when exactly, and whether this game shared
+// its kickoff slot with others (which directly affects its own audience,
+// since a shared slot splits attention across every game in it).
 function GameRow({ fixture, audience, simulcastInfo }) {
-  const info = simulcastInfo?.get(fixture.id);
   return (
     <div className="flex items-center gap-2 border-b border-gray-50 py-2 last:border-0">
       <div className="flex w-16 shrink-0 flex-col text-[10px] leading-tight text-gray-400">
+        <span className="font-bold text-gray-500">MD{fixture.matchday}</span>
         <span className="font-bold text-gray-600">{formatDate(fixture.date)}</span>
         <span>
           {fixture.day} {fixture.kickoffTime}
@@ -33,15 +34,8 @@ function GameRow({ fixture, audience, simulcastInfo }) {
           <span className="truncate text-xs text-gray-700">{fixture.away.short ?? fixture.away.name}</span>
         </div>
       </div>
+      <SimulcastBadge fixture={fixture} simulcastInfo={simulcastInfo} />
       <span className="w-16 shrink-0 text-right text-xs font-bold text-[#0f1e54]">{formatNumber(audience)}</span>
-      {info && (
-        <span
-          title={`Shared its kickoff slot with ${info.blockSize - 1} other game(s)`}
-          className="w-14 shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-center text-[9px] font-bold text-amber-700"
-        >
-          {info.blockSize}g slot
-        </span>
-      )}
     </div>
   );
 }
