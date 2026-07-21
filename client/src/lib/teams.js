@@ -29,6 +29,30 @@ function fallbackTeam(name, pastTeamsByName) {
   };
 }
 
+// Same fallback chain as fallbackTeam above, generalized with an optional
+// extra tier checked after pastTeams and before the generic placeholder -
+// used by cup fixtures, where a club can be a genuine non-Serie-A opponent
+// (the "cupTeams" tab) that never played in the current roster or its
+// history at all. Kept separate from fallbackTeam/enrichFixture (rather than
+// changing them to take this same extra tier) so the main Serie A fixtures
+// path - already correct and heavily relied on - stays untouched.
+export function resolveClubByName(name, teamByName, pastTeamsByName, extraByName) {
+  const current = teamByName.get(name);
+  if (current) return current;
+  const branding = pastTeamsByName?.get(name) ?? extraByName?.get(name);
+  return {
+    name,
+    slug: slugify(name),
+    short: branding?.short || String(name).slice(0, 3).toUpperCase(),
+    crestUrl: branding?.crestUrl || null,
+    primary: branding?.primary || null,
+    secondary: branding?.secondary || null,
+    sponsored: false,
+    bigClub: false,
+    derbyRival: null,
+  };
+}
+
 // Fixtures store home/away as the club's bundled (immutable) name text, so
 // matching must stay keyed by that even if a live Settings edit renames the
 // club for display - see useTeams.js's `staticName`.

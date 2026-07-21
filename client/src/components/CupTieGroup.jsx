@@ -8,8 +8,6 @@ import { computeTieAggregate } from '../lib/cupFixtures.js';
 export default function CupTieGroup({ legs, onUpdate, canEdit, broadcasters }) {
   const sorted = [...legs].sort((a, b) => (a.date ?? '9999').localeCompare(b.date ?? '9999'));
   const aggregate = computeTieAggregate(sorted);
-  const ourClubName = sorted[0].ourClub.name;
-  const opponentName = sorted[0].opponent.name;
 
   return (
     <div className="flex flex-col divide-y divide-gray-100">
@@ -18,11 +16,15 @@ export default function CupTieGroup({ legs, onUpdate, canEdit, broadcasters }) {
       ))}
       {aggregate && (
         <div className="bg-gray-50 px-3 py-1.5 text-center text-xs font-bold text-[#0f1e54]">
-          {aggregate.ourAgg === aggregate.theirAgg && aggregate.decidedByPens
-            ? `${aggregate.ourAgg}-${aggregate.theirAgg} agg · ${aggregate.penOurScore > aggregate.penTheirScore ? ourClubName : opponentName} win on penalties (${aggregate.penOurScore}-${aggregate.penTheirScore})`
-            : `${aggregate.ourAgg > aggregate.theirAgg ? ourClubName : aggregate.theirAgg > aggregate.ourAgg ? opponentName : 'Tied'} ${
-                aggregate.ourAgg === aggregate.theirAgg ? '' : 'win '
-              }${aggregate.ourAgg}-${aggregate.theirAgg} on aggregate`}
+          {aggregate.aScore === aggregate.bScore && aggregate.decidedByPens
+            ? `${aggregate.aScore}-${aggregate.bScore} agg · ${aggregate.penAScore > aggregate.penBScore ? aggregate.teamA.name : aggregate.teamB.name} win on penalties (${aggregate.penAScore}-${aggregate.penBScore})`
+            : `${
+                aggregate.aScore > aggregate.bScore
+                  ? aggregate.teamA.name
+                  : aggregate.bScore > aggregate.aScore
+                    ? aggregate.teamB.name
+                    : 'Tied'
+              } ${aggregate.aScore === aggregate.bScore ? '' : 'win '}${aggregate.aScore}-${aggregate.bScore} on aggregate`}
         </div>
       )}
     </div>

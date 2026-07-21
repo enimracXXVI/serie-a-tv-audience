@@ -3,74 +3,119 @@ import { useState } from 'react';
 const inputClass =
   'rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
 
-const NEW_OPPONENT = '__new__';
+const NEW_CLUB = '__new__';
 
-function slugify(name) {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
+function ClubSelect({ label, value, onChange, teams, cupOpponents }) {
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
+      <option value="">{label}</option>
+      {teams.length > 0 && (
+        <optgroup label="Serie A">
+          {teams.map((t) => (
+            <option key={t.staticName} value={t.staticName}>
+              {t.name}
+            </option>
+          ))}
+        </optgroup>
+      )}
+      {cupOpponents.length > 0 && (
+        <optgroup label="Other clubs">
+          {cupOpponents.map((t) => (
+            <option key={t.name} value={t.name}>
+              {t.name}
+            </option>
+          ))}
+        </optgroup>
+      )}
+      <option value={NEW_CLUB}>+ New club…</option>
+    </select>
+  );
 }
 
 // Sticky defaults (competition/round carry over between submissions) so
 // adding several fixtures for the same round - a full matchday's worth of
 // cup ties - doesn't mean re-picking the same competition/round every time.
+// Home and away are both picked from the exact same combined list (any
+// Serie A club, sponsored or not, plus any other club already added for
+// this competition) - there's no "your club" side, so two of your own
+// sponsored clubs can meet each other just as easily as either meeting a
+// club you've never heard of.
 export default function AddCupFixtureForm({ teams, cupTeams, competitions, onCreate, onCreateOpponent, onDone }) {
   const [competition, setCompetition] = useState(competitions[0].value);
   const [round, setRound] = useState('');
-  const [ourClub, setOurClub] = useState('');
-  const [opponent, setOpponent] = useState('');
-  const [newOpponentName, setNewOpponentName] = useState('');
-  const [newOpponentCrestUrl, setNewOpponentCrestUrl] = useState('');
-  const [homeAway, setHomeAway] = useState('home');
+  const [home, setHome] = useState('');
+  const [away, setAway] = useState('');
+  const [newHomeClubName, setNewHomeClubName] = useState('');
+  const [newHomeClubCrestUrl, setNewHomeClubCrestUrl] = useState('');
+  const [newAwayClubName, setNewAwayClubName] = useState('');
+  const [newAwayClubCrestUrl, setNewAwayClubCrestUrl] = useState('');
+  const [neutralVenue, setNeutralVenue] = useState(false);
   const [date, setDate] = useState('');
   const [kickoffTime, setKickoffTime] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  const opponentOptions = cupTeams.filter((t) => t.competition === competition);
+  const cupOpponents = cupTeams.filter((t) => t.competition === competition);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
-    if (!ourClub) {
-      setError('Pick your club.');
+    if (!home) {
+      setError('Pick the home club.');
       return;
     }
-    if (!opponent) {
-      setError('Pick or add an opponent.');
+    if (!away) {
+      setError('Pick the away club.');
       return;
     }
     setSaving(true);
     try {
-      let opponentSlug = opponent;
-      if (opponent === NEW_OPPONENT) {
-        if (!newOpponentName.trim()) throw new Error('Enter the new opponent’s name.');
-        opponentSlug = slugify(newOpponentName);
+      let homeName = home;
+      if (home === NEW_CLUB) {
+        if (!newHomeClubName.trim()) throw new Error('Enter the new home club’s name.');
+        homeName = newHomeClubName.trim();
         await onCreateOpponent({
-          slug: opponentSlug,
-          name: newOpponentName.trim(),
-          short: newOpponentName.trim().slice(0, 3).toUpperCase(),
-          crestUrl: newOpponentCrestUrl.trim() || '',
+          name: homeName,
+          short: homeName.slice(0, 3).toUpperCase(),
+          crestUrl: newHomeClubCrestUrl.trim(),
           primary: '#0f1e54',
           secondary: '#ffffff',
           competition,
         });
       }
+      let awayName = away;
+      if (away === NEW_CLUB) {
+        if (!newAwayClubName.trim()) throw new Error('Enter the new away club’s name.');
+        awayName = newAwayClubName.trim();
+        await onCreateOpponent({
+          name: awayName,
+          short: awayName.slice(0, 3).toUpperCase(),
+          crestUrl: newAwayClubCrestUrl.trim(),
+          primary: '#0f1e54',
+          secondary: '#ffffff',
+          competition,
+        });
+      }
+      if (homeName === awayName) {
+        throw new Error('Home and away must be different clubs.');
+      }
       await onCreate({
         competition,
         round: round.trim(),
-        ourClub,
-        opponent: opponentSlug,
-        homeAway,
+        home: homeName,
+        away: awayName,
+        neutralVenue,
         date: date || '',
         kickoffTime: kickoffTime || '',
       });
       // Round/competition stay put; everything else resets for the next add.
-      setOpponent('');
-      setNewOpponentName('');
-      setNewOpponentCrestUrl('');
+      setHome('');
+      setAway('');
+      setNewHomeClubName('');
+      setNewHomeClubCrestUrl('');
+      setNewAwayClubName('');
+      setNewAwayClubCrestUrl('');
+      setNeutralVenue(false);
       setDate('');
       setKickoffTime('');
       onDone?.();
@@ -99,46 +144,53 @@ export default function AddCupFixtureForm({ teams, cupTeams, competitions, onCre
           placeholder="Round (e.g. Round of 16)"
           className={`${inputClass} w-48`}
         />
-        <select value={ourClub} onChange={(e) => setOurClub(e.target.value)} className={inputClass}>
-          <option value="">Our club…</option>
-          {teams.map((t) => (
-            <option key={t.slug} value={t.slug}>
-              {t.name}
-            </option>
-          ))}
-        </select>
-        <select value={opponent} onChange={(e) => setOpponent(e.target.value)} className={inputClass}>
-          <option value="">Opponent…</option>
-          {opponentOptions.map((t) => (
-            <option key={t.slug} value={t.slug}>
-              {t.name}
-            </option>
-          ))}
-          <option value={NEW_OPPONENT}>+ New opponent…</option>
-        </select>
-        {opponent === NEW_OPPONENT && (
+        <ClubSelect label="Home club…" value={home} onChange={setHome} teams={teams} cupOpponents={cupOpponents} />
+        {home === NEW_CLUB && (
           <>
             <input
               type="text"
-              value={newOpponentName}
-              onChange={(e) => setNewOpponentName(e.target.value)}
-              placeholder="Opponent name"
+              value={newHomeClubName}
+              onChange={(e) => setNewHomeClubName(e.target.value)}
+              placeholder="Home club name"
               className={`${inputClass} w-40`}
             />
             <input
               type="text"
-              value={newOpponentCrestUrl}
-              onChange={(e) => setNewOpponentCrestUrl(e.target.value)}
+              value={newHomeClubCrestUrl}
+              onChange={(e) => setNewHomeClubCrestUrl(e.target.value)}
               placeholder="Crest URL (optional)"
               className={`${inputClass} w-48`}
             />
           </>
         )}
-        <select value={homeAway} onChange={(e) => setHomeAway(e.target.value)} className={inputClass}>
-          <option value="home">Home</option>
-          <option value="away">Away</option>
-          <option value="neutral">Neutral venue</option>
-        </select>
+        <ClubSelect label="Away club…" value={away} onChange={setAway} teams={teams} cupOpponents={cupOpponents} />
+        {away === NEW_CLUB && (
+          <>
+            <input
+              type="text"
+              value={newAwayClubName}
+              onChange={(e) => setNewAwayClubName(e.target.value)}
+              placeholder="Away club name"
+              className={`${inputClass} w-40`}
+            />
+            <input
+              type="text"
+              value={newAwayClubCrestUrl}
+              onChange={(e) => setNewAwayClubCrestUrl(e.target.value)}
+              placeholder="Crest URL (optional)"
+              className={`${inputClass} w-48`}
+            />
+          </>
+        )}
+        <label className="flex items-center gap-1.5 text-xs font-semibold text-[#0f1e54]">
+          <input
+            type="checkbox"
+            checked={neutralVenue}
+            onChange={(e) => setNeutralVenue(e.target.checked)}
+            className="h-4 w-4 accent-[#1fd8c9]"
+          />
+          Neutral venue
+        </label>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} />
         <input type="time" value={kickoffTime} onChange={(e) => setKickoffTime(e.target.value)} className={inputClass} />
       </div>
