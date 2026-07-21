@@ -12,7 +12,11 @@ import { useTeamSeasons } from './useTeamSeasons.jsx';
 // show any editing UI at all; updateFixture/createFixture are null for an
 // archive season, never partially-wired.
 export function useSeasonFixtures(season, teams) {
-  const isCurrent = !season.tab;
+  // Every season has a real `tab` value now (the live one included - it's
+  // renamed each rollover, e.g. fixtures_26_27), so "is this the live
+  // season" is decided by the `seasons` tab's own `current` flag, not by
+  // whether `tab` happens to be blank.
+  const isCurrent = Boolean(season.current);
 
   // Always called (rules of hooks) - this is exactly what every other page
   // already fetches for the current season, so there's no extra cost when

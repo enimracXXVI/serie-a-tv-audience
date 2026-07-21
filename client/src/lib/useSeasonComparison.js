@@ -16,7 +16,9 @@ import { useSeasons } from './useSeasons.jsx';
 export function useSeasonComparison(teams, includeSimulcast, includeOther, focusedSlug) {
   const live = useFixtures([], teams);
   const { seasons } = useSeasons();
-  const archiveSeasons = useMemo(() => seasons.filter((s) => s.tab), [seasons]);
+  // Every season has a real `tab` now (the live one included), so archive
+  // vs. live is decided by the `current` flag, not by whether `tab` is set.
+  const archiveSeasons = useMemo(() => seasons.filter((s) => !s.current), [seasons]);
   const [archiveRows, setArchiveRows] = useState({});
   const [archiveErrors, setArchiveErrors] = useState({});
   const [archiveLoading, setArchiveLoading] = useState(true);
@@ -51,7 +53,7 @@ export function useSeasonComparison(teams, includeSimulcast, includeOther, focus
 
   const seasonSummaries = useMemo(() => {
     return seasons.map((s) => {
-      const isCurrent = !s.tab;
+      const isCurrent = Boolean(s.current);
       const fixtures = isCurrent
         ? live.fixtures
         : applySeasonTeamAttributes(

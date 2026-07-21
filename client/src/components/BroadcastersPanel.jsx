@@ -5,6 +5,14 @@ import { callWithReauth } from '../lib/reauth.js';
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9] placeholder:text-white/30';
 
+function slugify(name) {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
 function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain }) {
   const [logoUrl, setLogoUrl] = useState(broadcaster.logoUrl ?? '');
   const [error, setError] = useState(null);
@@ -13,7 +21,7 @@ function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain }) {
     if (logoUrl === (broadcaster.logoUrl ?? '')) return;
     setError(null);
     try {
-      await callWithReauth(session, (token) => saveBroadcaster(broadcaster.name, { logoUrl }, token));
+      await callWithReauth(session, (token) => saveBroadcaster(broadcaster.slug, { logoUrl }, token));
     } catch (err) {
       setError(err.message);
     }
@@ -22,7 +30,7 @@ function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain }) {
   async function setMain() {
     setError(null);
     try {
-      await onSetMain(broadcaster.name);
+      await onSetMain(broadcaster.slug);
     } catch (err) {
       setError(err.message);
     }
@@ -71,8 +79,9 @@ export default function BroadcastersPanel({ session }) {
       return;
     }
     try {
+      const trimmed = newName.trim();
       await callWithReauth(session, (token) =>
-        createBroadcaster({ name: newName.trim(), logoUrl: newLogoUrl.trim() }, token)
+        createBroadcaster({ name: trimmed, slug: slugify(trimmed), logoUrl: newLogoUrl.trim() }, token)
       );
       setNewName('');
       setNewLogoUrl('');
@@ -81,13 +90,13 @@ export default function BroadcastersPanel({ session }) {
     }
   }
 
-  async function handleSetMain(name) {
+  async function handleSetMain(slug) {
     const prevMain = broadcasters.find((b) => b.isMain);
     await callWithReauth(session, async (token) => {
-      if (prevMain && prevMain.name !== name) {
-        await saveBroadcaster(prevMain.name, { isMain: false }, token);
+      if (prevMain && prevMain.slug !== slug) {
+        await saveBroadcaster(prevMain.slug, { isMain: false }, token);
       }
-      await saveBroadcaster(name, { isMain: true }, token);
+      await saveBroadcaster(slug, { isMain: true }, token);
     });
   }
 
@@ -107,7 +116,7 @@ export default function BroadcastersPanel({ session }) {
         <div className="flex flex-col gap-1.5">
           {broadcasters.map((b) => (
             <BroadcasterRow
-              key={b.name}
+              key={b.slug}
               broadcaster={b}
               session={session}
               saveBroadcaster={saveBroadcaster}

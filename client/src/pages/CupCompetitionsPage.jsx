@@ -5,6 +5,7 @@ import { useClubs } from '../lib/useClubs.jsx';
 import { useSession } from '../lib/useSession.jsx';
 import { useSeasonParam } from '../lib/useSeasonParam.js';
 import { useSeasons } from '../lib/useSeasons.jsx';
+import { SERIE_A_VALUE } from '../lib/competitions.js';
 import { callWithReauth } from '../lib/reauth.js';
 import SeasonSelector from '../components/SeasonSelector.jsx';
 import CupRoundGroup from '../components/CupRoundGroup.jsx';
@@ -12,7 +13,11 @@ import AddCupFixtureForm from '../components/AddCupFixtureForm.jsx';
 
 export default function CupCompetitionsPage() {
   const { clubs, createClub } = useClubs();
-  const { broadcasters, competitions, loading: cupDataLoading } = useCupData();
+  const { broadcasters, competitions: allCompetitions, loading: cupDataLoading } = useCupData();
+  // Serie A is a real "competitions" row now (for its logo setting - see
+  // competitions.js) but isn't a cup - never has cupFixtures of its own and
+  // can't be picked as one to add a fixture under.
+  const competitions = useMemo(() => allCompetitions.filter((c) => c.value !== SERIE_A_VALUE), [allCompetitions]);
   const [season, setSeason] = useSeasonParam();
   const { currentSeason } = useSeasons();
   const {

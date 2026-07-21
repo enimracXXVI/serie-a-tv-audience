@@ -6,7 +6,8 @@ import SeasonSelector from '../components/SeasonSelector.jsx';
 import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useSession } from '../lib/useSession.jsx';
-import { useAppSettings } from '../lib/useAppSettings.jsx';
+import { useCupData } from '../lib/useCupData.jsx';
+import { serieALogo } from '../lib/competitions.js';
 import { useSeasonParam } from '../lib/useSeasonParam.js';
 import { callWithReauth } from '../lib/reauth.js';
 
@@ -24,7 +25,8 @@ export default function HomePage() {
   } = useSeasonFixtures(season, teams);
   const session = useSession();
   const canEdit = session.signedIn && seasonCanEdit;
-  const { serieALogoUrl } = useAppSettings();
+  const { competitions } = useCupData();
+  const serieALogoUrl = serieALogo(competitions);
   const [updateError, setUpdateError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
 

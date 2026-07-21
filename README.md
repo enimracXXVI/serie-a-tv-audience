@@ -73,7 +73,7 @@ open the sheet directly, add these labels to row 1 if you want them:
 
 | Column | Label | Meaning |
 |---|---|---|
-| M | otherBroadcaster | Blank, or another broadcaster's `name` from the `broadcasters` tab (see below) — this game is also shown there, alongside the main broadcaster |
+| M | otherBroadcaster | Blank, or another broadcaster's `slug` from the `broadcasters` tab (see below) — this game is also shown there, alongside the main broadcaster |
 | N | addedTime1H | Added/injury time, first half (minutes) |
 | O | addedTime2H | Added/injury time, second half (minutes) |
 | P | daznSimulcastAudience | Audience for DAZN's multi-game simulcast slot, when applicable |
@@ -97,24 +97,32 @@ checkboxes, e.g. into a past-season archive tab (see below).
 DAZN/Sky Sport being the official Serie A broadcasters is a fact about
 *today*, not something to hardcode - this could change in a future season.
 The `broadcasters` tab (already used for cup fixtures - see below) is now
-also the source of truth for the main Serie A calendar: header row `name`,
-`logoUrl`, `isMain`. Exactly one row should have `isMain` set to TRUE - that's
-the **main broadcaster** (e.g. DAZN today), configured from the hamburger
-menu's **Settings → Broadcasters** panel by clicking **Set as main
-broadcaster** on the row you want. Its name/logo replaces every hardcoded
-"DAZN" label across the Serie A calendar and Dashboard. Every *other* row in
-this tab becomes a per-fixture choice: column M (`otherBroadcaster`, above)
-is either blank or one of these broadcasters' `name` - picked from a dropdown
-on a fixture's **Kickoff** edit tab, exactly like a cup fixture's broadcaster
-picker. There's no fixed "second broadcaster" anymore - one game might also
-be shown on Sky, another on a different channel entirely, and a third
-nowhere else at all.
+also the source of truth for the main Serie A calendar: header row `slug`,
+`name`, `logoUrl`, `isMain`. You may also keep an `id` column (e.g.
+`ID00001`) if you like having a manual reference number per row for your own
+bookkeeping - the app never reads or writes it, so its format and presence
+are entirely up to you; the same applies to every other tab below that has
+one. Exactly one row should have `isMain` set to TRUE - that's the **main
+broadcaster** (e.g. DAZN today), configured from the hamburger menu's
+**Settings → Broadcasters** panel by clicking **Set as main broadcaster** on
+the row you want. Its name/logo replaces every hardcoded "DAZN" label across
+the Serie A calendar and Dashboard. Every *other* row in this tab becomes a
+per-fixture choice: column M (`otherBroadcaster`, above) is either blank or
+one of these broadcasters' `slug` - picked from a dropdown on a fixture's
+**Kickoff** edit tab, exactly like a cup fixture's broadcaster picker (a
+plain broadcaster **name**, typed by hand rather than picked from the
+dropdown, still resolves too - slug is checked first, then name, same
+fallback pattern as clubs). There's no fixed "second broadcaster" anymore -
+one game might also be shown on Sky, another on a different channel
+entirely, and a third nowhere else at all.
 
 **Column M was previously `onSky` (TRUE/FALSE)** - if you're updating from an
 earlier version of this app, rename that header cell to `otherBroadcaster`
-and change any existing `TRUE` cells to the specific broadcaster's `name`
-(e.g. `Sky Sport`) instead; leave `FALSE`/blank cells blank. Do this in the
-live `fixtures` tab and any archive tabs you've created. Columns I/J/P
+and change any existing `TRUE` cells to the specific broadcaster's `slug`
+(e.g. `sky`) instead; leave `FALSE`/blank cells blank. Do this in the live
+season's fixtures tab (whichever tab the `seasons` tab's `current` row
+points at, e.g. `fixtures_26_27` - see "Past seasons" below) and any archive
+tabs you've created. Columns I/J/P
 (`daznAudience`/`skyAudience`/`daznSimulcastAudience`) keep their internal
 names unchanged - no sheet edit needed for those - but their on-screen labels
 are now dynamic: `daznAudience` shows as "*(main broadcaster's name)* audience",
@@ -158,8 +166,9 @@ opponent) - lives in a single sheet tab named `teams`, one shape for all of
 them. There's no separate bundled roster file and no second "other clubs"
 tab anymore; a club's `scope` decides which group it belongs to.
 
-Header row: `slug`, `name`, `short`, `primary`, `secondary`, `crestUrl`,
-`scope`.
+Header row: `slug`, `name`, `long`, `short`, `primary`, `secondary`,
+`crestUrl`, `scope` (an `id` column is also fine to keep, same
+app-never-touches-it deal as `broadcasters`' above).
 
 - `slug` is the row's **key** - pick something short and URL-safe
   (`inter`, `real-madrid`) and never change it once fixtures reference it.
@@ -171,6 +180,10 @@ Header row: `slug`, `name`, `short`, `primary`, `secondary`, `crestUrl`,
   hand rather than picked from the app's own dropdown (which always writes
   the slug). Rename a club any time from Settings; it's always safe going
   forward.
+- `long` - the club's full/official name (e.g. `FC Internazionale Milano`,
+  `SSC Napoli`). Not read anywhere in the app yet - it's a reference column
+  for now, kept for a possible future switch to displaying full names
+  instead of `name`.
 - `short`, `primary`, `secondary` - 3-letter code and hex colours, shown on
   mobile / used for chart lines and borders.
 - `crestUrl` - same `=IMAGE("url")`-or-plain-URL rule as everywhere else in
@@ -276,15 +289,19 @@ mechanism, covers every season including the current one - there's no
 separate "live" version of these fields on the `teams` tab anymore.
 
 Add a `teamSeasons` tab (doesn't exist in the seeded sheet - add it
-yourself) with header row: `id`, `season`, `slug`, `sponsored`, `bigClub`,
-`derbyRival`, `matchdaySponsors`, `playerMascots`, `walkabouts`.
+yourself) with header row: `slug`, `team`, `season`, `sponsored`, `bigClub`,
+`derbyRival`, `matchdaySponsors`, `playerMascots`, `walkabouts` (an `id`
+column is also fine to keep, same app-never-touches-it deal as the other
+tabs above).
 
-- `id` - always `season::slug` (e.g. `26/27::roma`) - the app fills this in
-  for you when you save from Settings; only worth knowing if you're pasting
-  rows directly.
+- `slug` here is this **row's own key** - always `season::teamSlug` (e.g.
+  `26/27::roma`) - the app fills this in for you when you save from
+  Settings; only worth knowing if you're pasting rows directly. Don't
+  confuse it with a `teams`-tab club slug on its own - that's the `team`
+  column below.
+- `team` - the club's `teams` tab slug (e.g. `roma`).
 - `season` - must match a label in the `seasons` tab (see below), e.g.
   `26/27` or `24/25`.
-- `slug` - the club's `teams` tab slug.
 - `sponsored`, `bigClub` - TRUE/FALSE (tolerant parsing - a real checkbox or
   plain "TRUE"/"true" text both work).
 - `derbyRival` - another club's **slug** (not a name) - whichever club
@@ -335,26 +352,35 @@ each one reads from, is itself a sheet tab now (`seasons`), not a hardcoded
 list:
 
 Add a `seasons` tab (doesn't exist in the seeded sheet - add it yourself)
-with header row: `label`, `tab`, `current`.
+with header row: `label`, `slug`, `tab`, `current` (an `id` column is also
+fine to keep, same app-never-touches-it deal as the other tabs above).
 
 ```
-26/27		TRUE
-25/26	fixtures_25_26	FALSE
-24/25	fixtures_24_25	FALSE
+26/27	26-27	fixtures_26_27	TRUE
+25/26	25-26	fixtures_25_26	FALSE
+24/25	24-25	fixtures_24_25	FALSE
 ```
 
 - `label` - shown in every season dropdown, e.g. `26/27`.
-- `tab` - blank for the live season (reads the editable `fixtures` tab like
-  every page already does); an archive season points at a separate tab with
-  **the exact same header row as `fixtures`** (id, matchday, day, date,
-  home, away, homeScore, awayScore, daznAudience, skyAudience, kickoffTime,
-  updatedAt, otherBroadcaster, addedTime1H, addedTime2H,
-  daznSimulcastAudience, homeMatchdaySponsor, homePlayerMascot,
+- `slug` - a URL-safe version of the label (e.g. `26-27`, no slash) - this is
+  what actually appears in the page URL (`?season=26-27`) when you switch
+  seasons, since `label`'s `/` doesn't round-trip cleanly through a query
+  string. Keep it unique and don't rename it once you've shared a link using
+  it.
+- `tab` - **every** season, including the live one, points at a real
+  fixtures tab now - there's no blank/implicit-live convention anymore.
+  The live season's row points at whichever tab is actually being written
+  to today (e.g. `fixtures_26_27`); an archive season's row points at a
+  read-only tab with **the exact same header row as the live one** (id,
+  matchday, day, date, home, away, homeScore, awayScore, daznAudience,
+  skyAudience, kickoffTime, updatedAt, otherBroadcaster, addedTime1H,
+  addedTime2H, daznSimulcastAudience, homeMatchdaySponsor, homePlayerMascot,
   homeWalkabout, awayMatchdaySponsor, awayPlayerMascot, awayWalkabout,
   isBigMatch, isDerby). Neither archive tab exists yet in the seeded sheet -
   create `fixtures_25_26` and `fixtures_24_25` yourself (header row + past
   results pasted in).
-- `current` - TRUE on exactly one row, the live season.
+- `current` - TRUE on exactly one row - **this**, not whether `tab` is
+  blank, is what decides which season is live and editable.
 
 If this tab doesn't exist yet (or is empty), the app falls back to a single
 built-in `26/27` (current) season so it isn't hard-broken before you set it
@@ -407,25 +433,37 @@ Entirely a sheet operation now - no code change or redeploy needed:
 2. **Promote the 3 incoming clubs**: add a `teams` row for each (or change
    an existing `national` row's `scope` back to `current`, if it's a club
    that was relegated before), with `scope` set to `current`.
-3. **Archive the just-finished season**: copy the live `fixtures` tab's
-   contents into a new tab (e.g. `fixtures_26_27`), then clear the live
-   `fixtures` tab and paste in the new season's fixture list. Add a matching
-   row to the `seasons` tab (new archive row for the season that just ended,
-   `current` set to TRUE on the new season's row and FALSE on the old one).
+3. **Create the new season's own fixtures tab**: since every season
+   (including the live one) already points at its own named tab
+   (e.g. this season is `fixtures_26_27`), rolling over doesn't clear or
+   reuse a fixed tab - just create a fresh one for the new season (e.g.
+   `fixtures_27_28`) with the same header row and paste in its fixture
+   list. Add a row for it to the `seasons` tab with `current` set to TRUE
+   and its own `slug` (e.g. `27-28`), and flip the just-finished season's
+   row to `current` FALSE - its `tab` keeps pointing at the season that
+   just ended (e.g. `fixtures_26_27`), which now becomes a read-only
+   archive.
 4. Promoted clubs' `sponsored`/`bigClub`/`derbyRival`/caps all default to
    unset for the new season - set them from the **Sponsorship / big match /
    derby** Settings panel once the roster's updated (pick the new season
    from its dropdown).
 
-### Serie A logo (`appSettings` tab)
+### Serie A logo
 
-Add an `appSettings` tab (doesn't exist in the seeded sheet - add it yourself)
-with header row: `id`, `serieALogoUrl`. There's only ever one row - the app
-manages its `id` (`global`) for you. Set the logo from the top of Settings'
-**Competitions** section (it's the same kind of "one logo" setting as every
-competition listed below it, so it lives there rather than its own section);
-it shows up next to the page title on the Fixtures and Standings headers.
-Leave it unset to show just the plain text title, as before this feature.
+Serie A isn't a cup, but it lives as an ordinary row in the `competitions`
+tab (see "Cups" below) anyway - `value` set to `serie-a` - purely so its
+logo has a home without needing its own single-purpose tab. Set it from the
+top of Settings' **Competitions** section (it's the same kind of "one logo"
+setting as every competition listed below it, so it lives there rather than
+its own section); it shows up next to the page title on the Fixtures and
+Standings headers. Leave it unset to show just the plain text title. This
+row is never offered as a cup competition anywhere (Add cup fixture, the
+Cups page's grouping, etc.) - it's filtered out specifically because it
+isn't one.
+
+There's no `appSettings` tab anymore - if you're upgrading from an earlier
+version of this app, delete it once you've copied its `serieALogoUrl` value
+onto the `competitions` tab's `serie-a` row's `logoUrl` column.
 
 ## Cups (Coppa Italia / Champions League / Europa League / Conference League)
 
@@ -440,14 +478,18 @@ track cup competitions:
 **1. `competitions` tab** - which competitions exist, their logo, and their
 scope, so a fixture list/form can show a badge instead of a plain text label
 and know which `teams` to offer as opponents. Header row: `value`, `label`,
-`logoUrl`, `scope`. `value` is the stable key `cupFixtures.competition`
-points at - don't rename it once you've used it elsewhere. `scope` is
-`national` or `european` - decides which non-current clubs show up as
-opponent options for that competition in the Add fixture form (a current
-Serie A club is always offered regardless); a blank/missing cell reads as
-`national` (a one-time fallback for a competition added before this column
-existed). Paste this seed block into A2 to start with the four you'd expect
-(`logoUrl` blank, fill in from Settings):
+`logoUrl`, `scope` (an `id` column is also fine to keep, same
+app-never-touches-it deal as the other tabs above). `value` is the stable
+key `cupFixtures.competition` points at - don't rename it once you've used
+it elsewhere. `scope` is `national` or `european` - decides which
+non-current clubs show up as opponent options for that competition in the
+Add fixture form (a current Serie A club is always offered regardless); a
+blank/missing cell reads as `national` (a one-time fallback for a
+competition added before this column existed). Serie A itself also lives as
+a row here (`value` set to `serie-a`) purely to hold its logo setting - see
+"Serie A logo" above; it's excluded everywhere a *cup* competition is
+listed or picked. Paste this seed block into A2 to start with the four cups
+you'd expect (`logoUrl` blank, fill in from Settings):
 
 ```
 CoppaItalia	Coppa Italia		national
@@ -463,11 +505,14 @@ add it whenever you want logos, not before. Managed from Settings, same
 
 **2. `broadcasters` tab** - a small reusable list so a cup fixture's
 broadcaster shows a logo badge instead of a retyped name. Header row:
-`name`, `logoUrl`, `isMain`. Also managed from Settings. This tab is shared
-with the main Serie A calendar (see "Broadcaster naming" above) - `isMain`
-marks the one row that's the main/official broadcaster there; it has no
-effect on cup fixtures, where every broadcaster (including the main one) is
-just a plain dropdown choice.
+`slug`, `name`, `logoUrl`, `isMain` (an `id` column is also fine to keep,
+same app-never-touches-it deal as the other tabs above). Also managed from
+Settings. This tab is shared with the main Serie A calendar (see
+"Broadcaster naming" above) - `isMain` marks the one row that's the
+main/official broadcaster there; it has no effect on cup fixtures, where
+every broadcaster (including the main one) is just a plain dropdown choice,
+picked and stored by `slug` (a plain broadcaster name typed by hand still
+resolves too, same slug-first/name-fallback rule as everywhere else).
 
 **3. `cupFixtures` tab** - the fixtures themselves. Header row: `id`,
 `competition`, `round`, `home`, `away`, `neutralVenue`, `date`,
@@ -480,7 +525,9 @@ the app checks slug first, then falls back to matching by name). There's no
 "your club vs the opponent" distinction, both are just whichever two clubs
 actually played, resolved the same way for either side - this is what lets
 two of your own sponsored clubs meet each other correctly, and lets any
-club's crest/colours show up as long as it has a `teams` row. `round` is
+club's crest/colours show up as long as it has a `teams` row. `broadcaster`
+holds a `broadcasters`-tab **slug** the same way, with the same
+name-fallback for anything typed by hand. `round` is
 free text (`Round of 16`, `Group A`, whatever your competition calls it -
 there's no fixed round list, a group stage and a knockout draw both just
 work); `neutralVenue` is TRUE/FALSE, for the rare match (typically a final)

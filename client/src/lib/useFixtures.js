@@ -11,11 +11,14 @@ export function useFixtures(teamSlugs, teams) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const key = teamSlugs.slice().sort().join(',');
+  const { currentSeason } = useSeasons();
+  const liveTab = currentSeason.tab;
 
   useEffect(() => {
+    if (!liveTab) return undefined;
     let cancelled = false;
     setLoading(true);
-    fetchFixtures()
+    fetchFixtures(liveTab)
       .then((rows) => {
         if (!cancelled) setRawFixtures(rows);
       })
@@ -29,10 +32,9 @@ export function useFixtures(teamSlugs, teams) {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [key, liveTab]);
 
   const { bySlug: clubsBySlug, byName: clubsByName } = useClubs();
-  const { currentSeason } = useSeasons();
   const { rows: teamSeasonRows } = useTeamSeasons();
 
   const fixtures = useMemo(() => {
@@ -58,7 +60,7 @@ export function useFixtures(teamSlugs, teams) {
       // Recomputed on every save (not just when `date` is the field being
       // touched) so `day` can never drift out of sync with `date`.
       merged.day = computeDayOfWeek(merged.date);
-      const updated = await updateFixtureRow(merged, accessToken);
+      const updated = await updateFixtureRow(merged, accessToken, liveTab);
 
       // Only reflect locally what actually reached the sheet - a field
       // whose column header is missing didn't save, so pretending it did
@@ -78,33 +80,35 @@ export function useFixtures(teamSlugs, teams) {
         );
       }
     },
-    [fixtures]
+    [fixtures, liveTab]
   );
 
   // home/away are stored as the picked club's slug (see clubs.js/teams.js
   // for why slug, not name text, is the durable identity now).
-  const createFixture = useCallback(async ({ matchday, homeSlug, awaySlug, date, kickoffTime }, accessToken) => {
-    if (!accessToken) throw new Error('UNAUTHENTICATED');
-    if (!teams.some((t) => t.slug === homeSlug) || !teams.some((t) => t.slug === awaySlug)) {
-      throw new Error('Pick both a home and an away club.');
-    }
-    const created = await appendFixtureRow(
-      { matchday, home: homeSlug, away: awaySlug, date, kickoffTime },
-      accessToken
-    );
-    setRawFixtures((prev) => [...prev, created]);
-    return created.id;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teams]);
+  const createFixture = useCallback(
+    async ({ matchday, homeSlug, awaySlug, date, kickoffTime }, accessToken) => {
+      if (!accessToken) throw new Error('UNAUTHENTICATED');
+      if (!teams.some((t) => t.slug === homeSlug) || !teams.some((t) => t.slug === awaySlug)) {
+        throw new Error('Pick both a home and an away club.');
+      }
+      const created = await appendFixtureRow({ matchday, home: homeSlug, away: awaySlug, date, kickoffTime }, accessToken, liveTab);
+      setRawFixtures((prev) => [...prev, created]);
+      return created.id;
+    },
+    [teams, liveTab]
+  );
 
-  const deleteFixture = useCallback(async (id, accessToken) => {
-    if (!accessToken) throw new Error('UNAUTHENTICATED');
-    // Deleting actually shifts every row below it up by one - the response
-    // is the freshly refetched, post-delete list, not just this row removed
-    // from what was already loaded.
-    const rows = await deleteFixtureRow(id, accessToken);
-    setRawFixtures(rows);
-  }, []);
+  const deleteFixture = useCallback(
+    async (id, accessToken) => {
+      if (!accessToken) throw new Error('UNAUTHENTICATED');
+      // Deleting actually shifts every row below it up by one - the response
+      // is the freshly refetched, post-delete list, not just this row removed
+      // from what was already loaded.
+      const rows = await deleteFixtureRow(id, accessToken, liveTab);
+      setRawFixtures(rows);
+    },
+    [liveTab]
+  );
 
   return { fixtures, loading, error, updateFixture, createFixture, deleteFixture };
 }

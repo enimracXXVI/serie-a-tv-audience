@@ -190,7 +190,7 @@ export default function TeamSeasonsPanel({ session }) {
   const [syncStatus, setSyncStatus] = useState(null); // null | 'syncing' | results array
 
   const roster = useMemo(() => (selectedSeason ? teamsInFixtures(fixtures) : []), [fixtures, selectedSeason]);
-  const rowsByKey = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
+  const rowsByKey = useMemo(() => new Map(rows.map((r) => [r.slug, r])), [rows]);
 
   async function handleSyncAllSeasons() {
     setSyncStatus('syncing');
