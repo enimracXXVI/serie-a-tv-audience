@@ -1,6 +1,7 @@
 import { SPREADSHEET_ID, GOOGLE_API_KEY } from './config.js';
 import { columnIndexToLetter, buildHeaderIndex, cell, getSheetId } from './sheetsCommon.js';
 import { computeMatchTags } from './matchTags.js';
+import { computeDayOfWeek } from './matchdays.js';
 
 const NUMERIC_FIELDS = new Set([
   'id',
@@ -249,7 +250,13 @@ export async function appendFixtureRow(fields, accessToken, sheetName) {
   const headerIndex = headerIndexCache;
   const nextId = current.reduce((max, f) => Math.max(max, Number(f.id) || 0), 0) + 1;
 
-  const allFields = { id: nextId, ...fields };
+  // Stamped here rather than left to the caller, so every newly-created row
+  // (Serie A or cup - both go through this same append) gets a real
+  // `updatedAt` immediately instead of sitting blank until its first edit,
+  // and `day` is always in sync with `date` from the moment the row exists,
+  // not just after someone happens to touch it.
+  const day = fields.date ? computeDayOfWeek(fields.date) : (fields.day ?? '');
+  const allFields = { id: nextId, ...fields, day, updatedAt: new Date().toISOString() };
 
   const maxIdx = Math.max(...Object.values(headerIndex));
   const row = new Array(maxIdx + 1).fill('');

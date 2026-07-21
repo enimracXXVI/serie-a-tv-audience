@@ -206,6 +206,7 @@ export default function TeamsPanel({ session }) {
   const current = useMemo(() => clubs.filter((c) => clubScope(c) === 'current'), [clubs]);
   const national = useMemo(() => clubs.filter((c) => clubScope(c) === 'national'), [clubs]);
   const european = useMemo(() => clubs.filter((c) => clubScope(c) === 'european'), [clubs]);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   return (
     <div className="flex flex-col gap-3">
@@ -245,7 +246,19 @@ export default function TeamsPanel({ session }) {
               ))}
             </div>
           </CollapsibleSection>
-          {session.signedIn && <AddClubForm session={session} createClub={createClub} />}
+          {session.signedIn && (
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => setShowAddForm((v) => !v)}
+                className={`self-start rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                  showAddForm ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+              >
+                Add club {showAddForm ? '▴' : '▾'}
+              </button>
+              {showAddForm && <AddClubForm session={session} createClub={createClub} />}
+            </div>
+          )}
         </div>
       )}
     </div>

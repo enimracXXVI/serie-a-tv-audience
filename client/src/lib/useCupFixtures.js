@@ -6,6 +6,7 @@ import { isSerieARow } from './competitions.js';
 import { useClubs } from './useClubs.jsx';
 import { useTeamSeasons } from './useTeamSeasons.jsx';
 import { useSeasons } from './useSeasons.jsx';
+import { computeDayOfWeek } from './matchdays.js';
 
 // Cup fixtures for a season now live in that season's own fixtures tab,
 // alongside its Serie A rows (see sheets.js/competitions.js's isSerieARow) -
@@ -70,6 +71,11 @@ export function useCupFixtures(season) {
       const current = fixtures.find((f) => f.id === id);
       if (!current) return;
       const merged = { ...current, ...fields };
+      // Recomputed on every save (not just when `date` is the field being
+      // touched) so `day` can never drift out of sync with `date` - same as
+      // Serie A's own updateFixture, even though the cup UI itself never
+      // shows `day` (kept in sync purely for whoever reads the sheet directly).
+      merged.day = computeDayOfWeek(merged.date);
       const updated = await updateFixtureRow(merged, accessToken, liveTab);
 
       const missingHere = (updated.missingFields ?? []).filter((f) => f in fields);

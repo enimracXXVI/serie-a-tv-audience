@@ -125,7 +125,12 @@ export default function ScreenshotableCard({ filename, background = '#ffffff', c
   }
 
   return (
-    <div ref={ref} className="relative">
+    // flex/h-full (plus stretching the card's own content, the last child
+    // here, to fill any extra space) lets two cards side by side in a grid
+    // row match height instead of each just being as tall as its own
+    // content - the grid row itself only stretches its direct children if
+    // they're actually able to grow to fill it.
+    <div ref={ref} className="relative flex h-full flex-col [&>:last-child]:flex [&>:last-child]:flex-1 [&>:last-child]:flex-col">
       <button
         type="button"
         onClick={handleClick}
