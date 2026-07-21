@@ -1,11 +1,17 @@
+import { useState } from 'react';
 import Crest from './Crest.jsx';
 import { formatNumber } from '../lib/formatNumber.js';
+import GameListModal from './GameListModal.jsx';
 
 // Which visiting club actually brings the crowd - an average alone hides
 // this, but it's exactly what an LED package buyer needs: a Torino-Juventus
 // night is not a Torino-Lecce night, even though both count toward the
-// same season average.
-export default function OpponentAudienceChart({ team, data }) {
+// same season average. Click a row for the actual games behind it - when
+// each was played and whether it shared its kickoff slot with anything
+// else, both of which affect that game's own audience directly.
+export default function OpponentAudienceChart({ team, data, simulcastInfo }) {
+  const [selected, setSelected] = useState(null);
+
   if (!team) {
     return (
       <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
@@ -39,7 +45,12 @@ export default function OpponentAudienceChart({ team, data }) {
       </div>
       <div className="flex flex-col gap-1.5">
         {rows.map((r) => (
-          <div key={r.opponent.slug} className="flex items-center gap-2">
+          <button
+            key={r.opponent.slug}
+            onClick={() => setSelected(r)}
+            title="Click for the actual games behind this average"
+            className="flex items-center gap-2 rounded-md px-1 py-0.5 text-left hover:bg-gray-50"
+          >
             <Crest team={r.opponent} size={18} />
             <span className="w-24 shrink-0 truncate text-xs font-semibold text-gray-600">{r.opponent.name}</span>
             <div className="h-4 flex-1 overflow-hidden rounded-full bg-gray-100">
@@ -50,9 +61,18 @@ export default function OpponentAudienceChart({ team, data }) {
             </div>
             <span className="w-16 shrink-0 text-right text-xs font-bold text-[#0f1e54]">{formatNumber(r.avg)}</span>
             <span className="w-12 shrink-0 text-right text-[10px] text-gray-400">{r.count}g</span>
-          </div>
+          </button>
         ))}
       </div>
+      {selected && (
+        <GameListModal
+          title={`${team.name} vs ${selected.opponent.name}`}
+          subtitle={`Avg ${formatNumber(selected.avg)} across ${selected.count} home game(s)`}
+          games={selected.games}
+          simulcastInfo={simulcastInfo}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   );
 }

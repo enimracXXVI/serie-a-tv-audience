@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { formatNumber } from '../lib/formatNumber.js';
+import GameListModal from './GameListModal.jsx';
 
 const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const LIMITS = [10, 20];
@@ -18,9 +19,10 @@ const COLUMNS = [
   { key: 'count', label: 'Games' },
 ];
 
-export default function DayTimeBreakdownTable({ rows }) {
+export default function DayTimeBreakdownTable({ rows, simulcastInfo }) {
   const [sortChain, setSortChain] = useState([{ key: 'avg', dir: 'desc' }]);
   const [limit, setLimit] = useState(10);
+  const [selected, setSelected] = useState(null);
 
   function headerClick(key, event) {
     setSortChain((prev) => {
@@ -110,16 +112,30 @@ export default function DayTimeBreakdownTable({ rows }) {
           </thead>
           <tbody className="divide-y divide-gray-50">
             {visible.map((row) => (
-              <tr key={`${row.day}|${row.time}`}>
+              <tr
+                key={`${row.day}|${row.time}`}
+                onClick={() => setSelected(row)}
+                className="cursor-pointer hover:bg-gray-50"
+                title="Click for the games behind this row"
+              >
                 <td className="px-2 py-2 text-left font-semibold text-gray-700">{row.day}</td>
                 <td className="px-2 py-2 text-center text-gray-600">{row.time}</td>
                 <td className="px-2 py-2 text-center font-bold text-[#0f1e54]">{formatNumber(row.avg)}</td>
                 <td className="px-2 py-2 text-center text-gray-600">{formatNumber(row.total)}</td>
-                <td className="px-2 py-2 text-center text-gray-600">{row.count}</td>
+                <td className="px-2 py-2 text-center text-gray-600 underline decoration-dotted">{row.count}</td>
               </tr>
             ))}
           </tbody>
         </table>
+      )}
+      {selected && (
+        <GameListModal
+          title={`${selected.day} ${selected.time}`}
+          subtitle={`Avg ${formatNumber(selected.avg)} - total ${formatNumber(selected.total)} across ${selected.count} game(s)`}
+          games={selected.games}
+          simulcastInfo={simulcastInfo}
+          onClose={() => setSelected(null)}
+        />
       )}
     </div>
   );

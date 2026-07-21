@@ -125,12 +125,15 @@ export default function ScreenshotableCard({ filename, background = '#ffffff', c
   }
 
   return (
-    // flex/h-full (plus stretching the card's own content, the last child
-    // here, to fill any extra space) lets two cards side by side in a grid
+    // flex/h-full (plus letting the card's own content, the last child here,
+    // grow to fill any extra space) lets two cards side by side in a grid
     // row match height instead of each just being as tall as its own
     // content - the grid row itself only stretches its direct children if
-    // they're actually able to grow to fill it.
-    <div ref={ref} className="relative flex h-full flex-col [&>:last-child]:flex [&>:last-child]:flex-1 [&>:last-child]:flex-col">
+    // they're actually able to grow to fill it. Only `flex-1` (grow) is
+    // applied to that child, never `flex`/`flex-col` themselves - those
+    // would override whatever internal layout (often `grid`, e.g. the stat
+    // tiles) the child's own className already sets.
+    <div ref={ref} className="relative flex h-full flex-col [&>:last-child]:flex-1">
       <button
         type="button"
         onClick={handleClick}

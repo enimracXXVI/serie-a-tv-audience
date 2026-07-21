@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { formatNumber, formatAbbreviated } from '../lib/formatNumber.js';
+import GameListModal from './GameListModal.jsx';
 
 const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -12,7 +14,9 @@ function cellStyle(value, max) {
   return { background: `hsl(174, 60%, ${lightness}%)`, color: lightness < 55 ? '#ffffff' : '#0f1e54' };
 }
 
-export default function DayTimeHeatmap({ rows }) {
+export default function DayTimeHeatmap({ rows, simulcastInfo }) {
+  const [selected, setSelected] = useState(null);
+
   if (rows.length === 0) {
     return (
       <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
@@ -58,11 +62,16 @@ export default function DayTimeHeatmap({ rows }) {
                 const style = cellStyle(cell?.avg ?? null, max);
                 return (
                   <td key={day} className="p-0.5">
-                    <div
+                    <button
+                      type="button"
+                      disabled={!cell}
+                      onClick={() => cell && setSelected(cell)}
                       title={
-                        cell ? `${day} ${time} - avg ${formatNumber(cell.avg)} across ${cell.count} game(s)` : `${day} ${time} - no games`
+                        cell
+                          ? `${day} ${time} - avg ${formatNumber(cell.avg)} across ${cell.count} game(s) - click for details`
+                          : `${day} ${time} - no games`
                       }
-                      className="flex h-12 w-16 flex-col items-center justify-center rounded-md text-center"
+                      className={`flex h-12 w-16 flex-col items-center justify-center rounded-md text-center ${cell ? 'cursor-pointer hover:ring-2 hover:ring-[#1fd8c9]' : 'cursor-default'}`}
                       style={{ background: style.background, color: style.color }}
                     >
                       {cell && (
@@ -71,7 +80,7 @@ export default function DayTimeHeatmap({ rows }) {
                           <span className="text-[9px] opacity-70">{cell.count}g</span>
                         </>
                       )}
-                    </div>
+                    </button>
                   </td>
                 );
               })}
@@ -79,6 +88,15 @@ export default function DayTimeHeatmap({ rows }) {
           ))}
         </tbody>
       </table>
+      {selected && (
+        <GameListModal
+          title={`${selected.day} ${selected.time}`}
+          subtitle={`Avg ${formatNumber(selected.avg)} across ${selected.count} game(s)`}
+          games={selected.games}
+          simulcastInfo={simulcastInfo}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   );
 }

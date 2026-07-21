@@ -17,7 +17,7 @@ function formatValue(key, value) {
 }
 
 export default function AudienceBarChart({ metrics, focusedSlug, onFocus }) {
-  const [metricKey, setMetricKey] = useState('homeAudienceAvg');
+  const [metricKey, setMetricKey] = useState('homeAudienceTotal');
 
   const ranked = useMemo(() => [...metrics].sort((a, b) => b[metricKey] - a[metricKey]), [metrics, metricKey]);
   const max = Math.max(...ranked.map((r) => r[metricKey]), 1);
