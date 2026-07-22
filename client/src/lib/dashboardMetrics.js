@@ -279,3 +279,33 @@ export function computeActivationAudience(team, fixtures, simulcastInfo, include
     return { key: fixtureKey, label, count: audiences.length, total: sum(audiences), avg: avg(audiences) };
   });
 }
+
+// LED perimeter-board minutes and that game's audience, reported side by
+// side rather than multiplied together - minutes measure how long the
+// board ran, audience measures how many people watched the match at all;
+// neither scales the other; a viewer watching a board for 10 minutes
+// isn't "more aware" of the brand than one watching it for 5. Scoped to
+// this club's own home games only, same as everywhere else LED is
+// tracked - the boards only exist at their own stadium.
+export function computeLedExposure(team, fixtures, simulcastInfo, includeSimulcast, includeOther = true) {
+  if (!team?.ledMinutes) return null;
+  const homeGames = fixtures.filter((f) => f.home.slug === team.slug && isPlayed(f));
+  const games = homeGames.map((fixture) => {
+    const base = Number(team.ledMinutes) || 0;
+    const extra = Number(fixture.extraLedMinutes) || 0;
+    const addedTime = team.addedTimeLed ? addedTimeMinutes(fixture) : 0;
+    const minutes = base + extra + addedTime;
+    const audience = effectiveAudience(fixture, simulcastInfo, includeSimulcast, includeOther);
+    const penaltyExposure = Boolean(team.penaltyLed && fixture.penaltyTaken);
+    return { fixture, audience, minutes, base, extra, addedTime, penaltyExposure };
+  });
+  return {
+    games,
+    count: games.length,
+    totalMinutes: sum(games.map((g) => g.minutes)),
+    avgMinutes: avg(games.map((g) => g.minutes)),
+    totalAudience: sum(games.map((g) => g.audience)),
+    avgAudience: avg(games.map((g) => g.audience)),
+    penaltyGames: games.filter((g) => g.penaltyExposure).length,
+  };
+}

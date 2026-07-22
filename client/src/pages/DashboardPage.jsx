@@ -15,6 +15,7 @@ import {
   computeSeasonTrend,
   computeRemainingSchedule,
   computeOpponentAudience,
+  computeLedExposure,
 } from '../lib/dashboardMetrics.js';
 import { isPlayed } from '../lib/standings.js';
 import { useSeasonComparison } from '../lib/useSeasonComparison.js';
@@ -28,6 +29,7 @@ import SeasonTrendChart from '../components/SeasonTrendChart.jsx';
 import DayTimeHeatmap from '../components/DayTimeHeatmap.jsx';
 import ActivationDonut from '../components/ActivationDonut.jsx';
 import OpponentAudienceChart from '../components/OpponentAudienceChart.jsx';
+import LedExposureCard from '../components/LedExposureCard.jsx';
 import SeasonComparisonCard from '../components/SeasonComparisonCard.jsx';
 import ToggleSwitch from '../components/ToggleSwitch.jsx';
 import ScreenshotableCard from '../components/ScreenshotableCard.jsx';
@@ -118,6 +120,7 @@ const NAV_SECTIONS = [
   { id: 'dash-games', label: 'Top games' },
   { id: 'dash-opponent', label: 'Home audience by opponent' },
   { id: 'dash-activation', label: 'Sponsor activation' },
+  { id: 'dash-led', label: 'LED exposure' },
 ];
 
 // Desktop only ("dashboard on desktop... a bit frustrating to have to
@@ -301,6 +304,10 @@ export default function DashboardPage() {
     () => (focusedTeam ? computeOpponentAudience(focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeOther) : null),
     [focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeOther]
   );
+  const ledExposure = useMemo(
+    () => (focusedTeam ? computeLedExposure(focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeOther) : null),
+    [focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeOther]
+  );
 
   const { seasons: comparisonSeasons } = useSeasonComparison(teams, includeSimulcast, includeOther, focusedSlug);
 
@@ -447,6 +454,12 @@ export default function DashboardPage() {
             <div id="dash-activation" className="scroll-mt-20">
               <ScreenshotableCard filename="dashboard-activation-audience">
                 <ActivationAudienceCard team={focusedTeam} activations={activationAudience} />
+              </ScreenshotableCard>
+            </div>
+
+            <div id="dash-led" className="scroll-mt-20">
+              <ScreenshotableCard filename="dashboard-led-exposure">
+                <LedExposureCard team={focusedTeam} exposure={ledExposure} />
               </ScreenshotableCard>
             </div>
           </>
