@@ -210,11 +210,14 @@ export function createSheetTabClient({
       headerIndexCache[bookkeepingIdField] !== undefined &&
       !allFields[bookkeepingIdField]
     ) {
-      const maxSeq = current.reduce((max, r) => {
-        const match = String(r[bookkeepingIdField] ?? '').match(/^ID(\d+)$/i);
-        return match ? Math.max(max, Number(match[1])) : max;
-      }, 0);
-      allFields = { ...allFields, [bookkeepingIdField]: `ID${String(maxSeq + 1).padStart(5, '0')}` };
+      // The cell itself just holds a plain number - the "ID00001" look is a
+      // custom number format applied to the column, not literal text (same
+      // convention as the fixtures tab's own numeric id). Writing a real
+      // number here lets that format render it; writing the string "ID00001"
+      // would defeat the format entirely and, since read-back would then
+      // never match a plain number either, reset every new row back to 1.
+      const nextBookkeepingId = current.reduce((max, r) => Math.max(max, Number(r[bookkeepingIdField]) || 0), 0) + 1;
+      allFields = { ...allFields, [bookkeepingIdField]: nextBookkeepingId };
     }
 
     const maxIdx = Math.max(...Object.values(headerIndexCache));

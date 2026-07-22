@@ -101,10 +101,14 @@ DAZN/Sky Sport being the official Serie A broadcasters is a fact about
 The `broadcasters` tab (already used for cup fixtures - see below) is now
 also the source of truth for the main Serie A calendar: header row `slug`,
 `name`, `logoUrl`, `isMain`. You may also keep an `id` column for your own
-bookkeeping reference - if you add one, the app auto-fills it with the next
-`ID00001`-style value on every new row (an existing value is never touched
-or read back); the same applies to every other tab below that has one
-(`teams`, `teamSeasons`, `competitions`, `seasons`). Exactly one row should have `isMain` set to TRUE - that's the **main
+bookkeeping reference - if you add one, the app auto-fills it on every new
+row with the next plain integer after the highest one already in that
+column (1, 2, 3, ...), the same way the fixtures tab's own numeric `id`
+column works; give the column a custom number format (e.g. `"ID"00000`) if
+you want it to *display* as `ID00001` - the app only ever reads/writes the
+underlying number, never that formatted text, so the format is entirely up
+to you. The same applies to every other tab below that has one (`teams`,
+`teamSeasons`, `competitions`, `seasons`). Exactly one row should have `isMain` set to TRUE - that's the **main
 broadcaster** (e.g. DAZN today), configured from the hamburger menu's
 **Settings → Broadcasters** panel by clicking **Set as main broadcaster** on
 the row you want. Its name/logo replaces every hardcoded "DAZN" label across
