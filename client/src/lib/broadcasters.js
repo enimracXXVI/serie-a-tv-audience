@@ -9,6 +9,7 @@ const client = createSheetTabClient({
   sheetName: 'broadcasters',
   idField: 'slug',
   autoIncrementId: false,
+  bookkeepingIdField: 'id',
   booleanFields: ['isMain'],
 });
 

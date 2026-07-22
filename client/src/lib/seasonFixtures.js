@@ -10,11 +10,11 @@ const NUMERIC_FIELDS = new Set([
   'matchday',
   'homeScore',
   'awayScore',
-  'daznAudience',
-  'skyAudience',
+  'mainAudience',
+  'otherAudience',
   'addedTime1H',
   'addedTime2H',
-  'daznSimulcastAudience',
+  'simulcastAudience',
   'audience',
   'etHomeScore',
   'etAwayScore',
@@ -80,7 +80,9 @@ function rowToFixture(row, headerIndex) {
 // current-season-only concept, and header-driven parsing just leaves
 // those fields undefined if the archive tab doesn't have them).
 export async function fetchSeasonFixtures(tabName) {
-  const range = `${tabName}!A1:Z500`;
+  // Unbounded column width - see fetchFixtures in sheets.js for why a fixed
+  // column-letter cap silently truncates a wide header row.
+  const range = `${tabName}!1:500`;
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(
     range
   )}?key=${GOOGLE_API_KEY}&valueRenderOption=UNFORMATTED_VALUE&_=${Date.now()}`;

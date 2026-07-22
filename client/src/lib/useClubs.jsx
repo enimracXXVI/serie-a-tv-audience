@@ -46,8 +46,11 @@ export function ClubsProvider({ children }) {
 
   const createClub = useCallback(async (fields, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
-    await addClub(fields, accessToken);
-    setClubs((prev) => [...prev, fields]);
+    // Uses the server's returned item (not the caller's `fields`) so an
+    // auto-filled bookkeeping `id` (see sheetTab.js's bookkeepingIdField)
+    // shows up immediately instead of only after the next reload.
+    const { item } = await addClub(fields, accessToken);
+    setClubs((prev) => [...prev, item]);
     return fields.slug;
   }, []);
 

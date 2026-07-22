@@ -24,6 +24,7 @@ const client = createSheetTabClient({
   sheetName: 'teams',
   idField: 'slug',
   autoIncrementId: false,
+  bookkeepingIdField: 'id',
   imageFormulaFields: ['crestUrl'],
 });
 

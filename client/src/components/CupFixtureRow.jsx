@@ -262,7 +262,9 @@ export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, ed
         <div className="flex items-center gap-1 sm:gap-2">
           <div className="flex h-11 w-14 shrink-0 flex-col items-center justify-center text-center text-[9px] leading-tight text-gray-400">
             {dateShort && <div>{dateShort}</div>}
-            {fixture.kickoffTime && <div>{fixture.kickoffTime}</div>}
+            {(fixture.day || fixture.kickoffTime) && (
+              <div>{[fixture.day, fixture.kickoffTime].filter(Boolean).join(' ')}</div>
+            )}
             {fixture.neutralVenue && <div className="font-black text-gray-400">N</div>}
           </div>
 

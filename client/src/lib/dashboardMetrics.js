@@ -6,10 +6,10 @@ function blockKey(fixture) {
   return `${fixture.date ?? ''}|${fixture.kickoffTime ?? ''}`;
 }
 
-// Games sharing an exact date+kickoff slot air as one DAZN simulcast block -
-// only the first one in the block collects the shared daznSimulcastAudience
-// figure (see CalendarView's isFirstInBlock). This finds that figure for
-// every fixture in a multi-game block, plus how many games shared it.
+// Games sharing an exact date+kickoff slot air as one simulcast block - only
+// the first one in the block collects the shared simulcastAudience figure
+// (see CalendarView's isFirstInBlock). This finds that figure for every
+// fixture in a multi-game block, plus how many games shared it.
 export function computeSimulcastInfo(fixtures) {
   const groups = new Map();
   for (const f of fixtures) {
@@ -21,8 +21,8 @@ export function computeSimulcastInfo(fixtures) {
   const info = new Map();
   for (const group of groups.values()) {
     if (group.length < 2) continue;
-    const withFigure = group.find((f) => f.daznSimulcastAudience !== null && f.daznSimulcastAudience !== undefined);
-    const simulcastAudience = withFigure ? Number(withFigure.daznSimulcastAudience) : null;
+    const withFigure = group.find((f) => f.simulcastAudience !== null && f.simulcastAudience !== undefined);
+    const simulcastAudience = withFigure ? Number(withFigure.simulcastAudience) : null;
     for (const f of group) info.set(f.id, { blockSize: group.length, simulcastAudience });
   }
   return info;
@@ -35,8 +35,8 @@ export function computeSimulcastInfo(fixtures) {
 // shared slot additionally gets an even share of that slot's simulcast
 // figure (divided by block size) - the "smart" adjusted view, off by default.
 export function effectiveAudience(fixture, simulcastInfo, includeSimulcast, includeOther = true) {
-  let total = Number(fixture.daznAudience) || 0;
-  if (includeOther && fixture.otherBroadcaster) total += Number(fixture.skyAudience) || 0;
+  let total = Number(fixture.mainAudience) || 0;
+  if (includeOther && fixture.otherBroadcaster) total += Number(fixture.otherAudience) || 0;
   if (includeSimulcast) {
     const info = simulcastInfo.get(fixture.id);
     if (info && info.simulcastAudience !== null && info.blockSize > 0) {

@@ -5,7 +5,12 @@ import { createSheetTabClient } from './sheetTab.js';
 // once fixtures reference it. `name` and `logoURL` are the things Settings
 // actually edits day to day; `long`/`short` exist on the sheet (same
 // convention as the `teams` tab) but aren't read anywhere yet.
-const client = createSheetTabClient({ sheetName: 'competitions', idField: 'slug', autoIncrementId: false });
+const client = createSheetTabClient({
+  sheetName: 'competitions',
+  idField: 'slug',
+  autoIncrementId: false,
+  bookkeepingIdField: 'id',
+});
 
 export const fetchCompetitions = client.fetchAll;
 export const updateCompetition = client.updateRow;

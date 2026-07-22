@@ -137,6 +137,8 @@ function AddClubForm({ session, createClub }) {
   const [name, setName] = useState('');
   const [crestUrl, setCrestUrl] = useState('');
   const [scope, setScope] = useState('national');
+  const [primary, setPrimary] = useState('#0f1e54');
+  const [secondary, setSecondary] = useState('#ffffff');
   const [createError, setCreateError] = useState(null);
 
   async function handleAdd(e) {
@@ -155,8 +157,8 @@ function AddClubForm({ session, createClub }) {
             slug: slugify(trimmed),
             short: trimmed.slice(0, 3).toUpperCase(),
             crestUrl: crestUrl.trim(),
-            primary: '#0f1e54',
-            secondary: '#ffffff',
+            primary,
+            secondary,
             scope,
           },
           token
@@ -165,6 +167,8 @@ function AddClubForm({ session, createClub }) {
       setName('');
       setCrestUrl('');
       setScope('national');
+      setPrimary('#0f1e54');
+      setSecondary('#ffffff');
     } catch (err) {
       setCreateError(err.message);
     }
@@ -187,6 +191,8 @@ function AddClubForm({ session, createClub }) {
           placeholder="Crest URL (optional)"
           className={`${inputClass} w-48`}
         />
+        <ColorField label="Primary colour" value={primary} onCommit={setPrimary} />
+        <ColorField label="Secondary colour" value={secondary} onCommit={setSecondary} />
         <select value={scope} onChange={(e) => setScope(e.target.value)} className={inputClass}>
           <option value="current">Current roster</option>
           <option value="national">National</option>

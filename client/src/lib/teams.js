@@ -46,15 +46,15 @@ export function enrichFixture(raw, clubsBySlug, clubsByName) {
     away: resolveClub(raw.away, clubsBySlug, clubsByName),
     homeScore: raw.homeScore,
     awayScore: raw.awayScore,
-    daznAudience: raw.daznAudience,
-    skyAudience: raw.skyAudience,
+    mainAudience: raw.mainAudience,
+    otherAudience: raw.otherAudience,
     // A broadcaster's slug (matching a row in the `broadcasters` tab) if this
     // game is also shown somewhere besides the main broadcaster, blank/null
     // otherwise - see BroadcastersPanel for how "main" is configured.
     otherBroadcaster: raw.otherBroadcaster || null,
     addedTime1H: raw.addedTime1H,
     addedTime2H: raw.addedTime2H,
-    daznSimulcastAudience: raw.daznSimulcastAudience,
+    simulcastAudience: raw.simulcastAudience,
     homeMatchdaySponsor: raw.homeMatchdaySponsor,
     homePlayerMascot: raw.homePlayerMascot,
     homeWalkabout: raw.homeWalkabout,

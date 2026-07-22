@@ -18,11 +18,21 @@ export function createSheetTabClient({
   numericFields = [],
   booleanFields = [],
   imageFormulaFields = [],
+  // A tab keyed by a natural key (slug, label, ...) can still carry its own
+  // separate bookkeeping "id" column for the user's own reference (see
+  // README) - set this to that column's name (almost always 'id') to have a
+  // fresh `ID00001`-style value auto-filled on every new row, the same way
+  // the real idField already gets one. Left null (the default) for a tab
+  // where idField already IS the bookkeeping column (e.g. fixtures).
+  bookkeepingIdField = null,
 }) {
   const NUMERIC_FIELDS = new Set(numericFields);
   const BOOLEAN_FIELDS = new Set(booleanFields);
   const IMAGE_FORMULA_FIELDS = new Set(imageFormulaFields);
-  const FULL_RANGE = `${sheetName}!A1:Z500`;
+  // Unbounded column width - a fixed column-letter cap silently truncates
+  // the header read once a tab grows past that column (see fetchFixtures in
+  // sheets.js, which hit exactly this with a 34+ column fixtures tab).
+  const FULL_RANGE = `${sheetName}!1:500`;
 
   let headerIndexCache = null;
   let rowIndexCache = null; // id -> row number (row N+1 holds the (N)th data row, exactly like fixtures/teams)
@@ -192,6 +202,19 @@ export function createSheetTabClient({
       if (current.some((r) => r[idField] === key)) {
         throw new Error(`"${key}" already exists in the "${sheetName}" tab - pick a different ${idField}.`);
       }
+    }
+
+    if (
+      bookkeepingIdField &&
+      bookkeepingIdField !== idField &&
+      headerIndexCache[bookkeepingIdField] !== undefined &&
+      !allFields[bookkeepingIdField]
+    ) {
+      const maxSeq = current.reduce((max, r) => {
+        const match = String(r[bookkeepingIdField] ?? '').match(/^ID(\d+)$/i);
+        return match ? Math.max(max, Number(match[1])) : max;
+      }, 0);
+      allFields = { ...allFields, [bookkeepingIdField]: `ID${String(maxSeq + 1).padStart(5, '0')}` };
     }
 
     const maxIdx = Math.max(...Object.values(headerIndexCache));

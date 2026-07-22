@@ -4,6 +4,7 @@ import TeamsPanel from './TeamsPanel.jsx';
 import TeamSeasonsPanel from './TeamSeasonsPanel.jsx';
 import BroadcastersPanel from './BroadcastersPanel.jsx';
 import CompetitionsPanel from './CompetitionsPanel.jsx';
+import SeasonsPanel from './SeasonsPanel.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
 import { useSession } from '../lib/useSession.jsx';
 
@@ -242,6 +243,11 @@ export default function HamburgerMenu() {
                   <div className="border-t border-white/10 pt-6">
                     <CollapsibleSection title="Broadcasters">
                       <BroadcastersPanel session={session} />
+                    </CollapsibleSection>
+                  </div>
+                  <div className="border-t border-white/10 pt-6">
+                    <CollapsibleSection title="Seasons">
+                      <SeasonsPanel session={session} />
                     </CollapsibleSection>
                   </div>
                 </div>
