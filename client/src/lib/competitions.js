@@ -15,6 +15,7 @@ const client = createSheetTabClient({
 export const fetchCompetitions = client.fetchAll;
 export const updateCompetition = client.updateRow;
 export const addCompetition = client.appendRow;
+export const deleteCompetition = client.deleteRow;
 
 // Serie A itself is a row here too now (not a cup, never has fixtures of
 // its own of its own kind) - purely so its logo setting can live in the same

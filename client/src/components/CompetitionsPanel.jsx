@@ -53,9 +53,10 @@ function slugify(name) {
     .replace(/(^-|-$)/g, '');
 }
 
-function CompetitionRow({ competition, session, saveCompetition }) {
+function CompetitionRow({ competition, session, saveCompetition, removeCompetition }) {
   const [logoURL, setLogoURL] = useState(competition.logoURL ?? '');
   const [error, setError] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function commitLogoURL() {
     if (logoURL === (competition.logoURL ?? '')) return;
@@ -73,6 +74,20 @@ function CompetitionRow({ competition, session, saveCompetition }) {
       await callWithReauth(session, (token) => saveCompetition(competition.slug, { scope }, token));
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm(`Delete "${competition.name}"? This can't be undone from here - you'd need to re-add it by hand.`)) {
+      return;
+    }
+    setDeleting(true);
+    setError(null);
+    try {
+      await callWithReauth(session, (token) => removeCompetition(competition.slug, token));
+    } catch (err) {
+      setError(err.message);
+      setDeleting(false);
     }
   }
 
@@ -102,12 +117,21 @@ function CompetitionRow({ competition, session, saveCompetition }) {
         </select>
       </label>
       {error && <p className="text-xs text-red-300">{error}</p>}
+      {session.signedIn && (
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="w-fit rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+        >
+          {deleting ? 'Deleting…' : 'Delete competition'}
+        </button>
+      )}
     </div>
   );
 }
 
 export default function CompetitionsPanel({ session }) {
-  const { competitions, loading, error, saveCompetition, createCompetition } = useCupData();
+  const { competitions, loading, error, saveCompetition, createCompetition, removeCompetition } = useCupData();
   const serieA = competitions.find((c) => c.slug === SERIE_A_VALUE);
   const cupCompetitions = competitions.filter((c) => c.slug !== SERIE_A_VALUE);
   const [newName, setNewName] = useState('');
@@ -149,7 +173,13 @@ export default function CompetitionsPanel({ session }) {
         <div className="flex flex-col gap-1.5">
           <SerieARow competition={serieA} session={session} saveCompetition={saveCompetition} />
           {cupCompetitions.map((c) => (
-            <CompetitionRow key={c.slug} competition={c} session={session} saveCompetition={saveCompetition} />
+            <CompetitionRow
+              key={c.slug}
+              competition={c}
+              session={session}
+              saveCompetition={saveCompetition}
+              removeCompetition={removeCompetition}
+            />
           ))}
           {session.signedIn && (
             <div className="flex flex-col gap-2">

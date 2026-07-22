@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { fetchBroadcasters, updateBroadcaster, addBroadcaster } from './broadcasters.js';
-import { fetchCompetitions, updateCompetition, addCompetition, DEFAULT_COMPETITIONS } from './competitions.js';
+import { fetchBroadcasters, updateBroadcaster, addBroadcaster, deleteBroadcaster } from './broadcasters.js';
+import { fetchCompetitions, updateCompetition, addCompetition, deleteCompetition, DEFAULT_COMPETITIONS } from './competitions.js';
 
 const CupDataContext = createContext(null);
 
@@ -71,6 +71,14 @@ export function CupDataProvider({ children }) {
     return fields.slug;
   }, []);
 
+  const removeBroadcaster = useCallback(async (slug, accessToken) => {
+    if (!accessToken) throw new Error('UNAUTHENTICATED');
+    // Deleting actually shifts every row below it up by one - the response
+    // is the freshly refetched, post-delete list, same as removeClub.
+    const rows = await deleteBroadcaster(slug, accessToken);
+    setBroadcasters(rows);
+  }, []);
+
   const saveCompetition = useCallback(async (slug, fields, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
     const { missingFields } = await updateCompetition(slug, fields, accessToken);
@@ -88,6 +96,12 @@ export function CupDataProvider({ children }) {
     return fields.slug;
   }, []);
 
+  const removeCompetition = useCallback(async (slug, accessToken) => {
+    if (!accessToken) throw new Error('UNAUTHENTICATED');
+    const rows = await deleteCompetition(slug, accessToken);
+    setCompetitions(rows);
+  }, []);
+
   return (
     <CupDataContext.Provider
       value={{
@@ -97,8 +111,10 @@ export function CupDataProvider({ children }) {
         error,
         saveBroadcaster,
         createBroadcaster,
+        removeBroadcaster,
         saveCompetition,
         createCompetition,
+        removeCompetition,
       }}
     >
       {children}

@@ -89,6 +89,7 @@ export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSi
               </div>
               <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1.5 min-w-0">
                 <div className="flex items-center justify-end gap-1.5 min-w-0">
+                  {fixture.home.sponsored && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fd8c9]" />}
                   <span className="truncate text-xs font-semibold text-gray-700">{fixture.home.short ?? fixture.home.name}</span>
                   <Crest team={fixture.home} size={18} />
                 </div>
@@ -96,6 +97,7 @@ export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSi
                 <div className="flex items-center gap-1.5 min-w-0">
                   <Crest team={fixture.away} size={18} />
                   <span className="truncate text-xs font-semibold text-gray-700">{fixture.away.short ?? fixture.away.name}</span>
+                  {fixture.away.sponsored && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fd8c9]" />}
                 </div>
               </div>
               <SimulcastBadge fixture={fixture} simulcastInfo={simulcastInfo} />
