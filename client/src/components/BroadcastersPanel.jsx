@@ -13,9 +13,10 @@ function slugify(name) {
     .replace(/(^-|-$)/g, '');
 }
 
-function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain }) {
+function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain, removeBroadcaster }) {
   const [logoUrl, setLogoUrl] = useState(broadcaster.logoUrl ?? '');
   const [error, setError] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function commit() {
     if (logoUrl === (broadcaster.logoUrl ?? '')) return;
@@ -33,6 +34,20 @@ function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain }) {
       await onSetMain(broadcaster.slug);
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm(`Delete "${broadcaster.name}"? This can't be undone from here - you'd need to re-add it by hand.`)) {
+      return;
+    }
+    setDeleting(true);
+    setError(null);
+    try {
+      await callWithReauth(session, (token) => removeBroadcaster(broadcaster.slug, token));
+    } catch (err) {
+      setError(err.message);
+      setDeleting(false);
     }
   }
 
@@ -61,12 +76,21 @@ function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain }) {
         </button>
       )}
       {error && <p className="text-xs text-red-300">{error}</p>}
+      {session.signedIn && (
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="w-fit rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+        >
+          {deleting ? 'Deleting…' : 'Delete broadcaster'}
+        </button>
+      )}
     </div>
   );
 }
 
 export default function BroadcastersPanel({ session }) {
-  const { broadcasters, loading, error, saveBroadcaster, createBroadcaster } = useCupData();
+  const { broadcasters, loading, error, saveBroadcaster, createBroadcaster, removeBroadcaster } = useCupData();
   const [newName, setNewName] = useState('');
   const [newLogoUrl, setNewLogoUrl] = useState('');
   const [createError, setCreateError] = useState(null);
@@ -122,6 +146,7 @@ export default function BroadcastersPanel({ session }) {
               session={session}
               saveBroadcaster={saveBroadcaster}
               onSetMain={handleSetMain}
+              removeBroadcaster={removeBroadcaster}
             />
           ))}
           {session.signedIn && (

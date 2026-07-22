@@ -16,6 +16,7 @@ const client = createSheetTabClient({
 export const fetchBroadcasters = client.fetchAll;
 export const updateBroadcaster = client.updateRow;
 export const addBroadcaster = client.appendRow;
+export const deleteBroadcaster = client.deleteRow;
 
 // Resolves a fixture's `otherBroadcaster`/`broadcaster` cell (a slug for
 // anything written after broadcasters became slug-keyed, a name for

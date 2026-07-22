@@ -16,15 +16,16 @@ function formatDate(dateStr) {
 function GameRow({ fixture, audience, simulcastInfo }) {
   return (
     <div className="flex items-center gap-2 border-b border-gray-50 py-2 last:border-0">
-      <div className="flex w-16 shrink-0 flex-col text-[10px] leading-tight text-gray-400">
+      <div className="flex w-16 shrink-0 flex-col items-center text-center text-[10px] leading-tight text-gray-400">
         <span className="font-bold text-gray-500">MD{fixture.matchday}</span>
-        <span className="font-bold text-gray-600">{formatDate(fixture.date)}</span>
-        <span>
+        <span className="whitespace-nowrap">{formatDate(fixture.date)}</span>
+        <span className="whitespace-nowrap">
           {fixture.day} {fixture.kickoffTime}
         </span>
       </div>
       <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1 min-w-0">
         <div className="flex items-center justify-end gap-1.5 min-w-0">
+          {fixture.home.sponsored && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fd8c9]" />}
           <span className="truncate text-xs text-gray-700">{fixture.home.short ?? fixture.home.name}</span>
           <Crest team={fixture.home} size={16} />
         </div>
@@ -32,6 +33,7 @@ function GameRow({ fixture, audience, simulcastInfo }) {
         <div className="flex items-center gap-1.5 min-w-0">
           <Crest team={fixture.away} size={16} />
           <span className="truncate text-xs text-gray-700">{fixture.away.short ?? fixture.away.name}</span>
+          {fixture.away.sponsored && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fd8c9]" />}
         </div>
       </div>
       <SimulcastBadge fixture={fixture} simulcastInfo={simulcastInfo} />

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { fetchSeasons, updateSeason, addSeason } from './seasonsData.js';
+import { fetchSeasons, updateSeason, addSeason, deleteSeason } from './seasonsData.js';
 
 const SeasonsContext = createContext(null);
 
@@ -69,8 +69,16 @@ export function SeasonsProvider({ children }) {
     return fields.label;
   }, []);
 
+  const removeSeason = useCallback(async (label, accessToken) => {
+    if (!accessToken) throw new Error('UNAUTHENTICATED');
+    const rows = await deleteSeason(label, accessToken);
+    setSeasons(rows);
+  }, []);
+
   return (
-    <SeasonsContext.Provider value={{ seasons: orderedSeasons, currentSeason, loading, saveSeason, createSeason }}>
+    <SeasonsContext.Provider
+      value={{ seasons: orderedSeasons, currentSeason, loading, saveSeason, createSeason, removeSeason }}
+    >
       {children}
     </SeasonsContext.Provider>
   );

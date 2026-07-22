@@ -17,3 +17,4 @@ const client = createSheetTabClient({
 export const fetchSeasons = client.fetchAll;
 export const updateSeason = client.updateRow;
 export const addSeason = client.appendRow;
+export const deleteSeason = client.deleteRow;

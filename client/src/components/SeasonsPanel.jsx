@@ -13,10 +13,11 @@ function slugify(label) {
     .replace(/(^-|-$)/g, '');
 }
 
-function SeasonRow({ season, session, saveSeason, onSetCurrent }) {
+function SeasonRow({ season, session, saveSeason, onSetCurrent, removeSeason }) {
   const [tab, setTab] = useState(season.tab ?? '');
   const [slug, setSlug] = useState(season.slug ?? '');
   const [error, setError] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function commit(fields) {
     setError(null);
@@ -33,6 +34,22 @@ function SeasonRow({ season, session, saveSeason, onSetCurrent }) {
       await onSetCurrent(season.label);
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function handleDelete() {
+    if (
+      !window.confirm(`Delete season "${season.label}"? This can't be undone from here - you'd need to re-add it by hand.`)
+    ) {
+      return;
+    }
+    setDeleting(true);
+    setError(null);
+    try {
+      await callWithReauth(session, (token) => removeSeason(season.label, token));
+    } catch (err) {
+      setError(err.message);
+      setDeleting(false);
     }
   }
 
@@ -76,12 +93,21 @@ function SeasonRow({ season, session, saveSeason, onSetCurrent }) {
         </button>
       )}
       {error && <p className="text-xs text-red-300">{error}</p>}
+      {session.signedIn && (
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="w-fit rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+        >
+          {deleting ? 'Deleting…' : 'Delete season'}
+        </button>
+      )}
     </div>
   );
 }
 
 export default function SeasonsPanel({ session }) {
-  const { seasons, loading, saveSeason, createSeason } = useSeasons();
+  const { seasons, loading, saveSeason, createSeason, removeSeason } = useSeasons();
   const [newLabel, setNewLabel] = useState('');
   const [newTab, setNewTab] = useState('');
   const [createError, setCreateError] = useState(null);
@@ -137,7 +163,14 @@ export default function SeasonsPanel({ session }) {
       ) : (
         <div className="flex flex-col gap-1.5">
           {seasons.map((s) => (
-            <SeasonRow key={s.label} season={s} session={session} saveSeason={saveSeason} onSetCurrent={handleSetCurrent} />
+            <SeasonRow
+              key={s.label}
+              season={s}
+              session={session}
+              saveSeason={saveSeason}
+              onSetCurrent={handleSetCurrent}
+              removeSeason={removeSeason}
+            />
           ))}
           {session.signedIn && (
             <div className="flex flex-col gap-2">
