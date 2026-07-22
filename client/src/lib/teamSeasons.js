@@ -8,16 +8,18 @@ import { createSheetTabClient } from './sheetTab.js';
 // for both now, since a club's sponsorship/big-match/derby status was never
 // really a permanent attribute of the club, it's a per-season fact.
 //
-// This tab also has its own `id` column (a user-maintained ID00001-style
-// reference the app doesn't read or write) - the app's own row key is the
-// `slug` column, which holds the composite `season::team` string (e.g.
-// `26/27::cagliari`); `team` holds the club's own `teams`-tab slug.
-// `derbyRival` is a team slug too, not a name - no resolution step needed
-// since every club has a reliable slug.
+// This tab also has its own `id` column (an ID00001-style reference,
+// auto-filled on every new row for the user's own bookkeeping - see
+// bookkeepingIdField) - the app's own row key is the `slug` column, which
+// holds the composite `season::team` string (e.g. `26/27::cagliari`);
+// `team` holds the club's own `teams`-tab slug. `derbyRival` is a team slug
+// too, not a name - no resolution step needed since every club has a
+// reliable slug.
 const client = createSheetTabClient({
   sheetName: 'teamSeasons',
   idField: 'slug',
   autoIncrementId: false,
+  bookkeepingIdField: 'id',
   booleanFields: ['sponsored', 'bigClub', 'addedTimeLed', 'penaltyLed'],
   numericFields: ['matchdaySponsors', 'playerMascots', 'walkabouts', 'ledMinutes'],
 });

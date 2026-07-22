@@ -62,7 +62,7 @@ I already created and seeded the Google Sheet in your Drive:
 https://docs.google.com/spreadsheets/d/1h3ZN2H5_ISzLUCW_AtbP2nFSRoMf7htwL8PYYAtRq4o/edit
 (380 fixtures loaded). Its ID is already in `client/src/lib/config.js` — you
 don't need to create a sheet. Columns A-L (id, matchday, day, date, home,
-away, homeScore, awayScore, daznAudience, skyAudience, kickoffTime,
+away, homeScore, awayScore, mainAudience, otherAudience, kickoffTime,
 updatedAt) were part of the original seed - `day` is kept in sync
 automatically: editing a fixture's `date` from the app recomputes `day` from
 the new date on every save, so it can't go stale even though it started as a
@@ -76,7 +76,7 @@ open the sheet directly, add these labels to row 1 if you want them:
 | M | otherBroadcaster | Blank, or another broadcaster's `slug` from the `broadcasters` tab (see below) — this game is also shown there, alongside the main broadcaster |
 | N | addedTime1H | Added/injury time, first half (minutes) |
 | O | addedTime2H | Added/injury time, second half (minutes) |
-| P | daznSimulcastAudience | Audience for DAZN's multi-game simulcast slot, when applicable |
+| P | simulcastAudience | Audience for the main broadcaster's multi-game simulcast slot, when applicable |
 | Q | homeMatchdaySponsor | TRUE/FALSE — home club had a matchday sponsor activation at this match |
 | R | homePlayerMascot | TRUE/FALSE — home club had a player mascot at this match |
 | S | homeWalkabout | TRUE/FALSE — home club had a walkabout at this match |
@@ -100,11 +100,11 @@ DAZN/Sky Sport being the official Serie A broadcasters is a fact about
 *today*, not something to hardcode - this could change in a future season.
 The `broadcasters` tab (already used for cup fixtures - see below) is now
 also the source of truth for the main Serie A calendar: header row `slug`,
-`name`, `logoUrl`, `isMain`. You may also keep an `id` column (e.g.
-`ID00001`) if you like having a manual reference number per row for your own
-bookkeeping - the app never reads or writes it, so its format and presence
-are entirely up to you; the same applies to every other tab below that has
-one. Exactly one row should have `isMain` set to TRUE - that's the **main
+`name`, `logoUrl`, `isMain`. You may also keep an `id` column for your own
+bookkeeping reference - if you add one, the app auto-fills it with the next
+`ID00001`-style value on every new row (an existing value is never touched
+or read back); the same applies to every other tab below that has one
+(`teams`, `teamSeasons`, `competitions`, `seasons`). Exactly one row should have `isMain` set to TRUE - that's the **main
 broadcaster** (e.g. DAZN today), configured from the hamburger menu's
 **Settings → Broadcasters** panel by clicking **Set as main broadcaster** on
 the row you want. Its name/logo replaces every hardcoded "DAZN" label across
@@ -124,13 +124,13 @@ and change any existing `TRUE` cells to the specific broadcaster's `slug`
 (e.g. `sky`) instead; leave `FALSE`/blank cells blank. Do this in the live
 season's fixtures tab (whichever tab the `seasons` tab's `current` row
 points at, e.g. `fixtures_26_27` - see "Past seasons" below) and any archive
-tabs you've created. Columns I/J/P
-(`daznAudience`/`skyAudience`/`daznSimulcastAudience`) keep their internal
-names unchanged - no sheet edit needed for those - but their on-screen labels
-are now dynamic: `daznAudience` shows as "*(main broadcaster's name)* audience",
-`skyAudience` as the generic "Other broadcaster audience" (since which
-broadcaster that is can now vary fixture to fixture), and
-`daznSimulcastAudience` as "*(main broadcaster's name)* simulcast audience".
+tabs you've created. Columns I/J/P are named `mainAudience`/`otherAudience`/
+`simulcastAudience` (renamed from the earlier `daznAudience`/`skyAudience`/
+`daznSimulcastAudience`, back when DAZN/Sky were hardcoded) - their on-screen
+labels are dynamic: `mainAudience` shows as "*(main broadcaster's name)*
+audience", `otherAudience` as the generic "Other broadcaster audience" (since
+which broadcaster that is can now vary fixture to fixture), and
+`simulcastAudience` as "*(main broadcaster's name)* simulcast audience".
 
 The Q-V columns are only editable from the home page's **Sponsors** tab (per
 matchday card), and only show checkboxes for whichever side of a fixture is a
@@ -190,7 +190,7 @@ tab anymore; a club's `scope` decides which group it belongs to.
 
 Header row: `slug`, `name`, `long`, `short`, `primary`, `secondary`,
 `crestUrl`, `scope` (an `id` column is also fine to keep, same
-app-never-touches-it deal as `broadcasters`' above).
+auto-fill deal as `broadcasters`' above).
 
 - `slug` is the row's **key** - pick something short and URL-safe
   (`inter`, `real-madrid`) and never change it once fixtures reference it.
@@ -314,7 +314,7 @@ Add a `teamSeasons` tab (doesn't exist in the seeded sheet - add it
 yourself) with header row: `slug`, `team`, `season`, `sponsored`, `bigClub`,
 `derbyRival`, `matchdaySponsors`, `playerMascots`, `walkabouts`, `ledMinutes`,
 `addedTimeLed`, `penaltyLed` (an `id` column is also fine to keep, same
-app-never-touches-it deal as the other tabs above).
+auto-fill deal as the other tabs above).
 
 - `slug` here is this **row's own key** - always `season::teamSlug` (e.g.
   `26/27::roma`) - the app fills this in for you when you save from
@@ -423,7 +423,7 @@ list:
 
 Add a `seasons` tab (doesn't exist in the seeded sheet - add it yourself)
 with header row: `label`, `slug`, `tab`, `current` (an `id` column is also
-fine to keep, same app-never-touches-it deal as the other tabs above).
+fine to keep, same auto-fill deal as the other tabs above).
 
 ```
 26/27	26-27	fixtures_26_27	TRUE
@@ -443,8 +443,8 @@ fine to keep, same app-never-touches-it deal as the other tabs above).
   to today (e.g. `fixtures_26_27`); an archive season's row points at a
   read-only tab with **the exact same header row as the live one** - both
   the Serie A columns (id, matchday, day, date, home, away, homeScore,
-  awayScore, daznAudience, skyAudience, kickoffTime, updatedAt,
-  otherBroadcaster, addedTime1H, addedTime2H, daznSimulcastAudience,
+  awayScore, mainAudience, otherAudience, kickoffTime, updatedAt,
+  otherBroadcaster, addedTime1H, addedTime2H, simulcastAudience,
   homeMatchdaySponsor, homePlayerMascot, homeWalkabout, awayMatchdaySponsor,
   awayPlayerMascot, awayWalkabout, isBigMatch, isDerby, extraLedMinutes,
   penaltyTaken) and, on the same tab, that season's cup fixture rows (see
@@ -590,7 +590,7 @@ add it whenever you want logos, not before.
 **2. `broadcasters` tab** - a small reusable list so a cup fixture's
 broadcaster shows a logo badge instead of a retyped name. Header row:
 `slug`, `name`, `logoUrl`, `isMain` (an `id` column is also fine to keep,
-same app-never-touches-it deal as the other tabs above). Also managed from
+same auto-fill deal as the other tabs above). Also managed from
 Settings. This tab is shared with the main Serie A calendar (see
 "Broadcaster naming" above) - `isMain` marks the one row that's the
 main/official broadcaster there; it has no effect on cup fixtures, where
@@ -781,13 +781,13 @@ the cheaper LED packages that only run during stoppage time.
 
 **Simulcast handling**: when several games share an exact kickoff slot, the
 main broadcaster airs them as one program with a single shared
-`daznSimulcastAudience` figure (see the fixtures sheet columns above) instead
-of - or alongside - each game's own `daznAudience`. Counting both as-is would
+`simulcastAudience` figure (see the fixtures sheet columns above) instead
+of - or alongside - each game's own `mainAudience`. Counting both as-is would
 double-count the same viewers across every game in the slot, so by default
-the dashboard ignores `daznSimulcastAudience` entirely and uses only each
-game's own `daznAudience`. Toggling on **Include simulcast** (top right of the
+the dashboard ignores `simulcastAudience` entirely and uses only each
+game's own `mainAudience`. Toggling on **Include simulcast** (top right of the
 page) instead gives each game in a shared slot an even split of that slot's
-shared figure (`daznSimulcastAudience ÷ number of games in the slot`), added
+shared figure (`simulcastAudience ÷ number of games in the slot`), added
 on top - a smart-but-approximate adjustment, off by default.
 
 The page has a ranked bar chart (pick the metric from the dropdown) and a

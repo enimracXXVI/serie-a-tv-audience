@@ -63,8 +63,11 @@ export function CupDataProvider({ children }) {
 
   const createBroadcaster = useCallback(async (fields, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
-    await addBroadcaster(fields, accessToken);
-    setBroadcasters((prev) => [...prev, fields]);
+    // Uses the server's returned item (not the caller's `fields`) so an
+    // auto-filled bookkeeping `id` (see sheetTab.js's bookkeepingIdField)
+    // shows up immediately instead of only after the next reload.
+    const { item } = await addBroadcaster(fields, accessToken);
+    setBroadcasters((prev) => [...prev, item]);
     return fields.slug;
   }, []);
 
@@ -80,8 +83,8 @@ export function CupDataProvider({ children }) {
 
   const createCompetition = useCallback(async (fields, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
-    await addCompetition(fields, accessToken);
-    setCompetitions((prev) => [...prev, fields]);
+    const { item } = await addCompetition(fields, accessToken);
+    setCompetitions((prev) => [...prev, item]);
     return fields.slug;
   }, []);
 

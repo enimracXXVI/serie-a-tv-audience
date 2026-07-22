@@ -126,24 +126,24 @@ function AudienceFields({ fixture, onUpdate, mainBroadcasterName }) {
     <div className="flex flex-wrap items-end gap-2">
       <NumberField
         label={`${mainBroadcasterName} audience`}
-        value={fixture.daznAudience}
+        value={fixture.mainAudience}
         placeholder="M"
-        onCommit={(v) => onUpdate(fixture.id, { daznAudience: v })}
+        onCommit={(v) => onUpdate(fixture.id, { mainAudience: v })}
       />
       {fixture.otherBroadcaster && (
         <NumberField
           label="Other broadcaster audience"
-          value={fixture.skyAudience}
+          value={fixture.otherAudience}
           placeholder="M"
-          onCommit={(v) => onUpdate(fixture.id, { skyAudience: v })}
+          onCommit={(v) => onUpdate(fixture.id, { otherAudience: v })}
         />
       )}
       {fixture.isFirstInBlock && (
         <NumberField
           label={`${mainBroadcasterName} simulcast audience`}
-          value={fixture.daznSimulcastAudience}
+          value={fixture.simulcastAudience}
           placeholder="M · shared slot"
-          onCommit={(v) => onUpdate(fixture.id, { daznSimulcastAudience: v })}
+          onCommit={(v) => onUpdate(fixture.id, { simulcastAudience: v })}
         />
       )}
     </div>

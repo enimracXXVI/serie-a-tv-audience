@@ -10,7 +10,10 @@ const client = createSheetTabClient({
   sheetName: 'seasons',
   idField: 'label',
   autoIncrementId: false,
+  bookkeepingIdField: 'id',
   booleanFields: ['current'],
 });
 
 export const fetchSeasons = client.fetchAll;
+export const updateSeason = client.updateRow;
+export const addSeason = client.appendRow;

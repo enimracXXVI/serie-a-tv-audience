@@ -8,11 +8,11 @@ const NUMERIC_FIELDS = new Set([
   'matchday',
   'homeScore',
   'awayScore',
-  'daznAudience',
-  'skyAudience',
+  'mainAudience',
+  'otherAudience',
   'addedTime1H',
   'addedTime2H',
-  'daznSimulcastAudience',
+  'simulcastAudience',
   // Cup-only fields - blank on every Serie A row (see isSerieARow in
   // competitions.js for how a row is told apart).
   'audience',
@@ -44,13 +44,13 @@ const EDITABLE_FIELDS = [
   'day',
   'homeScore',
   'awayScore',
-  'daznAudience',
-  'skyAudience',
+  'mainAudience',
+  'otherAudience',
   'kickoffTime',
   'otherBroadcaster',
   'addedTime1H',
   'addedTime2H',
-  'daznSimulcastAudience',
+  'simulcastAudience',
   'homeMatchdaySponsor',
   'homePlayerMascot',
   'homeWalkabout',
@@ -138,7 +138,12 @@ function rowToFixture(row, headerIndex) {
 }
 
 export async function fetchFixtures(sheetName) {
-  const range = `${sheetName}!A1:Z500`;
+  // Unbounded column width (just a row range) - a fixed column-letter cap
+  // like A1:Z500 silently truncates the header read the moment a tab grows
+  // past column Z (26 columns), which this one has (34+ fields) - any field
+  // past that point would read back as "missing" even though it's really
+  // there, just further right than the fetch ever looked.
+  const range = `${sheetName}!1:500`;
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(
     range
   )}?key=${GOOGLE_API_KEY}&valueRenderOption=UNFORMATTED_VALUE&_=${Date.now()}`;

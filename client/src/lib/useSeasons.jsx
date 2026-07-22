@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { fetchSeasons } from './seasonsData.js';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { fetchSeasons, updateSeason, addSeason } from './seasonsData.js';
 
 const SeasonsContext = createContext(null);
 
@@ -44,8 +44,33 @@ export function SeasonsProvider({ children }) {
 
   const currentSeason = orderedSeasons[0];
 
+  // Editing/adding a season is rare (once a year, at most) - Settings'
+  // SeasonsPanel is the only consumer of these, same shape as every other
+  // Settings-backed provider (saveClub/createClub etc. in useClubs.jsx).
+  const saveSeason = useCallback(async (label, fields, accessToken) => {
+    if (!accessToken) throw new Error('UNAUTHENTICATED');
+    const { missingFields } = await updateSeason(label, fields, accessToken);
+    const missingHere = (missingFields ?? []).filter((f) => f in fields);
+    const applied = { ...fields };
+    for (const f of missingHere) delete applied[f];
+    setSeasons((prev) => prev.map((s) => (s.label === label ? { ...s, ...applied } : s)));
+    if (missingHere.length > 0) {
+      throw new Error(`Saved, but the seasons sheet has no column header for: ${missingHere.join(', ')}.`);
+    }
+  }, []);
+
+  const createSeason = useCallback(async (fields, accessToken) => {
+    if (!accessToken) throw new Error('UNAUTHENTICATED');
+    // Uses the server's returned item (not `fields`) so an auto-filled
+    // bookkeeping `id` (see sheetTab.js's bookkeepingIdField) shows up
+    // immediately instead of only after the next reload.
+    const { item } = await addSeason(fields, accessToken);
+    setSeasons((prev) => [...prev, item]);
+    return fields.label;
+  }, []);
+
   return (
-    <SeasonsContext.Provider value={{ seasons: orderedSeasons, currentSeason, loading }}>
+    <SeasonsContext.Provider value={{ seasons: orderedSeasons, currentSeason, loading, saveSeason, createSeason }}>
       {children}
     </SeasonsContext.Provider>
   );

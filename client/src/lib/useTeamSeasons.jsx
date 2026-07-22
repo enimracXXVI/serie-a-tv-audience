@@ -69,8 +69,11 @@ export function TeamSeasonsProvider({ children }) {
         penaltyLed: false,
         ...fields,
       };
-      await createTeamSeason(allFields, accessToken);
-      setRows((prev) => [...prev, allFields]);
+      // Uses the server's returned item (not allFields) so an auto-filled
+      // bookkeeping `id` (see sheetTab.js's bookkeepingIdField) shows up
+      // immediately instead of only after the next reload.
+      const { item } = await createTeamSeason(allFields, accessToken);
+      setRows((prev) => [...prev, item]);
     },
     [rows]
   );
