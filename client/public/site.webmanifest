@@ -1,0 +1,11 @@
+{
+  "name": "Serie A 2026/27 · TV Audience Tracker",
+  "short_name": "Serie A TV",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "theme_color": "#0f1e54",
+  "background_color": "#0f1e54",
+  "display": "standalone"
+}
