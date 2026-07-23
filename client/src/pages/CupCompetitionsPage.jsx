@@ -95,9 +95,7 @@ export default function CupCompetitionsPage() {
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-3">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 pr-36">
-          <h1 className="text-lg font-black text-white sm:text-xl">
-            Cups <span className="ml-1.5 text-xs font-semibold opacity-60">{season.label}</span>
-          </h1>
+          <h1 className="text-lg font-black text-white sm:text-xl">Cups</h1>
           <div className="flex flex-wrap items-center gap-3">
             <SeasonSelector season={season} onChange={setSeason} />
             {canEdit && (
@@ -119,6 +117,7 @@ export default function CupCompetitionsPage() {
           <AddCupFixtureForm
             clubs={clubs}
             competitions={competitions}
+            broadcasters={broadcasters}
             onCreate={handleCreate}
             onCreateOpponent={handleCreateOpponent}
           />

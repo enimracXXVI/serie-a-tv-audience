@@ -27,6 +27,7 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
   const [penaltyLed, setPenaltyLed] = useState(Boolean(row?.penaltyLed));
   const [ledStartMatchday, setLedStartMatchday] = useState(row?.ledStartMatchday ?? '');
   const [goalCarpet, setGoalCarpet] = useState(Boolean(row?.goalCarpet));
+  const [goalCarpetStartMatchday, setGoalCarpetStartMatchday] = useState(row?.goalCarpetStartMatchday ?? '');
   const [saveError, setSaveError] = useState(null);
   // ledMinutes here is the raw <input> string ('' when never set, '0' is a
   // real value) - hasLedDeal expects a number|null, so normalize before
@@ -201,7 +202,7 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
                 </div>
                 <label className="flex flex-col gap-1">
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">
-                    LED deal starts matchday
+                    LED starts matchday
                   </span>
                   <input
                     type="number"
@@ -223,6 +224,22 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
                     label="Goal carpet"
                   />
                 </div>
+                <label className="flex flex-col gap-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">
+                    Goal carpet starts matchday
+                  </span>
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="1"
+                    value={goalCarpetStartMatchday}
+                    onChange={(e) => setGoalCarpetStartMatchday(e.target.value)}
+                    onBlur={() =>
+                      commit({ goalCarpetStartMatchday: goalCarpetStartMatchday === '' ? null : Number(goalCarpetStartMatchday) })
+                    }
+                    className={`${inputClass} w-24`}
+                  />
+                </label>
               </div>
               {saveError && (
                 <p className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-xs text-red-300">
@@ -246,8 +263,9 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
               <span>LED minutes per home fixture: {ledMinutes || '-'}</span>
               <span>Added time exclusive: {addedTimeLed ? 'Yes' : 'No'}</span>
               <span>LED during penalties: {penaltyLed ? 'Yes' : 'No'}</span>
-              {ledStartMatchday && <span>LED deal starts matchday {ledStartMatchday}</span>}
+              {ledStartMatchday && <span>LED starts matchday {ledStartMatchday}</span>}
               <span>Goal carpet: {goalCarpet ? 'Yes' : 'No'}</span>
+              {goalCarpetStartMatchday && <span>Goal carpet starts matchday {goalCarpetStartMatchday}</span>}
             </div>
           )}
         </div>

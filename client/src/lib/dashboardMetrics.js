@@ -1,7 +1,7 @@
 import { isPlayed } from './standings.js';
 import { computeMatchTags } from './matchTags.js';
 import { SPONSOR_TYPES } from './sponsorCounts.js';
-import { hasLedDeal, hasLedMinutesConcept, ledMinutesApplyToFixture } from './teams.js';
+import { hasLedDeal, hasLedMinutesConcept, ledMinutesApplyToFixture, goalCarpetAppliesToFixture } from './teams.js';
 
 function blockKey(fixture) {
   return `${fixture.date ?? ''}|${fixture.kickoffTime ?? ''}`;
@@ -298,11 +298,16 @@ export function computeLedExposure(team, fixtures, simulcastInfo, includeSimulca
   // every game would misrepresent a completely different sponsorship
   // element as an inactive LED deal.
   if (!hasLedMinutesConcept(team)) {
-    const audiences = homeGames.map((fixture) => effectiveAudience(fixture, simulcastInfo, includeSimulcast, includeOther));
+    // The carpet has its own independent start-matchday (goalCarpetStartMatchday),
+    // completely separate from ledStartMatchday - see goalCarpetAppliesToFixture.
+    const eligibleGoalCarpetGames = homeGames.filter((fixture) => goalCarpetAppliesToFixture(team, fixture));
+    const audiences = eligibleGoalCarpetGames.map((fixture) =>
+      effectiveAudience(fixture, simulcastInfo, includeSimulcast, includeOther)
+    );
     return {
       goalCarpetOnly: true,
-      games: homeGames.map((fixture, i) => ({ fixture, audience: audiences[i] })),
-      count: homeGames.length,
+      games: eligibleGoalCarpetGames.map((fixture, i) => ({ fixture, audience: audiences[i] })),
+      count: eligibleGoalCarpetGames.length,
       totalAudience: sum(audiences),
       avgAudience: avg(audiences),
     };
