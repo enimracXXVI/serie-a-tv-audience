@@ -1,6 +1,7 @@
 import { isPlayed } from './standings.js';
 import { computeMatchTags } from './matchTags.js';
 import { SPONSOR_TYPES } from './sponsorCounts.js';
+import { hasLedDeal } from './teams.js';
 
 function blockKey(fixture) {
   return `${fixture.date ?? ''}|${fixture.kickoffTime ?? ''}`;
@@ -288,7 +289,7 @@ export function computeActivationAudience(team, fixtures, simulcastInfo, include
 // this club's own home games only, same as everywhere else LED is
 // tracked - the boards only exist at their own stadium.
 export function computeLedExposure(team, fixtures, simulcastInfo, includeSimulcast, includeOther = true) {
-  if (!team?.ledMinutes) return null;
+  if (!hasLedDeal(team)) return null;
   const homeGames = fixtures.filter((f) => f.home.slug === team.slug && isPlayed(f));
   const games = homeGames.map((fixture) => {
     const base = Number(team.ledMinutes) || 0;

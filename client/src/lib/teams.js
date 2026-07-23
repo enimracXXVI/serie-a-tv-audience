@@ -143,6 +143,15 @@ export function overrideTeamAttributes(roster, seasonLabel, attributeRows) {
   );
 }
 
+// "Has an LED deal" can't be `Boolean(team.ledMinutes || ...)` - 0 is a
+// legitimate contracted-minutes value (see the comment above), and
+// `0 || false || false` is falsy, so a team with 0 base minutes but
+// addedTimeLed/penaltyLed checked would wrongly read as no deal at all.
+// null/undefined (never configured) is the only "no deal" state.
+export function hasLedDeal(team) {
+  return (team?.ledMinutes !== null && team?.ledMinutes !== undefined) || Boolean(team?.addedTimeLed) || Boolean(team?.penaltyLed);
+}
+
 export function applySeasonTeamAttributes(fixtures, seasonLabel, attributeRows) {
   const roster = teamsInFixtures(fixtures);
   const overridden = overrideTeamAttributes(roster, seasonLabel, attributeRows);

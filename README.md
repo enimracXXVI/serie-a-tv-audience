@@ -372,7 +372,10 @@ columns on the fixtures tab (see "Y-Z" above):
 
 - **`ledMinutes`** (per season/club) - core LED minutes contracted **per home
   fixture** that season - a rate, not a season-long total. A number, not a
-  boolean, since it's a minutes count rather than a yes/no.
+  boolean, since it's a minutes count rather than a yes/no. `0` is a valid
+  rate (e.g. a club whose only LED terms are added-time-exclusive or
+  penalty-exposure, with no separate per-fixture minutes) - "no LED deal at
+  all" is left **blank**, not `0`.
 - **`addedTimeLed`** (per season/club) - your brand is the only one allowed
   on LED during all added/stoppage time at that club's home games that
   season.

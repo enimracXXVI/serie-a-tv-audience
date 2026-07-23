@@ -6,6 +6,8 @@ import { matchTagStyle } from '../lib/matchTags.js';
 import { SPONSOR_TYPES } from '../lib/sponsorCounts.js';
 import { useCupData } from '../lib/useCupData.jsx';
 import { resolveBroadcaster } from '../lib/broadcasters.js';
+import { hasLedDeal } from '../lib/teams.js';
+import ToggleSwitch from './ToggleSwitch.jsx';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
@@ -19,10 +21,10 @@ function formatDateShort(dateStr) {
 function ScoreDisplay({ homeScore, awayScore }) {
   const played = homeScore !== null && homeScore !== undefined && awayScore !== null && awayScore !== undefined;
   return (
-    <div className="flex items-center gap-1 text-sm font-bold text-[#0f1e54]">
-      <span className="w-6 text-center">{played ? homeScore : '-'}</span>
+    <div className="flex items-center gap-0.5 text-sm font-bold text-[#0f1e54] sm:gap-1">
+      <span className="w-4 text-center sm:w-6">{played ? homeScore : '-'}</span>
       <span className="text-gray-300 text-xs">-</span>
-      <span className="w-6 text-center">{played ? awayScore : '-'}</span>
+      <span className="w-4 text-center sm:w-6">{played ? awayScore : '-'}</span>
     </div>
   );
 }
@@ -156,8 +158,7 @@ function AudienceFields({ fixture, onUpdate, mainBroadcasterName }) {
 // settings from teamSeasons, never `away`'s.
 function LedFields({ fixture, onUpdate }) {
   const { home } = fixture;
-  const hasLedDeal = Boolean(home.ledMinutes || home.addedTimeLed || home.penaltyLed);
-  if (!hasLedDeal) {
+  if (!hasLedDeal(home)) {
     return <p className="text-xs text-gray-400">No LED deal for {home.name} this season.</p>;
   }
   return (
@@ -169,15 +170,14 @@ function LedFields({ fixture, onUpdate }) {
         onCommit={(v) => onUpdate(fixture.id, { extraLedMinutes: v })}
       />
       {home.penaltyLed && (
-        <label className="flex items-center gap-2 pb-1.5">
-          <input
-            type="checkbox"
+        <div className="pb-1.5">
+          <ToggleSwitch
             checked={Boolean(fixture.penaltyTaken)}
-            onChange={(e) => onUpdate(fixture.id, { penaltyTaken: e.target.checked })}
-            className="h-4 w-4 accent-[#1fd8c9]"
+            onChange={(v) => onUpdate(fixture.id, { penaltyTaken: v })}
+            label="Penalty taken"
+            labelClassName="text-gray-600"
           />
-          <span className="text-xs font-semibold text-gray-600">Penalty taken</span>
-        </label>
+        </div>
       )}
     </div>
   );
@@ -205,20 +205,15 @@ function SponsorshipFields({ fixture, onUpdate, sponsorCounts }) {
               const current = sponsorCounts?.[team.slug]?.[capField] ?? 0;
               const capReached = !checked && cap !== null && cap !== undefined && cap !== '' && current >= Number(cap);
               return (
-                <label
+                <ToggleSwitch
                   key={fixtureKey}
-                  className={`flex items-center gap-1.5 ${capReached ? 'opacity-40' : ''}`}
+                  checked={checked}
+                  disabled={capReached}
+                  onChange={(v) => onUpdate(fixture.id, { [fieldName]: v })}
+                  label={label}
+                  labelClassName="text-gray-600"
                   title={capReached ? `${label} cap reached (${current}/${cap}) - raise it in Settings to allow more.` : undefined}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    disabled={capReached}
-                    onChange={(e) => onUpdate(fixture.id, { [fieldName]: e.target.checked })}
-                    className="h-4 w-4 accent-[#1fd8c9] disabled:cursor-not-allowed"
-                  />
-                  <span className="text-xs font-semibold text-gray-600">{label}</span>
-                </label>
+                />
               );
             })}
           </div>
@@ -269,11 +264,17 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
         </div>
 
         <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1 sm:gap-2 min-w-0">
-          <div className="flex items-center justify-end gap-1.5 min-w-0 sm:gap-2">
+          <div className="flex items-center justify-end gap-1 min-w-0 sm:gap-2">
+            {/* Hidden below sm - these fixed-size badges were eating the
+                narrow mobile column's whole width, squeezing the team name/
+                code itself down to an ellipsis or nothing (see FixtureRow
+                mobile layout notes). The name always wins the space fight on
+                mobile; badges come back once there's room. */}
             <SponsorBadges
               matchdaySponsor={fixture.homeMatchdaySponsor}
               playerMascot={fixture.homePlayerMascot}
               walkabout={fixture.homeWalkabout}
+              className="hidden sm:flex"
             />
             {home.sponsored && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fd8c9]" />}
             <span
@@ -285,11 +286,11 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
             <Crest team={home} size={20} />
           </div>
 
-          <div className="rounded-md px-1 py-1">
+          <div className="rounded-md px-0.5 py-1 sm:px-1">
             <ScoreDisplay homeScore={fixture.homeScore} awayScore={fixture.awayScore} />
           </div>
 
-          <div className="flex items-center gap-1.5 min-w-0 sm:gap-2">
+          <div className="flex items-center gap-1 min-w-0 sm:gap-2">
             <Crest team={away} size={20} />
             <span className={`truncate text-xs sm:text-sm ${awayHighlighted || away.sponsored ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}>
               <span className="sm:hidden">{away.short ?? away.name}</span>
@@ -300,6 +301,7 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
               matchdaySponsor={fixture.awayMatchdaySponsor}
               playerMascot={fixture.awayPlayerMascot}
               walkabout={fixture.awayWalkabout}
+              className="hidden sm:flex"
             />
           </div>
         </div>

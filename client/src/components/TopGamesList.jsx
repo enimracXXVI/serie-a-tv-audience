@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
 import SimulcastBadge from './SimulcastBadge.jsx';
+import ToggleSwitch from './ToggleSwitch.jsx';
 import { computeTopGames } from '../lib/dashboardMetrics.js';
 import { formatNumber } from '../lib/formatNumber.js';
 
@@ -48,15 +49,7 @@ export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSi
               </option>
             ))}
           </select>
-          <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
-            <input
-              type="checkbox"
-              checked={homeOnly}
-              onChange={(e) => setHomeOnly(e.target.checked)}
-              className="h-3.5 w-3.5 accent-[#1fd8c9]"
-            />
-            Home only
-          </label>
+          <ToggleSwitch checked={homeOnly} onChange={setHomeOnly} label="Home only" labelClassName="text-gray-500" />
           <div className="flex gap-1">
             {LIMITS.map((n) => (
               <button

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import Crest from './Crest.jsx';
+import ToggleSwitch from './ToggleSwitch.jsx';
 import { resolveCupFixtureOutcome } from '../lib/cupFixtures.js';
 import { resolveBroadcaster } from '../lib/broadcasters.js';
+import { hasLedDeal } from '../lib/teams.js';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
@@ -78,10 +80,10 @@ function ScoreDisplay({ homeScore, awayScore, note }) {
   const played = homeScore !== null && homeScore !== undefined && awayScore !== null && awayScore !== undefined;
   return (
     <div className="flex flex-col items-center">
-      <div className="flex items-center gap-1 text-sm font-bold text-[#0f1e54]">
-        <span className="w-6 text-center">{played ? homeScore : '-'}</span>
+      <div className="flex items-center gap-0.5 text-sm font-bold text-[#0f1e54] sm:gap-1">
+        <span className="w-4 text-center sm:w-6">{played ? homeScore : '-'}</span>
         <span className="text-gray-300 text-xs">-</span>
-        <span className="w-6 text-center">{played ? awayScore : '-'}</span>
+        <span className="w-4 text-center sm:w-6">{played ? awayScore : '-'}</span>
       </div>
       {note && <span className="text-[9px] font-semibold uppercase tracking-wide text-gray-400">{note}</span>}
     </div>
@@ -125,15 +127,14 @@ function KickoffFields({ fixture, onUpdate, broadcasters }) {
           ))}
         </select>
       </Field>
-      <label className="flex items-center gap-2 pb-1.5">
-        <input
-          type="checkbox"
+      <div className="pb-1.5">
+        <ToggleSwitch
           checked={Boolean(fixture.neutralVenue)}
-          onChange={(e) => onUpdate(fixture.id, { neutralVenue: e.target.checked })}
-          className="h-4 w-4 accent-[#1fd8c9]"
+          onChange={(v) => onUpdate(fixture.id, { neutralVenue: v })}
+          label="Neutral venue"
+          labelClassName="text-gray-600"
         />
-        <span className="text-xs font-semibold text-gray-600">Neutral venue</span>
-      </label>
+      </div>
     </div>
   );
 }
@@ -209,8 +210,7 @@ function cupFixtureHasLed(fixture) {
 
 function LedFields({ fixture, onUpdate }) {
   const { home } = fixture;
-  const hasLedDeal = Boolean(home.ledMinutes || home.addedTimeLed || home.penaltyLed);
-  if (!hasLedDeal) {
+  if (!hasLedDeal(home)) {
     return <p className="text-xs text-gray-400">No LED deal for {home.name} this season.</p>;
   }
   return (
@@ -222,15 +222,14 @@ function LedFields({ fixture, onUpdate }) {
         onCommit={(v) => onUpdate(fixture.id, { extraLedMinutes: v })}
       />
       {home.penaltyLed && (
-        <label className="flex items-center gap-2 pb-1.5">
-          <input
-            type="checkbox"
+        <div className="pb-1.5">
+          <ToggleSwitch
             checked={Boolean(fixture.penaltyTaken)}
-            onChange={(e) => onUpdate(fixture.id, { penaltyTaken: e.target.checked })}
-            className="h-4 w-4 accent-[#1fd8c9]"
+            onChange={(v) => onUpdate(fixture.id, { penaltyTaken: v })}
+            label="Penalty taken"
+            labelClassName="text-gray-600"
           />
-          <span className="text-xs font-semibold text-gray-600">Penalty taken</span>
-        </label>
+        </div>
       )}
     </div>
   );
@@ -269,7 +268,7 @@ export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, ed
           </div>
 
           <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-1 sm:gap-2 min-w-0">
-            <div className="flex items-center justify-end gap-1.5 min-w-0 sm:gap-2">
+            <div className="flex items-center justify-end gap-1 min-w-0 sm:gap-2">
               {winnerSlug === fixture.home.slug && <TrophyIcon />}
               {fixture.home.sponsored && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fd8c9]" />}
               <span
@@ -281,11 +280,11 @@ export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, ed
               <Crest team={fixture.home} size={20} />
             </div>
 
-            <div className="rounded-md px-1 py-1">
+            <div className="rounded-md px-0.5 py-1 sm:px-1">
               <ScoreDisplay homeScore={outcome.homeScore} awayScore={outcome.awayScore} note={scoreNote} />
             </div>
 
-            <div className="flex items-center gap-1.5 min-w-0 sm:gap-2">
+            <div className="flex items-center gap-1 min-w-0 sm:gap-2">
               <Crest team={fixture.away} size={20} />
               <span
                 className={`truncate text-xs sm:text-sm ${fixture.away.sponsored ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}
