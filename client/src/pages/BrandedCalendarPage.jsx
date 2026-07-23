@@ -100,7 +100,7 @@ export default function BrandedCalendarPage() {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-white/10 px-6 py-3" style={{ background: gradient }}>
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 pr-16">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 pr-36">
           <div className="flex items-center gap-3">
             {selectedTeams.length === 1 && <Crest team={selectedTeams[0]} size={26} />}
             <h1 className="text-lg font-black sm:text-xl" style={{ color: headerText }}>
