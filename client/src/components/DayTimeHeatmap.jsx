@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { formatNumber, formatAbbreviated } from '../lib/formatNumber.js';
 import GameListModal from './GameListModal.jsx';
+import Card from './Card.jsx';
 
 const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -19,10 +20,9 @@ export default function DayTimeHeatmap({ rows, simulcastInfo }) {
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-        <h3 className="mb-2 text-sm font-bold text-[#0f1e54]">Day + kickoff time heatmap</h3>
+      <Card title="Day + kickoff time heatmap">
         <p className="text-xs text-gray-400">No played games with this data yet.</p>
-      </div>
+      </Card>
     );
   }
 
@@ -40,8 +40,7 @@ export default function DayTimeHeatmap({ rows, simulcastInfo }) {
   const max = Math.max(...rows.map((r) => r.avg), 1);
 
   return (
-    <div className="w-full overflow-x-auto rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-      <h3 className="mb-3 text-sm font-bold text-[#0f1e54]">Day + kickoff time heatmap</h3>
+    <Card title="Day + kickoff time heatmap" bodyClassName="w-full overflow-x-auto p-4">
       <table className="border-collapse text-xs">
         <thead>
           <tr>
@@ -97,6 +96,6 @@ export default function DayTimeHeatmap({ rows, simulcastInfo }) {
           onClose={() => setSelected(null)}
         />
       )}
-    </div>
+    </Card>
   );
 }

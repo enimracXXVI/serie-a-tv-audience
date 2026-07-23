@@ -21,16 +21,25 @@ export default function ColorField({ label, value, onCommit }) {
     setDraft(value ?? '');
   }, [value]);
 
-  const swatchColor = isValidHex(draft) ? draft : isValidHex(value) ? value : 'transparent';
+  const swatchColor = isValidHex(draft) ? draft : isValidHex(value) ? value : '#000000';
 
   return (
     <label className="flex flex-col gap-1">
       <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">{label}</span>
       <div className="flex items-center gap-2">
-        <span
-          aria-hidden="true"
-          className="h-7 w-7 shrink-0 rounded border border-white/20"
-          style={{ background: swatchColor }}
+        {/* A real <input type="color"> - not just a decorative preview -
+            gives a modern, point-and-click OS colour picker on click, while
+            the text field alongside it stays the paste-a-hex-code path.
+            Both write the same value, whichever one the user prefers. */}
+        <input
+          type="color"
+          aria-label={`${label} picker`}
+          value={swatchColor}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            onCommit(e.target.value);
+          }}
+          className="h-7 w-7 shrink-0 cursor-pointer rounded border border-white/20 bg-transparent p-0"
         />
         <input
           type="text"

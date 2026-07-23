@@ -3,6 +3,7 @@ import Crest from './Crest.jsx';
 import SimulcastBadge from './SimulcastBadge.jsx';
 import { formatNumber } from '../lib/formatNumber.js';
 import GameListModal from './GameListModal.jsx';
+import Card from './Card.jsx';
 
 // Which visiting club actually brings the crowd - an average alone hides
 // this, but it's exactly what an LED package buyer needs: a Torino-Juventus
@@ -15,35 +16,34 @@ export default function OpponentAudienceChart({ team, data, simulcastInfo }) {
 
   if (!team) {
     return (
-      <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-        <h3 className="mb-2 text-sm font-bold text-[#0f1e54]">Home audience by opponent</h3>
+      <Card title="Home audience by opponent">
         <p className="text-xs text-gray-400">
           Click a club above to see which visiting opponents draw the biggest audience at their stadium.
         </p>
-      </div>
+      </Card>
     );
   }
 
   const { rows, range } = data;
   if (rows.length === 0) {
     return (
-      <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-        <h3 className="mb-2 text-sm font-bold text-[#0f1e54]">{team.name} - home audience by opponent</h3>
+      <Card title={`${team.name} - home audience by opponent`}>
         <p className="text-xs text-gray-400">No played home games yet.</p>
-      </div>
+      </Card>
     );
   }
 
   const max = Math.max(...rows.map((r) => r.avg), 1);
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-1">
-        <h3 className="text-sm font-bold text-[#0f1e54]">{team.name} - home audience by opponent</h3>
-        <span className="text-[10px] text-gray-400">
+    <Card
+      title={`${team.name} - home audience by opponent`}
+      controls={
+        <span className="text-[10px] text-white/80">
           Range: {formatNumber(range.min)} - {formatNumber(range.max)} across {range.count} home games
         </span>
-      </div>
+      }
+    >
       <div className="flex flex-col gap-1.5">
         {rows.map((r) => (
           <button
@@ -74,6 +74,6 @@ export default function OpponentAudienceChart({ team, data, simulcastInfo }) {
           onClose={() => setSelected(null)}
         />
       )}
-    </div>
+    </Card>
   );
 }

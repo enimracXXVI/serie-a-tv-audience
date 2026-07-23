@@ -1,20 +1,19 @@
 import { formatNumber } from '../lib/formatNumber.js';
+import Card from './Card.jsx';
 
 export default function AudienceByBucketChart({ title, buckets, accent = '#1fd8c9' }) {
   if (buckets.length === 0) {
     return (
-      <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-        <h3 className="mb-2 text-sm font-bold text-[#0f1e54]">{title}</h3>
+      <Card title={title}>
         <p className="text-xs text-gray-400">No played games with this data yet.</p>
-      </div>
+      </Card>
     );
   }
 
   const max = Math.max(...buckets.map((b) => b.avg), 1);
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-      <h3 className="mb-3 text-sm font-bold text-[#0f1e54]">{title}</h3>
+    <Card title={title}>
       <div className="flex flex-col gap-1.5">
         {buckets.map((b) => (
           <div key={b.key} className="flex items-center gap-2">
@@ -27,6 +26,6 @@ export default function AudienceByBucketChart({ title, buckets, accent = '#1fd8c
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }

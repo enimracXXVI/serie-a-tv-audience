@@ -2,6 +2,8 @@ import Crest from './Crest.jsx';
 import CupFixtureRow from './CupFixtureRow.jsx';
 import { computeTieAggregate } from '../lib/cupFixtures.js';
 
+const ACCENT = '#b91c1c';
+
 // The winner's score always reads first ("Bologna win 5-1", not "1-5") -
 // aggregate.aScore/bScore are fixed to leg 1's home/away club regardless of
 // who actually won, so the higher score has to be picked out and put first
@@ -36,18 +38,19 @@ export default function CupTieGroup({ legs, onUpdate, onDelete, canEdit, editMod
   const { before, winner, after } = aggregate ? aggregateParts(aggregate) : {};
 
   return (
-    <div className="flex flex-col divide-y divide-gray-100">
+    <div className="flex flex-col">
       {sorted.map((f, i) => (
-        <CupFixtureRow
-          key={f.id}
-          fixture={f}
-          onUpdate={onUpdate}
-          onDelete={onDelete}
-          canEdit={canEdit}
-          editMode={editMode}
-          broadcasters={broadcasters}
-          legLabel={i === 0 ? '1st leg' : '2nd leg'}
-        />
+        <div key={f.id} style={i > 0 ? { borderTop: `1px solid ${ACCENT}33` } : undefined}>
+          <CupFixtureRow
+            fixture={f}
+            onUpdate={onUpdate}
+            onDelete={onDelete}
+            canEdit={canEdit}
+            editMode={editMode}
+            broadcasters={broadcasters}
+            legLabel={i === 0 ? '1st leg' : '2nd leg'}
+          />
+        </div>
       ))}
       {aggregate && (
         <div className="flex items-center justify-center gap-1 bg-red-50 px-3 py-1.5 text-center text-xs font-bold text-[#0f1e54]">

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
+import Card from './Card.jsx';
 import { formatNumber } from '../lib/formatNumber.js';
 
 const COLUMNS = [
@@ -63,8 +64,11 @@ export default function TeamMetricsTable({ metrics, focusedSlug, onFocus }) {
   }, [metrics, sortChain]);
 
   return (
-    <div className="overflow-x-auto rounded-2xl bg-white shadow-lg shadow-black/20">
-      <div className="px-3 pt-2 text-[10px] text-gray-400">Shift+click a column to sort by multiple columns</div>
+    <Card
+      title="Club table"
+      bodyClassName="overflow-x-auto"
+      controls={<span className="text-[10px] text-white/80">Shift+click a column to sort by multiple columns</span>}
+    >
       <table className="w-full min-w-[720px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wide text-gray-400">
@@ -122,6 +126,6 @@ export default function TeamMetricsTable({ metrics, focusedSlug, onFocus }) {
           ))}
         </tbody>
       </table>
-    </div>
+    </Card>
   );
 }

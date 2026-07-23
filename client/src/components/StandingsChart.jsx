@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Crest, { useCrestSrc } from './Crest.jsx';
+import Card from './Card.jsx';
 import { computeStandings, computeStandingsHistory, computeRankHistory, maxPlayedMatchday } from '../lib/standings.js';
 
 // Crest artwork isn't always square (the bundled placeholders are a taller
@@ -260,11 +261,7 @@ function StandingSection({ title, metric, fixtures, teams, teamCount, maxMatchda
   const formatGridLabel = metric === 'points' ? (p) => p : (r) => `${r}${r === 1 ? 'st' : ''}`;
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-sm font-bold text-[#0f1e54]">{title}</h3>
-        <span className="text-xs font-semibold text-gray-400">Matchday {cutoff}</span>
-      </div>
+    <Card title={title} controls={<span className="text-xs font-semibold text-white/80">Matchday {cutoff}</span>}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         <div className="flex flex-1 flex-col gap-3">
           <LineChart
@@ -295,7 +292,7 @@ function StandingSection({ title, metric, fixtures, teams, teamCount, maxMatchda
         </div>
         <RankedList ranked={ranked} cutoff={cutoff} valueKey={metric} hoveredSlug={hoveredSlug} setHoveredSlug={setHoveredSlug} />
       </div>
-    </div>
+    </Card>
   );
 }
 

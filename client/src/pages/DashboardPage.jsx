@@ -19,6 +19,8 @@ import {
 } from '../lib/dashboardMetrics.js';
 import { isPlayed } from '../lib/standings.js';
 import { useSeasonComparison } from '../lib/useSeasonComparison.js';
+import { useCupFixtures } from '../lib/useCupFixtures.js';
+import { isCoppaItalia } from '../lib/competitions.js';
 import SeasonSelector from '../components/SeasonSelector.jsx';
 import AudienceBarChart from '../components/AudienceBarChart.jsx';
 import TeamMetricsTable from '../components/TeamMetricsTable.jsx';
@@ -33,6 +35,8 @@ import LedExposureCard from '../components/LedExposureCard.jsx';
 import SeasonComparisonCard from '../components/SeasonComparisonCard.jsx';
 import ToggleSwitch from '../components/ToggleSwitch.jsx';
 import ScreenshotableCard from '../components/ScreenshotableCard.jsx';
+import Dropdown from '../components/Dropdown.jsx';
+import Card from '../components/Card.jsx';
 import { formatNumber } from '../lib/formatNumber.js';
 import { useCupData } from '../lib/useCupData.jsx';
 
@@ -54,8 +58,7 @@ function TagPremiumCard({ premium }) {
   ];
   const max = Math.max(...rows.map((r) => r.avg), 1);
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-      <h3 className="mb-3 text-sm font-bold text-[#0f1e54]">Big match / derby audience premium</h3>
+    <Card title="Big match / derby audience premium">
       <div className="flex flex-col gap-1.5">
         {rows.map((r) => (
           <div key={r.key} className="flex items-center gap-2">
@@ -74,16 +77,13 @@ function TagPremiumCard({ premium }) {
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
 function RemainingScheduleCard({ remaining, team }) {
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-      <h3 className="mb-3 text-sm font-bold text-[#0f1e54]">
-        {team ? `${team.name} - remaining home fixtures` : 'Remaining fixtures - league-wide'}
-      </h3>
+    <Card title={team ? `${team.name} - remaining home fixtures` : 'Remaining fixtures - league-wide'}>
       {remaining.total === 0 ? (
         <p className="text-xs text-gray-400">Nothing left to schedule.</p>
       ) : (
@@ -102,7 +102,7 @@ function RemainingScheduleCard({ remaining, team }) {
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -147,34 +147,30 @@ function QuickNav() {
 function ActivationAudienceCard({ team, activations }) {
   if (!team) {
     return (
-      <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-        <h3 className="mb-2 text-sm font-bold text-[#0f1e54]">Sponsor activation audience</h3>
+      <Card title="Sponsor activation audience">
         <p className="text-xs text-gray-400">Click a sponsored club above to see the audience its activations reached.</p>
-      </div>
+      </Card>
     );
   }
   if (!team.sponsored) {
     return (
-      <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-        <h3 className="mb-2 text-sm font-bold text-[#0f1e54]">Sponsor activation audience</h3>
+      <Card title="Sponsor activation audience">
         <p className="text-xs text-gray-400">{team.name} isn&apos;t marked as sponsored in Settings.</p>
-      </div>
+      </Card>
     );
   }
   const totalActivations = activations.reduce((a, b) => a + b.count, 0);
   if (totalActivations === 0) {
     return (
-      <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-        <h3 className="mb-2 text-sm font-bold text-[#0f1e54]">{team.name} - sponsor activation audience</h3>
+      <Card title={`${team.name} - sponsor activation audience`}>
         <p className="text-xs text-gray-400">No activations checked yet on the home page's Sponsors tab.</p>
-      </div>
+      </Card>
     );
   }
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-      <h3 className="mb-3 text-sm font-bold text-[#0f1e54]">{team.name} - sponsor activation audience</h3>
+    <Card title={`${team.name} - sponsor activation audience`}>
       <ActivationDonut activations={activations} />
-    </div>
+    </Card>
   );
 }
 
@@ -189,6 +185,19 @@ export default function DashboardPage() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [season, setSeason] = useSeasonParam();
   const { fixtures, loading: fixturesLoading, error: fixturesError } = useSeasonFixtures(season, teams);
+  // LED perimeter-board tracking extends to Coppa Italia home games up to
+  // and including the semifinals (the final is excluded via its own
+  // neutralVenue flag - there's no "home club's own stadium" for a final) -
+  // see cupFixtureHasLed in CupFixtureRow.jsx for the same rule applied to
+  // the per-fixture editor. The exposure card needs those games merged in
+  // here too, or a Coppa-Italia-only chunk of a club's LED deal would never
+  // show up on the Dashboard at all.
+  const { fixtures: cupFixtures } = useCupFixtures(season);
+  const coppaItaliaLedFixtures = useMemo(
+    () => cupFixtures.filter((f) => isCoppaItalia(f.competition) && !f.neutralVenue),
+    [cupFixtures]
+  );
+  const ledFixtures = useMemo(() => [...fixtures, ...coppaItaliaLedFixtures], [fixtures, coppaItaliaLedFixtures]);
   const [searchParams, setSearchParams] = useSearchParams();
   // Defaults to off whenever the URL doesn't say otherwise - only written
   // into the URL when turned on, so a plain /dashboard link stays clean.
@@ -310,8 +319,8 @@ export default function DashboardPage() {
     [focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeOther]
   );
   const ledExposure = useMemo(
-    () => (focusedTeam ? computeLedExposure(focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeOther) : null),
-    [focusedTeam, fixtures, simulcastInfo, includeSimulcast, includeOther]
+    () => (focusedTeam ? computeLedExposure(focusedTeam, ledFixtures, simulcastInfo, includeSimulcast, includeOther) : null),
+    [focusedTeam, ledFixtures, simulcastInfo, includeSimulcast, includeOther]
   );
 
   const { seasons: comparisonSeasons } = useSeasonComparison(teams, includeSimulcast, includeOther, focusedSlug);
@@ -332,21 +341,12 @@ export default function DashboardPage() {
             className={`w-full flex-wrap items-center gap-3 sm:flex sm:w-auto ${mobileFiltersOpen ? 'flex' : 'hidden'}`}
           >
             <SeasonSelector season={season} onChange={setSeason} />
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-white/70">
-              Focus club
-              <select
-                value={focusedSlug ?? ''}
-                onChange={(e) => setFocusedSlug(e.target.value || null)}
-                className="rounded-md border border-transparent bg-white px-2 py-1 text-xs font-semibold text-[#0f1e54] outline-none focus:border-[#1fd8c9]"
-              >
-                <option value="">All clubs</option>
-                {effectiveTeams.map((t) => (
-                  <option key={t.slug} value={t.slug}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <Dropdown
+              variant="header"
+              value={focusedSlug ?? ''}
+              onChange={(v) => setFocusedSlug(v || null)}
+              options={[{ value: '', label: 'All clubs' }, ...effectiveTeams.map((t) => ({ value: t.slug, label: t.name }))]}
+            />
             <ToggleSwitch
               checked={includeOther}
               onChange={setIncludeOther}

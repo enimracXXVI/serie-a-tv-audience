@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
+import Card from './Card.jsx';
 import { formatNumber } from '../lib/formatNumber.js';
 
 // Same convention as the Fixtures page (FixtureRow's formatDateShort) - day,
@@ -9,6 +10,14 @@ function formatDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(`${dateStr}T00:00:00`);
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
+}
+
+// A Coppa Italia game (also included here - see DashboardPage) has no
+// numeric matchday, just a round name - fall back to that (or a plain "Cup"
+// tag) instead of rendering a blank "MD".
+function gameLabel(fixture) {
+  if (fixture.matchday) return `MD${fixture.matchday}`;
+  return fixture.round || 'Cup';
 }
 
 // "5 base + 2 extra + 3 AT" - only the parts that actually apply to this
@@ -105,26 +114,23 @@ export default function LedExposureCard({ team, exposure }) {
 
   if (!team) {
     return (
-      <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-        <h3 className="mb-2 text-sm font-bold text-[#0f1e54]">LED exposure</h3>
+      <Card title="LED exposure">
         <p className="text-xs text-gray-400">Click a club above to see its LED perimeter-board minutes and audience.</p>
-      </div>
+      </Card>
     );
   }
   if (!exposure) {
     return (
-      <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-        <h3 className="mb-2 text-sm font-bold text-[#0f1e54]">LED exposure</h3>
+      <Card title="LED exposure">
         <p className="text-xs text-gray-400">{team.name} has no LED perimeter-board deal this season.</p>
-      </div>
+      </Card>
     );
   }
   if (exposure.count === 0) {
     return (
-      <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-        <h3 className="mb-2 text-sm font-bold text-[#0f1e54]">{team.name} - LED exposure</h3>
+      <Card title={`${team.name} - LED exposure`}>
         <p className="text-xs text-gray-400">No home games played yet.</p>
-      </div>
+      </Card>
     );
   }
 
@@ -132,8 +138,7 @@ export default function LedExposureCard({ team, exposure }) {
   // hasLedMinutesConcept in teams.js) - just the reach those home games got.
   if (exposure.goalCarpetOnly) {
     return (
-      <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-        <h3 className="text-sm font-bold text-[#0f1e54]">{team.name} - LED exposure</h3>
+      <Card title={`${team.name} - LED exposure`}>
         <p className="mb-3 text-[10px] text-gray-400">Goal carpet branding only - no per-fixture LED minutes to report.</p>
         <div className="mb-3 text-center">
           <p className="text-xl font-black text-[#0f1e54]">{formatNumber(exposure.totalAudience)}</p>
@@ -156,7 +161,7 @@ export default function LedExposureCard({ team, exposure }) {
                 <tr key={g.fixture.id}>
                   <td className="px-2 py-2 text-left">
                     <div className="flex w-20 flex-col items-center text-center text-[10px] leading-tight text-gray-400">
-                      <span className="font-bold text-gray-500">MD{g.fixture.matchday}</span>
+                      <span className="font-bold text-gray-500">{gameLabel(g.fixture)}</span>
                       <span className="whitespace-nowrap">{formatDate(g.fixture.date)}</span>
                       <span className="whitespace-nowrap">
                         {g.fixture.day} {g.fixture.kickoffTime}
@@ -175,13 +180,12 @@ export default function LedExposureCard({ team, exposure }) {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-      <h3 className="text-sm font-bold text-[#0f1e54]">{team.name} - LED exposure</h3>
+    <Card title={`${team.name} - LED exposure`}>
       <p className="mb-3 text-[10px] text-gray-400">
         Minutes and audience reported separately, not multiplied - duration doesn&apos;t scale reach.
       </p>
@@ -214,7 +218,7 @@ export default function LedExposureCard({ team, exposure }) {
               <tr key={g.fixture.id}>
                 <td className="px-2 py-2 text-left">
                   <div className="flex w-20 flex-col items-center text-center text-[10px] leading-tight text-gray-400">
-                    <span className="font-bold text-gray-500">MD{g.fixture.matchday}</span>
+                    <span className="font-bold text-gray-500">{gameLabel(g.fixture)}</span>
                     <span className="whitespace-nowrap">{formatDate(g.fixture.date)}</span>
                     <span className="whitespace-nowrap">
                       {g.fixture.day} {g.fixture.kickoffTime}
@@ -247,6 +251,6 @@ export default function LedExposureCard({ team, exposure }) {
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
   );
 }

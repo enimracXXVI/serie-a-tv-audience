@@ -58,6 +58,17 @@ export function addedTimeMinutes(fixture) {
   return (Number(fixture.addedTime1H) || 0) + (Number(fixture.addedTime2H) || 0);
 }
 
+// A cup fixture row (see cupFixtures.js) reports its audience as a single
+// `audience` column - there's no main/other-broadcaster split or simulcast
+// concept for cup games the way there is for Serie A rows, so
+// includeSimulcast/includeOther simply don't apply to it. `competition` is
+// blank/null on every Serie A row and set on every cup row (see
+// isSerieARow in competitions.js), so it's a reliable discriminator here.
+function resolveAudience(fixture, simulcastInfo, includeSimulcast, includeOther) {
+  if (fixture.competition) return Number(fixture.audience) || 0;
+  return effectiveAudience(fixture, simulcastInfo, includeSimulcast, includeOther);
+}
+
 function sum(arr) {
   return arr.reduce((a, b) => a + b, 0);
 }
@@ -309,7 +320,7 @@ export function computeLedExposure(team, fixtures, simulcastInfo, includeSimulca
     // completely separate from ledStartMatchday - see goalCarpetAppliesToFixture.
     const eligibleGoalCarpetGames = homeGames.filter((fixture) => goalCarpetAppliesToFixture(team, fixture));
     const audiences = eligibleGoalCarpetGames.map((fixture) =>
-      effectiveAudience(fixture, simulcastInfo, includeSimulcast, includeOther)
+      resolveAudience(fixture, simulcastInfo, includeSimulcast, includeOther)
     );
     return {
       goalCarpetOnly: true,
@@ -334,7 +345,7 @@ export function computeLedExposure(team, fixtures, simulcastInfo, includeSimulca
     const minutes = base + extra + addedTime;
     const penaltyExposure = Boolean(penaltyLedAppliesToFixture(team, fixture) && fixture.penaltyTaken);
     if (minutes === 0 && !penaltyExposure) continue;
-    const audience = effectiveAudience(fixture, simulcastInfo, includeSimulcast, includeOther);
+    const audience = resolveAudience(fixture, simulcastInfo, includeSimulcast, includeOther);
     games.push({ fixture, audience, minutes, base, extra, addedTime, penaltyExposure });
   }
   return {

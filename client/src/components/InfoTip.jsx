@@ -30,7 +30,11 @@ export default function InfoTip({ text }) {
         i
       </button>
       {open && (
-        <div className="absolute left-1/2 top-full z-50 mt-1.5 w-64 -translate-x-1/2 rounded-lg bg-[#0a1440] px-3 py-2 text-xs font-normal normal-case leading-snug tracking-normal text-white/80 shadow-xl ring-1 ring-white/10">
+        // Anchored to the icon's own left edge (not centered under it) so
+        // it opens rightward and stays inside the sidebar panel - centering
+        // was pushing it past the panel's left boundary for icons placed
+        // near that edge, spilling the popover onto the page behind it.
+        <div className="absolute left-0 top-full z-50 mt-1.5 w-64 max-w-[80vw] rounded-lg bg-[#0a1440] px-3 py-2 text-xs font-normal normal-case leading-snug tracking-normal text-white/80 shadow-xl ring-1 ring-white/10">
           {text}
         </div>
       )}

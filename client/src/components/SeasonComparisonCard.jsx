@@ -1,4 +1,5 @@
 import { formatNumber } from '../lib/formatNumber.js';
+import Card from './Card.jsx';
 
 function ComparisonRow({ title, seasons, pick }) {
   const values = seasons.map((s) => (s.loading || s.error ? null : pick(s)));
@@ -36,9 +37,7 @@ export default function SeasonComparisonCard({ seasons, focusedTeam }) {
   const anyError = seasons.some((s) => s.error);
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-      <h3 className="mb-3 text-sm font-bold text-[#0f1e54]">Season comparison</h3>
-
+    <Card title="Season comparison">
       <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-gray-400">League-wide, all clubs</p>
       <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <ComparisonRow title="Total audience" seasons={seasons} pick={(s) => s.totalAudience} />
@@ -61,6 +60,6 @@ export default function SeasonComparisonCard({ seasons, focusedTeam }) {
           right headers (see README).
         </p>
       )}
-    </div>
+    </Card>
   );
 }

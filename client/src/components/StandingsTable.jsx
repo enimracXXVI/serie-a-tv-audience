@@ -1,12 +1,12 @@
 import Crest from './Crest.jsx';
+import Card from './Card.jsx';
 
 export default function StandingsTable({ standings, matchday, maxMatchday, onMatchdayChange }) {
   return (
-    <div className="rounded-2xl bg-white shadow-lg shadow-black/20">
-      <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-3 pt-2 pb-1.5">
-        <h3 className="text-sm font-bold text-[#0f1e54]">
-          {matchday >= maxMatchday ? 'Current standing' : `Standing at matchday ${matchday}`}
-        </h3>
+    <Card
+      title={matchday >= maxMatchday ? 'Current standing' : `Standing at matchday ${matchday}`}
+      bodyClassName=""
+      controls={
         <div className="flex flex-1 items-center gap-2 sm:max-w-xs">
           <input
             type="range"
@@ -14,11 +14,12 @@ export default function StandingsTable({ standings, matchday, maxMatchday, onMat
             max={maxMatchday}
             value={matchday}
             onChange={(e) => onMatchdayChange(Number(e.target.value))}
-            className="w-full accent-[#1fd8c9]"
+            className="w-full accent-[#0f1e54]"
           />
-          <span className="w-14 shrink-0 text-right text-xs font-semibold text-gray-400">MD {matchday}</span>
+          <span className="w-14 shrink-0 text-right text-xs font-semibold text-[#0f1e54]">MD {matchday}</span>
         </div>
-      </div>
+      }
+    >
       <div className="overflow-x-auto">
       <table className="w-full min-w-[560px] border-collapse text-sm">
         <thead>
@@ -64,6 +65,6 @@ export default function StandingsTable({ standings, matchday, maxMatchday, onMat
         </tbody>
       </table>
       </div>
-    </div>
+    </Card>
   );
 }
