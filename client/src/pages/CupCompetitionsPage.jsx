@@ -138,7 +138,7 @@ export default function CupCompetitionsPage() {
           </p>
         ) : (
           <>
-            {visibleCompetitions.length > 1 && (
+            {visibleCompetitions.length > 0 && (
               <div id="cup-nav" className="scroll-mt-4 flex flex-wrap items-center gap-1.5">
                 {visibleCompetitions.map((c) => (
                   <a
@@ -166,11 +166,9 @@ export default function CupCompetitionsPage() {
                       {c.logoURL && <img src={c.logoURL} alt="" className="h-4 max-w-[60px] object-contain" />}
                       {c.name}
                     </button>
-                    {visibleCompetitions.length > 1 && (
-                      <a href="#cup-nav" className="text-xs font-semibold text-white/40 hover:text-white">
-                        ↑ Top
-                      </a>
-                    )}
+                    <a href="#cup-nav" className="text-xs font-semibold text-white/40 hover:text-white">
+                      ↑ Top
+                    </a>
                   </div>
                   {!isCollapsed &&
                     [...grouped.get(c.slug).entries()].map(([round, roundFixtures]) => (

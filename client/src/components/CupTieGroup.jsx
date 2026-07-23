@@ -1,3 +1,4 @@
+import Crest from './Crest.jsx';
 import CupFixtureRow from './CupFixtureRow.jsx';
 import { computeTieAggregate } from '../lib/cupFixtures.js';
 
@@ -32,7 +33,7 @@ export default function CupTieGroup({ legs, onUpdate, onDelete, canEdit, editMod
 
   return (
     <div className="flex flex-col divide-y divide-gray-100">
-      {sorted.map((f) => (
+      {sorted.map((f, i) => (
         <CupFixtureRow
           key={f.id}
           fixture={f}
@@ -41,11 +42,14 @@ export default function CupTieGroup({ legs, onUpdate, onDelete, canEdit, editMod
           canEdit={canEdit}
           editMode={editMode}
           broadcasters={broadcasters}
+          legLabel={i === 0 ? '1st leg' : '2nd leg'}
         />
       ))}
       {aggregate && (
-        <div className="bg-gray-50 px-3 py-1.5 text-center text-xs font-bold text-[#0f1e54]">
-          {aggregateSummary(aggregate)}
+        <div className="flex items-center justify-center gap-2 bg-gray-50 px-3 py-1.5 text-center text-xs font-bold text-[#0f1e54]">
+          <Crest team={aggregate.teamA} size={16} />
+          <span>{aggregateSummary(aggregate)}</span>
+          <Crest team={aggregate.teamB} size={16} />
         </div>
       )}
     </div>

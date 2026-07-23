@@ -5,6 +5,7 @@ import CollapsibleSection from './CollapsibleSection.jsx';
 import { useClubs } from '../lib/useClubs.jsx';
 import { clubScope, slugify } from '../lib/clubs.js';
 import { callWithReauth } from '../lib/reauth.js';
+import { useConfirm } from '../lib/useConfirm.jsx';
 
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9] placeholder:text-white/30';
@@ -52,6 +53,7 @@ function ClubRow({ club, session, saveClub, removeClub }) {
   const [expanded, setExpanded] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [confirm, confirmDialog] = useConfirm();
 
   async function commit(fields) {
     setSaveError(null);
@@ -63,7 +65,7 @@ function ClubRow({ club, session, saveClub, removeClub }) {
   }
 
   async function handleDelete() {
-    if (!window.confirm(`Delete "${club.name}"? This can't be undone from here - you'd need to re-add it by hand.`)) {
+    if (!(await confirm(`Delete "${club.name}"? This can't be undone from here - you'd need to re-add it by hand.`))) {
       return;
     }
     setDeleting(true);
@@ -78,6 +80,7 @@ function ClubRow({ club, session, saveClub, removeClub }) {
 
   return (
     <div className="rounded-lg bg-white/5">
+      {confirmDialog}
       <button onClick={() => setExpanded((e) => !e)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left">
         <Crest team={club} size={26} />
         <span className="flex-1 text-sm font-bold text-white">{club.name}</span>

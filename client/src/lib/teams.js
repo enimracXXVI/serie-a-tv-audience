@@ -137,6 +137,16 @@ export function overrideTeamAttributes(roster, seasonLabel, attributeRows) {
           ledMinutes: row?.ledMinutes ?? null,
           addedTimeLed: Boolean(row?.addedTimeLed),
           penaltyLed: Boolean(row?.penaltyLed),
+          // Only meaningful if ledMinutes/addedTimeLed/penaltyLed is also
+          // set - the matchday the deal actually starts from, for a deal
+          // signed partway through the season. null means "from matchday 1"
+          // (the whole season), same as always before this field existed.
+          ledStartMatchday: row?.ledStartMatchday ?? null,
+          // A branded pitch-side goal carpet - a different sponsorship
+          // element from the LED perimeter boards above (no per-fixture
+          // minutes concept at all), but grouped with LED in hasLedDeal()
+          // since it's the same "signage" bucket everywhere that's checked.
+          goalCarpet: Boolean(row?.goalCarpet),
         },
       ];
     })
@@ -147,9 +157,33 @@ export function overrideTeamAttributes(roster, seasonLabel, attributeRows) {
 // legitimate contracted-minutes value (see the comment above), and
 // `0 || false || false` is falsy, so a team with 0 base minutes but
 // addedTimeLed/penaltyLed checked would wrongly read as no deal at all.
-// null/undefined (never configured) is the only "no deal" state.
+// null/undefined (never configured) is the only "no deal" state. Also true
+// for a goal-carpet-only club (see hasLedMinutesConcept below for telling
+// the two apart - goal carpet has no minutes to show).
 export function hasLedDeal(team) {
+  return hasLedMinutesConcept(team) || Boolean(team?.goalCarpet);
+}
+
+// True only if there's an actual minutes-based LED presence (a contracted
+// per-fixture rate, added-time exclusivity, or penalty exposure) - false for
+// a club whose only signage deal is the goal carpet, which was never a
+// minutes thing to begin with. Used to decide whether to show the "extra LED
+// minutes"/per-fixture LED editor at all, as opposed to just hasLedDeal's
+// broader "does this club have some LED-adjacent deal" check.
+export function hasLedMinutesConcept(team) {
   return (team?.ledMinutes !== null && team?.ledMinutes !== undefined) || Boolean(team?.addedTimeLed) || Boolean(team?.penaltyLed);
+}
+
+// A minutes-based LED deal only counts for a specific Serie A fixture once
+// that club's `ledStartMatchday` (if any) has been reached - a deal signed
+// partway through the season shouldn't retroactively apply to earlier
+// matchdays. Cup fixtures have no numeric matchday to compare against, so
+// this is a no-op there (cupFixtureHasLed's competition/neutralVenue gate is
+// the only thing that applies to cup rows - see CupFixtureRow).
+export function ledMinutesApplyToFixture(team, fixture) {
+  if (!hasLedMinutesConcept(team)) return false;
+  if (team.ledStartMatchday && fixture.matchday != null && fixture.matchday < team.ledStartMatchday) return false;
+  return true;
 }
 
 export function applySeasonTeamAttributes(fixtures, seasonLabel, attributeRows) {

@@ -6,8 +6,9 @@ import { matchTagStyle } from '../lib/matchTags.js';
 import { SPONSOR_TYPES } from '../lib/sponsorCounts.js';
 import { useCupData } from '../lib/useCupData.jsx';
 import { resolveBroadcaster } from '../lib/broadcasters.js';
-import { hasLedDeal } from '../lib/teams.js';
+import { hasLedDeal, hasLedMinutesConcept, ledMinutesApplyToFixture } from '../lib/teams.js';
 import ToggleSwitch from './ToggleSwitch.jsx';
+import { useConfirm } from '../lib/useConfirm.jsx';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
@@ -161,6 +162,18 @@ function LedFields({ fixture, onUpdate }) {
   if (!hasLedDeal(home)) {
     return <p className="text-xs text-gray-400">No LED deal for {home.name} this season.</p>;
   }
+  if (!hasLedMinutesConcept(home)) {
+    // Goal-carpet-only - there's no per-fixture minutes concept to edit at
+    // all (see hasLedMinutesConcept), just the season-level fact itself.
+    return <p className="text-xs text-gray-400">{home.name} has goal carpet branding this season - no per-fixture LED minutes to track.</p>;
+  }
+  if (!ledMinutesApplyToFixture(home, fixture)) {
+    return (
+      <p className="text-xs text-gray-400">
+        {home.name}&apos;s LED deal doesn&apos;t start until matchday {home.ledStartMatchday}.
+      </p>
+    );
+  }
   return (
     <div className="flex flex-wrap items-end gap-2">
       <NumberField
@@ -235,9 +248,10 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
   const mainBroadcasterName = mainBroadcaster?.name || 'Main broadcaster';
   const otherBroadcasterOptions = broadcasters.filter((b) => !b.isMain);
   const otherBroadcasterRow = resolveBroadcaster(fixture.otherBroadcaster, broadcasters);
+  const [confirm, confirmDialog] = useConfirm();
 
-  function handleDelete() {
-    if (!window.confirm(`Delete this fixture (${home.name} vs ${away.name})? This can't be undone from here.`)) {
+  async function handleDelete() {
+    if (!(await confirm(`Delete this fixture (${home.name} vs ${away.name})? This can't be undone from here.`))) {
       return;
     }
     onDelete(fixture.id);
@@ -245,6 +259,7 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
 
   return (
     <div className="flex items-stretch" style={{ background: tagStyle.background }}>
+      {confirmDialog}
       <div className="w-1.5 shrink-0" style={{ background: tagStyle.bar }} />
       <div className="min-w-0 flex-1 px-2 py-1.5 sm:px-3 sm:py-2">
       <div className="flex items-center gap-1 sm:gap-2">

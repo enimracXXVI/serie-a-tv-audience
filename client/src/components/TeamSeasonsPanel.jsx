@@ -25,11 +25,13 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
   const [ledMinutes, setLedMinutes] = useState(row?.ledMinutes ?? '');
   const [addedTimeLed, setAddedTimeLed] = useState(Boolean(row?.addedTimeLed));
   const [penaltyLed, setPenaltyLed] = useState(Boolean(row?.penaltyLed));
+  const [ledStartMatchday, setLedStartMatchday] = useState(row?.ledStartMatchday ?? '');
+  const [goalCarpet, setGoalCarpet] = useState(Boolean(row?.goalCarpet));
   const [saveError, setSaveError] = useState(null);
   // ledMinutes here is the raw <input> string ('' when never set, '0' is a
   // real value) - hasLedDeal expects a number|null, so normalize before
   // reusing the same "is 0 still a deal" rule as everywhere else.
-  const ledDeal = hasLedDeal({ ledMinutes: ledMinutes === '' ? null : Number(ledMinutes), addedTimeLed, penaltyLed });
+  const ledDeal = hasLedDeal({ ledMinutes: ledMinutes === '' ? null : Number(ledMinutes), addedTimeLed, penaltyLed, goalCarpet });
 
   async function commit(fields) {
     setSaveError(null);
@@ -42,30 +44,40 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
 
   return (
     <div className="rounded-lg bg-white/5">
-      <button onClick={() => setExpanded((e) => !e)} className="flex w-full items-center gap-3 px-3 py-2.5 text-left">
-        <Crest team={team} size={26} />
-        <span className="flex-1 text-sm font-bold text-white">{team.name}</span>
-        {sponsored && (
-          <span className="rounded-full bg-[#1fd8c9]/20 px-2 py-0.5 text-[10px] font-bold uppercase text-[#1fd8c9]">
-            Sponsor
-          </span>
+      <button onClick={() => setExpanded((e) => !e)} className="flex w-full flex-col gap-1.5 px-3 py-2.5 text-left">
+        <div className="flex items-center gap-3">
+          <Crest team={team} size={26} />
+          <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">{team.name}</span>
+          <span className="shrink-0 text-white/40">{expanded ? '▾' : '▸'}</span>
+        </div>
+        {/* Wraps onto its own line(s) rather than fighting the name/arrow for
+            horizontal space - a club with all four badges (sponsor/big/
+            derby/LED) was overflowing the row on narrow screens, pushing the
+            expand arrow off-screen entirely. */}
+        {(sponsored || bigClub || derbyRival || ledDeal) && (
+          <div className="flex flex-wrap gap-1.5 pl-[38px]">
+            {sponsored && (
+              <span className="rounded-full bg-[#1fd8c9]/20 px-2 py-0.5 text-[10px] font-bold uppercase text-[#1fd8c9]">
+                Sponsor
+              </span>
+            )}
+            {bigClub && (
+              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-400">
+                Big
+              </span>
+            )}
+            {derbyRival && (
+              <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-red-400">
+                Derby
+              </span>
+            )}
+            {ledDeal && (
+              <span className="rounded-full bg-sky-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-sky-400">
+                LED
+              </span>
+            )}
+          </div>
         )}
-        {bigClub && (
-          <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-400">
-            Big
-          </span>
-        )}
-        {derbyRival && (
-          <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-red-400">
-            Derby
-          </span>
-        )}
-        {ledDeal && (
-          <span className="rounded-full bg-sky-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-sky-400">
-            LED
-          </span>
-        )}
-        <span className="text-white/40">{expanded ? '▾' : '▸'}</span>
       </button>
 
       {expanded && (
@@ -187,6 +199,30 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
                     label="LED during penalties"
                   />
                 </div>
+                <label className="flex flex-col gap-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">
+                    LED deal starts matchday
+                  </span>
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="1"
+                    value={ledStartMatchday}
+                    onChange={(e) => setLedStartMatchday(e.target.value)}
+                    onBlur={() => commit({ ledStartMatchday: ledStartMatchday === '' ? null : Number(ledStartMatchday) })}
+                    className={`${inputClass} w-24`}
+                  />
+                </label>
+                <div className="pb-1.5">
+                  <ToggleSwitch
+                    checked={goalCarpet}
+                    onChange={(v) => {
+                      setGoalCarpet(v);
+                      commit({ goalCarpet: v });
+                    }}
+                    label="Goal carpet"
+                  />
+                </div>
               </div>
               {saveError && (
                 <p className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-xs text-red-300">
@@ -210,6 +246,8 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
               <span>LED minutes per home fixture: {ledMinutes || '-'}</span>
               <span>Added time exclusive: {addedTimeLed ? 'Yes' : 'No'}</span>
               <span>LED during penalties: {penaltyLed ? 'Yes' : 'No'}</span>
+              {ledStartMatchday && <span>LED deal starts matchday {ledStartMatchday}</span>}
+              <span>Goal carpet: {goalCarpet ? 'Yes' : 'No'}</span>
             </div>
           )}
         </div>
@@ -290,7 +328,12 @@ export default function TeamSeasonsPanel({ session }) {
         <div className="flex flex-col gap-1.5">
           {roster.map((team) => (
             <TeamSeasonRow
-              key={team.slug}
+              // Keyed on season+team, not just team, so switching season
+              // always mounts a fresh row instead of reusing one whose
+              // internal useState was only ever initialized from the
+              // previous season's row (a club present in consecutive
+              // seasons kept showing its old badges after the switch).
+              key={`${selectedSeason.label}::${team.slug}`}
               season={selectedSeason.label}
               team={team}
               roster={roster}

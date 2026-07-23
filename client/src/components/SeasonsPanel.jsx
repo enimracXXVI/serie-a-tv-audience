@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSeasons } from '../lib/useSeasons.jsx';
 import { callWithReauth } from '../lib/reauth.js';
+import { useConfirm } from '../lib/useConfirm.jsx';
 
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9] placeholder:text-white/30';
@@ -18,6 +19,7 @@ function SeasonRow({ season, session, saveSeason, onSetCurrent, removeSeason }) 
   const [slug, setSlug] = useState(season.slug ?? '');
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [confirm, confirmDialog] = useConfirm();
 
   async function commit(fields) {
     setError(null);
@@ -39,7 +41,7 @@ function SeasonRow({ season, session, saveSeason, onSetCurrent, removeSeason }) 
 
   async function handleDelete() {
     if (
-      !window.confirm(`Delete season "${season.label}"? This can't be undone from here - you'd need to re-add it by hand.`)
+      !(await confirm(`Delete season "${season.label}"? This can't be undone from here - you'd need to re-add it by hand.`))
     ) {
       return;
     }
@@ -55,6 +57,7 @@ function SeasonRow({ season, session, saveSeason, onSetCurrent, removeSeason }) 
 
   return (
     <div className="flex flex-col gap-1.5 rounded-lg bg-white/5 px-3 py-2">
+      {confirmDialog}
       <div className="flex items-center gap-2">
         <span className="text-sm font-semibold text-white">{season.label}</span>
         {season.current && (
