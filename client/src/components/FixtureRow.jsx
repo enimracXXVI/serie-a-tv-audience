@@ -176,14 +176,12 @@ function LedFields({ fixture, onUpdate }) {
         onCommit={(v) => onUpdate(fixture.id, { extraLedMinutes: v })}
       />
       {home.penaltyLed && (
-        <div className="pb-1.5">
-          <ToggleSwitch
-            checked={Boolean(fixture.penaltyTaken)}
-            onChange={(v) => onUpdate(fixture.id, { penaltyTaken: v })}
-            label="Penalty taken"
-            labelClassName="text-gray-600"
-          />
-        </div>
+        <ToggleSwitch
+          checked={Boolean(fixture.penaltyTaken)}
+          onChange={(v) => onUpdate(fixture.id, { penaltyTaken: v })}
+          label="Penalty taken"
+          labelClassName="text-gray-400"
+        />
       )}
     </div>
   );
@@ -217,7 +215,7 @@ function SponsorshipFields({ fixture, onUpdate, sponsorCounts }) {
                   disabled={capReached}
                   onChange={(v) => onUpdate(fixture.id, { [fieldName]: v })}
                   label={label}
-                  labelClassName="text-gray-600"
+                  labelClassName="text-gray-400"
                   title={capReached ? `${label} cap reached (${current}/${cap}) - raise it in Settings to allow more.` : undefined}
                 />
               );

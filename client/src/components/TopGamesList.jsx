@@ -49,7 +49,7 @@ export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSi
               </option>
             ))}
           </select>
-          <ToggleSwitch checked={homeOnly} onChange={setHomeOnly} label="Home only" labelClassName="text-gray-500" />
+          <ToggleSwitch checked={homeOnly} onChange={setHomeOnly} label="Home only" labelClassName="text-gray-400" />
           <div className="flex gap-1">
             {LIMITS.map((n) => (
               <button

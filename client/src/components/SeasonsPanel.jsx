@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSeasons } from '../lib/useSeasons.jsx';
 import { callWithReauth } from '../lib/reauth.js';
 import { useConfirm } from '../lib/useConfirm.jsx';
+import InfoTip from './InfoTip.jsx';
 
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9] placeholder:text-white/30';
@@ -154,12 +155,14 @@ export default function SeasonsPanel({ session }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-xs text-white/40">
-        Every season the app knows about, live or archived. Exactly one should be <strong>current</strong> - that's
-        the season Fixtures/Standings/Dashboard/Cups default to, and the tab actively written to when a game is
-        edited or added. Creating a season here only registers it - you still need to create its fixtures tab in the
-        sheet by hand (copy the current tab's header row) before picking it here.
-      </p>
+      <div className="flex items-center gap-1.5">
+        <InfoTip
+          text={
+            'Every season the app knows about, live or archived. Exactly one should be current - that\'s the season Fixtures/Standings/Dashboard/Cups default to, and the tab actively written to when a game is edited or added. Creating a season here only registers it - you still need to create its fixtures tab in the sheet by hand (copy the current tab\'s header row) before picking it here.'
+          }
+        />
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-white/30">About this section</span>
+      </div>
       {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit seasons.</p>}
       {loading ? (
         <p className="text-sm text-white/40">Loading…</p>

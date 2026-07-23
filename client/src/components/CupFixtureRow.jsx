@@ -130,14 +130,12 @@ function KickoffFields({ fixture, onUpdate, broadcasters }) {
           ))}
         </select>
       </Field>
-      <div className="pb-1.5">
-        <ToggleSwitch
-          checked={Boolean(fixture.neutralVenue)}
-          onChange={(v) => onUpdate(fixture.id, { neutralVenue: v })}
-          label="Neutral venue"
-          labelClassName="text-gray-600"
-        />
-      </div>
+      <ToggleSwitch
+        checked={Boolean(fixture.neutralVenue)}
+        onChange={(v) => onUpdate(fixture.id, { neutralVenue: v })}
+        label="Neutral venue"
+        labelClassName="text-gray-400"
+      />
     </div>
   );
 }
@@ -228,14 +226,12 @@ function LedFields({ fixture, onUpdate }) {
         onCommit={(v) => onUpdate(fixture.id, { extraLedMinutes: v })}
       />
       {home.penaltyLed && (
-        <div className="pb-1.5">
-          <ToggleSwitch
-            checked={Boolean(fixture.penaltyTaken)}
-            onChange={(v) => onUpdate(fixture.id, { penaltyTaken: v })}
-            label="Penalty taken"
-            labelClassName="text-gray-600"
-          />
-        </div>
+        <ToggleSwitch
+          checked={Boolean(fixture.penaltyTaken)}
+          onChange={(v) => onUpdate(fixture.id, { penaltyTaken: v })}
+          label="Penalty taken"
+          labelClassName="text-gray-400"
+        />
       )}
     </div>
   );

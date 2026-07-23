@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
 import ColorField from './ColorField.jsx';
-import UrlField from './UrlField.jsx';
+import PencilEditOverlay from './PencilEditOverlay.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
+import InfoTip from './InfoTip.jsx';
 import { useClubs } from '../lib/useClubs.jsx';
 import { clubScope, slugify } from '../lib/clubs.js';
 import { callWithReauth } from '../lib/reauth.js';
@@ -93,6 +94,12 @@ function ClubRow({ club, session, saveClub, removeClub }) {
         <div className="flex flex-col gap-3 border-t border-white/10 px-3 py-3">
           {session.signedIn ? (
             <>
+              <div className="flex items-center gap-3">
+                <PencilEditOverlay value={club.crestUrl} onCommit={(v) => commit({ crestUrl: v })}>
+                  <Crest team={club} size={48} />
+                </PencilEditOverlay>
+                <span className="text-[10px] text-white/40">Click the crest to change its image URL</span>
+              </div>
               <div className="flex flex-wrap gap-2">
                 <TextField label="Name" value={club.name} onCommit={(v) => commit({ name: v })} />
                 <TextField
@@ -112,7 +119,6 @@ function ClubRow({ club, session, saveClub, removeClub }) {
                 <ColorField label="Primary colour" value={club.primary} onCommit={(v) => commit({ primary: v })} />
                 <ColorField label="Secondary colour" value={club.secondary} onCommit={(v) => commit({ secondary: v })} />
               </div>
-              <UrlField label="Crest image URL" value={club.crestUrl} onCommit={(v) => commit({ crestUrl: v })} />
               {saveError && (
                 <p className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-xs text-red-300">
                   {saveError}
@@ -225,11 +231,10 @@ export default function TeamsPanel({ session }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-xs text-white/40">
-        Every club the app knows about - the current Serie A roster and everyone else (a former Serie A club, a
-        domestic cup opponent, a European cup opponent) - in one place. "Scope" decides which group a club shows up
-        in and which cup fixtures offer it as an opponent.
-      </p>
+      <div className="flex items-center gap-1.5">
+        <InfoTip text={'Every club the app knows about - the current Serie A roster and everyone else (a former Serie A club, a domestic cup opponent, a European cup opponent) - in one place. "Scope" decides which group a club shows up in and which cup fixtures offer it as an opponent.'} />
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-white/30">About this section</span>
+      </div>
       {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit clubs.</p>}
       {loading ? (
         <p className="text-sm text-white/40">Loading…</p>

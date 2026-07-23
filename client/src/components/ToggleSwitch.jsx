@@ -1,9 +1,11 @@
-export default function ToggleSwitch({ checked, onChange, label, title, disabled = false, labelClassName = 'text-white/70' }) {
+// Label sits above the switch, centered, in the same small-caps uppercase
+// style every other Settings field label uses (see Field components across
+// TeamsPanel/TeamSeasonsPanel/CupFixtureRow) - a toggle is a field like any
+// other, so its label shouldn't look different from a text input's.
+export default function ToggleSwitch({ checked, onChange, label, title, disabled = false, labelClassName = 'text-white/40' }) {
   return (
-    <label
-      className={`flex items-center gap-2 text-xs font-semibold ${labelClassName} ${disabled ? 'opacity-40' : ''}`}
-      title={title}
-    >
+    <div className={`flex flex-col items-center gap-1 ${disabled ? 'opacity-40' : ''}`} title={title}>
+      {label && <span className={`text-[10px] font-semibold uppercase tracking-wide ${labelClassName}`}>{label}</span>}
       <button
         type="button"
         role="switch"
@@ -20,7 +22,6 @@ export default function ToggleSwitch({ checked, onChange, label, title, disabled
           }`}
         />
       </button>
-      {label}
-    </label>
+    </div>
   );
 }
