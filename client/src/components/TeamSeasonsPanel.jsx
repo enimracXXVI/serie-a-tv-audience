@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
+import ToggleSwitch from './ToggleSwitch.jsx';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useClubs } from '../lib/useClubs.jsx';
 import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
 import { useTeamSeasons } from '../lib/useTeamSeasons.jsx';
-import { teamsInFixtures } from '../lib/teams.js';
+import { teamsInFixtures, hasLedDeal } from '../lib/teams.js';
 import { makeId } from '../lib/teamSeasons.js';
 import { useSeasons } from '../lib/useSeasons.jsx';
 import { callWithReauth } from '../lib/reauth.js';
@@ -25,6 +26,10 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
   const [addedTimeLed, setAddedTimeLed] = useState(Boolean(row?.addedTimeLed));
   const [penaltyLed, setPenaltyLed] = useState(Boolean(row?.penaltyLed));
   const [saveError, setSaveError] = useState(null);
+  // ledMinutes here is the raw <input> string ('' when never set, '0' is a
+  // real value) - hasLedDeal expects a number|null, so normalize before
+  // reusing the same "is 0 still a deal" rule as everywhere else.
+  const ledDeal = hasLedDeal({ ledMinutes: ledMinutes === '' ? null : Number(ledMinutes), addedTimeLed, penaltyLed });
 
   async function commit(fields) {
     setSaveError(null);
@@ -55,7 +60,7 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
             Derby
           </span>
         )}
-        {ledMinutes && (
+        {ledDeal && (
           <span className="rounded-full bg-sky-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-sky-400">
             LED
           </span>
@@ -68,30 +73,22 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
           {session.signedIn ? (
             <>
               <div className="flex flex-wrap items-end gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={sponsored}
-                    onChange={(e) => {
-                      setSponsored(e.target.checked);
-                      commit({ sponsored: e.target.checked });
-                    }}
-                    className="h-4 w-4 accent-[#1fd8c9]"
-                  />
-                  <span className="text-xs font-semibold text-white/70">Sponsored in {season}</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={bigClub}
-                    onChange={(e) => {
-                      setBigClub(e.target.checked);
-                      commit({ bigClub: e.target.checked });
-                    }}
-                    className="h-4 w-4 accent-[#1fd8c9]"
-                  />
-                  <span className="text-xs font-semibold text-white/70">Big club in {season}</span>
-                </label>
+                <ToggleSwitch
+                  checked={sponsored}
+                  onChange={(v) => {
+                    setSponsored(v);
+                    commit({ sponsored: v });
+                  }}
+                  label={`Sponsored in ${season}`}
+                />
+                <ToggleSwitch
+                  checked={bigClub}
+                  onChange={(v) => {
+                    setBigClub(v);
+                    commit({ bigClub: v });
+                  }}
+                  label={`Big club in ${season}`}
+                />
                 <label className="flex flex-col gap-1">
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">
                     Derby rival in {season}
@@ -170,30 +167,26 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
                     className={`${inputClass} w-24`}
                   />
                 </label>
-                <label className="flex items-center gap-2 pb-1.5">
-                  <input
-                    type="checkbox"
+                <div className="pb-1.5">
+                  <ToggleSwitch
                     checked={addedTimeLed}
-                    onChange={(e) => {
-                      setAddedTimeLed(e.target.checked);
-                      commit({ addedTimeLed: e.target.checked });
+                    onChange={(v) => {
+                      setAddedTimeLed(v);
+                      commit({ addedTimeLed: v });
                     }}
-                    className="h-4 w-4 accent-[#1fd8c9]"
+                    label="Exclusive during added time"
                   />
-                  <span className="text-xs font-semibold text-white/70">Exclusive during added time</span>
-                </label>
-                <label className="flex items-center gap-2 pb-1.5">
-                  <input
-                    type="checkbox"
+                </div>
+                <div className="pb-1.5">
+                  <ToggleSwitch
                     checked={penaltyLed}
-                    onChange={(e) => {
-                      setPenaltyLed(e.target.checked);
-                      commit({ penaltyLed: e.target.checked });
+                    onChange={(v) => {
+                      setPenaltyLed(v);
+                      commit({ penaltyLed: v });
                     }}
-                    className="h-4 w-4 accent-[#1fd8c9]"
+                    label="LED during penalties"
                   />
-                  <span className="text-xs font-semibold text-white/70">LED during penalties</span>
-                </label>
+                </div>
               </div>
               {saveError && (
                 <p className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-xs text-red-300">

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ToggleSwitch from './ToggleSwitch.jsx';
 import { competitionScope } from '../lib/competitions.js';
 import { clubScope, slugify } from '../lib/clubs.js';
 
@@ -191,15 +192,7 @@ export default function AddCupFixtureForm({ clubs, competitions, onCreate, onCre
             />
           </>
         )}
-        <label className="flex items-center gap-1.5 text-xs font-semibold text-white/70">
-          <input
-            type="checkbox"
-            checked={neutralVenue}
-            onChange={(e) => setNeutralVenue(e.target.checked)}
-            className="h-4 w-4 accent-[#1fd8c9]"
-          />
-          Neutral venue
-        </label>
+        <ToggleSwitch checked={neutralVenue} onChange={setNeutralVenue} label="Neutral venue" />
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} />
         <input type="time" value={kickoffTime} onChange={(e) => setKickoffTime(e.target.value)} className={inputClass} />
       </div>
