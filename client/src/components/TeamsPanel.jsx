@@ -97,9 +97,15 @@ function ClubRow({ club, session, saveClub, removeClub }) {
         <div className="flex flex-col gap-3 border-t border-white/10 px-3 py-3">
           {session.signedIn ? (
             <>
-              <PencilEditOverlay value={club.crestUrl} onCommit={(v) => commit({ crestUrl: v })}>
-                <Crest team={club} size={48} />
-              </PencilEditOverlay>
+              {/* self-start - this sits in a flex-col container whose default
+                  stretch alignment would otherwise pull PencilEditOverlay's
+                  button to the full row width, dragging its corner pencil
+                  badge away from the crest and out to the far right edge. */}
+              <div className="self-start">
+                <PencilEditOverlay value={club.crestUrl} onCommit={(v) => commit({ crestUrl: v })}>
+                  <Crest team={club} size={48} />
+                </PencilEditOverlay>
+              </div>
               <div className="flex flex-wrap gap-2">
                 <TextField label="Name" value={club.name} onCommit={(v) => commit({ name: v })} />
                 <TextField

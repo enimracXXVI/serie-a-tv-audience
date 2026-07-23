@@ -329,7 +329,7 @@ export default function DashboardPage() {
     <div className="min-h-screen">
       {!loading && !fixturesError && <QuickNav />}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-3">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 pr-16">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 pr-36">
           <h1 className="text-lg font-black text-white sm:text-xl">Dashboard</h1>
           <button
             onClick={() => setMobileFiltersOpen((v) => !v)}
