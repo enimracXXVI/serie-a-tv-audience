@@ -94,7 +94,7 @@ export default function CupCompetitionsPage() {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-3">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 pr-36">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 pr-16">
           <h1 className="text-lg font-black text-white sm:text-xl">Cups</h1>
           <div className="flex flex-wrap items-center gap-3">
             <SeasonSelector season={season} onChange={setSeason} />

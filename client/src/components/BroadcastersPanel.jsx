@@ -2,10 +2,26 @@ import { useState } from 'react';
 import { useCupData } from '../lib/useCupData.jsx';
 import { callWithReauth } from '../lib/reauth.js';
 import { useConfirm } from '../lib/useConfirm.jsx';
-import UrlField from './UrlField.jsx';
+import PencilEditOverlay from './PencilEditOverlay.jsx';
+import InfoTip from './InfoTip.jsx';
 
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9] placeholder:text-white/30';
+
+// Rectangular logo preview box - a broadcaster logotype is typically a wide
+// wordmark, not an icon, so it stays object-contain in a plain box rather
+// than getting cropped into a circle like a team crest.
+function LogoPreview({ url }) {
+  return (
+    <div className="flex h-8 w-14 items-center justify-center rounded-md bg-white/10">
+      {url ? (
+        <img src={url} alt="" className="max-h-full max-w-full object-contain" />
+      ) : (
+        <span className="text-[9px] font-semibold uppercase text-white/30">Logo</span>
+      )}
+    </div>
+  );
+}
 
 function slugify(name) {
   return name
@@ -55,8 +71,10 @@ function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain, remo
   return (
     <div className="flex flex-col gap-1 rounded-lg bg-white/5 px-3 py-2">
       {confirmDialog}
-      <div className="flex items-center gap-2">
-        {broadcaster.logoUrl && <img src={broadcaster.logoUrl} alt="" className="h-4 max-w-[60px] object-contain" />}
+      <div className="flex items-center gap-3">
+        <PencilEditOverlay value={broadcaster.logoUrl} onCommit={commit} rounded="rounded-md">
+          <LogoPreview url={broadcaster.logoUrl} />
+        </PencilEditOverlay>
         <span className="text-sm font-semibold text-white">{broadcaster.name}</span>
         {broadcaster.isMain && (
           <span className="rounded-full bg-[#1fd8c9]/20 px-2 py-0.5 text-[10px] font-bold uppercase text-[#1fd8c9]">
@@ -64,7 +82,6 @@ function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain, remo
           </span>
         )}
       </div>
-      <UrlField label="Logo image URL" value={broadcaster.logoUrl} onCommit={commit} />
       {session.signedIn && !broadcaster.isMain && (
         <button onClick={setMain} className="self-start text-[10px] font-semibold text-white/50 hover:text-white">
           Set as main broadcaster
@@ -122,11 +139,10 @@ export default function BroadcastersPanel({ session }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-xs text-white/40">
-        Mark exactly one broadcaster as <strong>main</strong> (e.g. DAZN) - its name/logo replaces every hardcoded
-        "DAZN" label on the Serie A calendar and Dashboard. Every other broadcaster here (e.g. Sky Sport) becomes a
-        per-fixture "other broadcaster" choice - pick one when a game is also shown somewhere else, or leave it unset.
-      </p>
+      <div className="flex items-center gap-1.5">
+        <InfoTip text={'Mark exactly one broadcaster as main (e.g. DAZN) - its name/logo replaces every hardcoded "DAZN" label on the Serie A calendar and Dashboard. Every other broadcaster here (e.g. Sky Sport) becomes a per-fixture "other broadcaster" choice - pick one when a game is also shown somewhere else, or leave it unset.'} />
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-white/30">About this section</span>
+      </div>
       {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit broadcasters.</p>}
       {loading ? (
         <p className="text-sm text-white/40">Loading…</p>

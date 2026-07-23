@@ -10,6 +10,7 @@ import { makeId } from '../lib/teamSeasons.js';
 import { useSeasons } from '../lib/useSeasons.jsx';
 import { callWithReauth } from '../lib/reauth.js';
 import { syncAllSeasonsMatchTags } from '../lib/syncSeasonTags.js';
+import InfoTip from './InfoTip.jsx';
 
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-center text-sm text-white outline-none focus:border-[#1fd8c9]';
@@ -388,10 +389,12 @@ export default function TeamSeasonsPanel({ session }) {
           ))}
         </select>
       </div>
-      <p className="text-xs text-white/40">
-        Sponsorship/big-match/derby/LED designations for {selectedSeason.label} - a club with nothing set here shows
-        as not sponsored/big/derby, with no LED deal, for this season.
-      </p>
+      <div className="flex items-center gap-1.5">
+        <InfoTip
+          text={`Sponsorship/big-match/derby/LED designations for ${selectedSeason.label} - a club with nothing set here shows as not sponsored/big/derby, with no LED deal, for this season.`}
+        />
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-white/30">About this section</span>
+      </div>
       {!session.signedIn && (
         <p className="text-xs text-white/50">Sign in to edit sponsorship/big-match/derby/LED designations.</p>
       )}

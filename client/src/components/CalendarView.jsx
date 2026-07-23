@@ -11,7 +11,7 @@ export default function CalendarView({
   onUpdate,
   onDelete,
   highlightSlugs = [],
-  accent = '#0f1e54',
+  accent = '#1fd8c9',
   canEdit = false,
 }) {
   const byMatchday = new Map();

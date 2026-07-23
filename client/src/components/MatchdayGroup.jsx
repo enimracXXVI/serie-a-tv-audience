@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import FixtureRow from './FixtureRow.jsx';
+import { contrastText } from '../lib/color.js';
 
 const TABS = [
   { key: 'kickoff', label: 'Kickoff' },
@@ -41,24 +42,28 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, onDelete, 
         : `${formatDate(dates[0])} – ${formatDate(dates[dates.length - 1])}`
       : '';
 
+  // The header's own fill is whatever accent this view uses (teal by
+  // default, a team's own colour on a branded calendar) - text needs to
+  // stay readable against either a light or a dark fill, so its colour is
+  // derived from the accent rather than hardcoded white (which disappears
+  // on a light accent like the default teal).
+  const textColor = contrastText(accent);
+
   return (
     <section
       id={`matchday-${matchday}`}
-      className="scroll-mt-4 overflow-hidden rounded-2xl shadow-lg shadow-black/20"
-      // Tint lives on the outer section itself, not just the inner padded
-      // body below - the same fix as CupRoundGroup's rounded-corner bug: a
-      // tint painted only on the inner div (which sits inside padding)
-      // leaves the padding gap showing this section's own background
-      // instead, breaking the rounded-2xl+overflow-hidden clip at the
-      // corners.
-      style={{ background: `color-mix(in srgb, ${accent} 8%, white)` }}
+      className="scroll-mt-4 overflow-hidden rounded-2xl bg-white shadow-lg shadow-black/20"
     >
       <header className="flex flex-col gap-2 px-4 py-2.5" style={{ background: accent }}>
         <div className="flex items-baseline justify-between">
-          <h3 className="text-sm font-bold tracking-wide text-white">Matchday {matchday}</h3>
+          <h3 className="text-sm font-bold tracking-wide" style={{ color: textColor }}>
+            Matchday {matchday}
+          </h3>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-white/70">{range}</span>
-            <a href="#matchday-nav" className="text-xs font-semibold text-white/70 hover:text-white">
+            <span className="text-xs" style={{ color: textColor, opacity: 0.7 }}>
+              {range}
+            </span>
+            <a href="#matchday-nav" className="text-xs font-semibold hover:opacity-100" style={{ color: textColor, opacity: 0.7 }}>
               ↑ Top
             </a>
           </div>
@@ -69,10 +74,8 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, onDelete, 
               <button
                 key={t.key}
                 onClick={() => setActiveTab((cur) => (cur === t.key ? null : t.key))}
-                className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide transition-colors ${
-                  activeTab === t.key ? 'bg-white' : 'bg-white/10 text-white/80 hover:bg-white/20'
-                }`}
-                style={activeTab === t.key ? { color: accent } : undefined}
+                className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wide transition-colors hover:bg-white/20"
+                style={activeTab === t.key ? { background: 'white', color: accent } : { color: textColor, opacity: 0.85 }}
               >
                 {t.label}
               </button>
@@ -80,7 +83,7 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, onDelete, 
           </div>
         )}
       </header>
-      <div className="flex flex-col divide-y divide-black/5 px-1 py-1">
+      <div className="flex flex-col divide-y divide-gray-100">
         {orderedFixtures.map((f) => (
           <FixtureRow
             key={f.id}

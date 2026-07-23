@@ -3,7 +3,22 @@ import { useCupData } from '../lib/useCupData.jsx';
 import { competitionScope, SERIE_A_VALUE } from '../lib/competitions.js';
 import { callWithReauth } from '../lib/reauth.js';
 import { useConfirm } from '../lib/useConfirm.jsx';
-import UrlField from './UrlField.jsx';
+import PencilEditOverlay from './PencilEditOverlay.jsx';
+
+// Rectangular logo preview box - a competition/broadcaster logotype is
+// typically a wide wordmark, not an icon, so it stays object-contain in a
+// plain box rather than getting cropped into a circle like a team crest.
+function LogoPreview({ url, size = 'h-9 w-16' }) {
+  return (
+    <div className={`flex ${size} items-center justify-center rounded-md bg-white/10`}>
+      {url ? (
+        <img src={url} alt="" className="max-h-full max-w-full object-contain" />
+      ) : (
+        <span className="text-[9px] font-semibold uppercase text-white/30">Logo</span>
+      )}
+    </div>
+  );
+}
 
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9] placeholder:text-white/30';
@@ -27,11 +42,16 @@ function SerieARow({ competition, session, saveCompetition }) {
 
   return (
     <div className="flex flex-col gap-1.5 rounded-lg bg-white/5 px-3 py-2">
-      <div className="flex items-center gap-2">
-        {competition.logoURL && <img src={competition.logoURL} alt="" className="h-5 max-w-[80px] object-contain" />}
+      <div className="flex items-center gap-3">
+        {session.signedIn ? (
+          <PencilEditOverlay value={competition.logoURL} onCommit={commit} rounded="rounded-md">
+            <LogoPreview url={competition.logoURL} />
+          </PencilEditOverlay>
+        ) : (
+          <LogoPreview url={competition.logoURL} />
+        )}
         <span className="text-sm font-semibold text-white">Serie A</span>
       </div>
-      <UrlField label="Logo image URL" value={competition.logoURL} onCommit={commit} disabled={!session.signedIn} />
       {error && <p className="text-xs text-red-300">{error}</p>}
     </div>
   );
@@ -85,11 +105,12 @@ function CompetitionRow({ competition, session, saveCompetition, removeCompetiti
   return (
     <div className="flex flex-col gap-1.5 rounded-lg bg-white/5 px-3 py-2">
       {confirmDialog}
-      <div className="flex items-center gap-2">
-        {competition.logoURL && <img src={competition.logoURL} alt="" className="h-5 max-w-[80px] object-contain" />}
+      <div className="flex items-center gap-3">
+        <PencilEditOverlay value={competition.logoURL} onCommit={commitLogoURL} rounded="rounded-md">
+          <LogoPreview url={competition.logoURL} />
+        </PencilEditOverlay>
         <span className="text-sm font-semibold text-white">{competition.name}</span>
       </div>
-      <UrlField label="Logo image URL" value={competition.logoURL} onCommit={commitLogoURL} />
       <label className="flex items-center gap-2">
         <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Scope</span>
         <select
