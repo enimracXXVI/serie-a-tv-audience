@@ -11,6 +11,7 @@ import { useSeasons } from '../lib/useSeasons.jsx';
 import { callWithReauth } from '../lib/reauth.js';
 import { syncAllSeasonsMatchTags } from '../lib/syncSeasonTags.js';
 import InfoTip from './InfoTip.jsx';
+import Dropdown from './Dropdown.jsx';
 
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-center text-sm text-white outline-none focus:border-[#1fd8c9]';
@@ -115,7 +116,7 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
             <>
               {/* Row 1: big club + derby rival (derby's own "None" option is
                   its generic/default state). */}
-              <div className="flex flex-wrap items-end gap-4">
+              <div className="flex flex-wrap items-center gap-4">
                 <ToggleSwitch
                   checked={bigClub}
                   onChange={(v) => {
@@ -125,28 +126,24 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
                   label="Big club"
                 />
                 <Field label="Derby rival">
-                  <select
+                  <Dropdown
+                    variant="sidebar"
+                    className="w-40"
                     value={derbyRival}
-                    onChange={(e) => {
-                      setDerbyRival(e.target.value);
-                      commit({ derbyRival: e.target.value });
+                    onChange={(v) => {
+                      setDerbyRival(v);
+                      commit({ derbyRival: v });
                     }}
-                    className={`${inputClass} w-40`}
-                  >
-                    <option value="">None</option>
-                    {roster
-                      .filter((t) => t.slug !== team.slug)
-                      .map((t) => (
-                        <option key={t.slug} value={t.slug}>
-                          {t.name}
-                        </option>
-                      ))}
-                  </select>
+                    options={[
+                      { value: '', label: 'None' },
+                      ...roster.filter((t) => t.slug !== team.slug).map((t) => ({ value: t.slug, label: t.name })),
+                    ]}
+                  />
                 </Field>
               </div>
 
               {/* Row 2: sponsored + activation caps. */}
-              <div className="flex flex-wrap items-end gap-4 border-t border-white/10 pt-3">
+              <div className="flex flex-wrap items-center gap-4 border-t border-white/10 pt-3">
                 <ToggleSwitch
                   checked={sponsored}
                   onChange={(v) => {
@@ -192,7 +189,7 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
               </div>
 
               {/* Row 3: LED (base minutes) toggle. */}
-              <div className="flex flex-wrap items-end gap-4 border-t border-white/10 pt-3">
+              <div className="flex flex-wrap items-center gap-4 border-t border-white/10 pt-3">
                 <ToggleSwitch checked={ledEnabled} onChange={toggleLed} label="LED" />
                 {ledEnabled && (
                   <>
@@ -222,14 +219,14 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
               </div>
 
               {/* Row 4: penalties + added time, each with its own start MD. */}
-              <div className="flex flex-wrap items-end gap-4 border-t border-white/10 pt-3">
+              <div className="flex flex-wrap items-center gap-4 border-t border-white/10 pt-3">
                 <ToggleSwitch
                   checked={penaltyLed}
                   onChange={(v) => {
                     setPenaltyLed(v);
                     commit({ penaltyLed: v });
                   }}
-                  label="LED during penalties"
+                  label="Penalties"
                 />
                 {penaltyLed && (
                   <Field label="Starting MD">
@@ -252,7 +249,7 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
                     setAddedTimeLed(v);
                     commit({ addedTimeLed: v });
                   }}
-                  label="Exclusive during added time"
+                  label="Added time"
                 />
                 {addedTimeLed && (
                   <Field label="Starting MD">
@@ -274,7 +271,7 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
               </div>
 
               {/* Row 5: goal carpet. */}
-              <div className="flex flex-wrap items-end gap-4 border-t border-white/10 pt-3">
+              <div className="flex flex-wrap items-center gap-4 border-t border-white/10 pt-3">
                 <ToggleSwitch
                   checked={goalCarpet}
                   onChange={(v) => {
@@ -376,18 +373,26 @@ export default function TeamSeasonsPanel({ session }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
+        {session.signedIn && (
+          <div className="flex items-center gap-1.5">
+            <InfoTip text="Writes isBigMatch/isDerby to every configured season's own tab in one go - run this once after changing a season's sponsorship/big-club/derby designations above, rather than waiting for someone to happen to edit one of that season's fixture rows." />
+            <button
+              onClick={handleSyncAllSeasons}
+              disabled={syncStatus === 'syncing'}
+              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold uppercase text-white transition-colors hover:bg-white/20 disabled:opacity-50"
+            >
+              {syncStatus === 'syncing' ? 'Syncing…' : 'Sync big / derby'}
+            </button>
+          </div>
+        )}
         <span className="text-xs font-semibold uppercase tracking-wide text-white/40">Season</span>
-        <select
+        <Dropdown
+          variant="sidebar"
+          className="w-24"
           value={selectedSeason.label}
-          onChange={(e) => setSelectedLabel(e.target.value)}
-          className={`${inputClass} w-24`}
-        >
-          {seasons.map((s) => (
-            <option key={s.label} value={s.label}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+          onChange={(v) => setSelectedLabel(v)}
+          options={seasons.map((s) => ({ value: s.label, label: s.label }))}
+        />
       </div>
       <div className="flex items-center gap-1.5">
         <InfoTip
@@ -424,31 +429,15 @@ export default function TeamSeasonsPanel({ session }) {
           ))}
         </div>
       )}
-      {session.signedIn && (
-        <div className="flex flex-col gap-1.5 border-t border-white/10 pt-3">
-          <button
-            onClick={handleSyncAllSeasons}
-            disabled={syncStatus === 'syncing'}
-            className="self-start rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-white/20 disabled:opacity-50"
-          >
-            {syncStatus === 'syncing' ? 'Syncing…' : 'Sync big match / derby tags - all seasons'}
-          </button>
-          <p className="text-[10px] text-white/40">
-            Writes isBigMatch/isDerby to every configured season's own tab in one go - run this once after changing a
-            season's sponsorship/big-club/derby designations above, rather than waiting for someone to happen to edit
-            one of that season's fixture rows.
-          </p>
-          {Array.isArray(syncStatus) && (
-            <p className="text-[10px]">
-              {syncStatus.map((r, i) => (
-                <span key={r.label} className={r.ok ? 'text-[#1fd8c9]' : 'text-red-300'}>
-                  {i > 0 && ' · '}
-                  {r.label}: {r.ok ? `${r.count} synced` : r.error}
-                </span>
-              ))}
-            </p>
-          )}
-        </div>
+      {session.signedIn && Array.isArray(syncStatus) && (
+        <p className="border-t border-white/10 pt-3 text-[10px]">
+          {syncStatus.map((r, i) => (
+            <span key={r.label} className={r.ok ? 'text-[#1fd8c9]' : 'text-red-300'}>
+              {i > 0 && ' · '}
+              {r.label}: {r.ok ? `${r.count} synced` : r.error}
+            </span>
+          ))}
+        </p>
       )}
     </div>
   );

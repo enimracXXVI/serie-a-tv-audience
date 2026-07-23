@@ -4,6 +4,12 @@ import { competitionScope, SERIE_A_VALUE } from '../lib/competitions.js';
 import { callWithReauth } from '../lib/reauth.js';
 import { useConfirm } from '../lib/useConfirm.jsx';
 import PencilEditOverlay from './PencilEditOverlay.jsx';
+import Dropdown from './Dropdown.jsx';
+
+const SCOPE_OPTIONS = [
+  { value: 'national', label: 'National' },
+  { value: 'european', label: 'European' },
+];
 
 // Rectangular logo preview box - a competition/broadcaster logotype is
 // typically a wide wordmark, not an icon, so it stays object-contain in a
@@ -24,8 +30,9 @@ const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9] placeholder:text-white/30';
 
 // Serie A is a real row in the "competitions" tab (see competitions.js), but
-// gets a simplified block here - just the logo, no scope selector (scope
-// only matters for filtering cup-fixture opponents, which Serie A never is).
+// gets a simplified block here - just the logo, no name edit or scope
+// selector (its name is fixed, and scope only matters for filtering
+// cup-fixture opponents, which Serie A never is).
 function SerieARow({ competition, session, saveCompetition }) {
   const [error, setError] = useState(null);
 
@@ -65,24 +72,77 @@ function slugify(name) {
     .replace(/(^-|-$)/g, '');
 }
 
+// Clicking the logo's pencil edits both the logo URL and the competition's
+// name together, rather than just the logo - a competition's name is just
+// as likely to need a fix (typo, rename) as its logo.
+function EditableCompetitionHeader({ competition, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [logoDraft, setLogoDraft] = useState(competition.logoURL ?? '');
+  const [nameDraft, setNameDraft] = useState(competition.name ?? '');
+
+  function startEditing() {
+    setLogoDraft(competition.logoURL ?? '');
+    setNameDraft(competition.name ?? '');
+    setEditing(true);
+  }
+
+  function save() {
+    setEditing(false);
+    const fields = {};
+    if (logoDraft !== (competition.logoURL ?? '')) fields.logoURL = logoDraft;
+    if (nameDraft !== (competition.name ?? '')) fields.name = nameDraft;
+    if (Object.keys(fields).length > 0) onSave(fields);
+  }
+
+  if (editing) {
+    return (
+      <div className="flex flex-1 flex-wrap items-center gap-1.5">
+        <input
+          type="text"
+          autoFocus
+          value={logoDraft}
+          onChange={(e) => setLogoDraft(e.target.value)}
+          placeholder="Logo URL"
+          className={`${inputClass} min-w-0 flex-1`}
+        />
+        <input
+          type="text"
+          value={nameDraft}
+          onChange={(e) => setNameDraft(e.target.value)}
+          placeholder="Name"
+          className={`${inputClass} w-32`}
+        />
+        <button type="button" onClick={save} className="shrink-0 rounded-md bg-[#1fd8c9] px-2.5 py-1 text-xs font-bold text-[#0f1e54] hover:brightness-95">
+          Save
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button type="button" onClick={startEditing} className="flex items-center gap-3" title="Click to edit logo/name">
+      <span className="relative inline-flex shrink-0">
+        <LogoPreview url={competition.logoURL} />
+        <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-md bg-[#1fd8c9] text-[#0f1e54] shadow ring-2 ring-[#0f1e54]">
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-2.5 w-2.5" aria-hidden="true">
+            <path d="M13.7 2.3a1.5 1.5 0 0 1 2.12 0l1.88 1.88a1.5 1.5 0 0 1 0 2.12L7.4 16.6l-4.2.9.9-4.2Zm-1.06 2.12L4.9 12.16l-.45 2.1 2.1-.45 7.74-7.74Z" />
+          </svg>
+        </span>
+      </span>
+      <span className="text-sm font-semibold text-white">{competition.name}</span>
+    </button>
+  );
+}
+
 function CompetitionRow({ competition, session, saveCompetition, removeCompetition }) {
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [confirm, confirmDialog] = useConfirm();
 
-  async function commitLogoURL(logoURL) {
+  async function commit(fields) {
     setError(null);
     try {
-      await callWithReauth(session, (token) => saveCompetition(competition.slug, { logoURL }, token));
-    } catch (err) {
-      setError(err.message);
-    }
-  }
-
-  async function commitScope(scope) {
-    setError(null);
-    try {
-      await callWithReauth(session, (token) => saveCompetition(competition.slug, { scope }, token));
+      await callWithReauth(session, (token) => saveCompetition(competition.slug, fields, token));
     } catch (err) {
       setError(err.message);
     }
@@ -105,33 +165,20 @@ function CompetitionRow({ competition, session, saveCompetition, removeCompetiti
   return (
     <div className="flex flex-col gap-1.5 rounded-lg bg-white/5 px-3 py-2">
       {confirmDialog}
-      <div className="flex items-center gap-3">
-        <PencilEditOverlay value={competition.logoURL} onCommit={commitLogoURL} rounded="rounded-md">
-          <LogoPreview url={competition.logoURL} />
-        </PencilEditOverlay>
-        <span className="text-sm font-semibold text-white">{competition.name}</span>
+      <div className="flex flex-wrap items-center gap-3">
+        <EditableCompetitionHeader competition={competition} onSave={commit} />
+        <Dropdown variant="sidebar" className="w-32" value={competitionScope(competition)} onChange={(scope) => commit({ scope })} options={SCOPE_OPTIONS} />
+        {session.signedIn && (
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="ml-auto w-fit rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold uppercase text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+          >
+            {deleting ? 'Deleting…' : 'Delete'}
+          </button>
+        )}
       </div>
-      <label className="flex items-center gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Scope</span>
-        <select
-          value={competitionScope(competition)}
-          onChange={(e) => commitScope(e.target.value)}
-          className={`${inputClass} w-32`}
-        >
-          <option value="national">National</option>
-          <option value="european">European</option>
-        </select>
-      </label>
       {error && <p className="text-xs text-red-300">{error}</p>}
-      {session.signedIn && (
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="w-fit rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
-        >
-          {deleting ? 'Deleting…' : 'Delete competition'}
-        </button>
-      )}
     </div>
   );
 }
@@ -171,6 +218,41 @@ export default function CompetitionsPanel({ session }) {
   return (
     <div className="flex flex-col gap-3">
       {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit competition logos.</p>}
+      {session.signedIn && (
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => setShowAddForm((v) => !v)}
+            className={`self-start rounded-full px-3 py-1.5 text-xs font-bold uppercase transition-colors ${
+              showAddForm ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
+            }`}
+          >
+            Add competition {showAddForm ? '▴' : '▾'}
+          </button>
+          {showAddForm && (
+            <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2 rounded-lg bg-white/5 px-3 py-2">
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="New competition name"
+                className={`${inputClass} w-48`}
+              />
+              <input
+                type="text"
+                value={newLogoURL}
+                onChange={(e) => setNewLogoURL(e.target.value)}
+                placeholder="Logo image URL (optional)"
+                className={`${inputClass} w-56`}
+              />
+              <Dropdown variant="sidebar" value={newScope} onChange={setNewScope} options={SCOPE_OPTIONS} />
+              <button type="submit" className="rounded-md bg-[#1fd8c9] px-3 py-1.5 text-xs font-bold text-[#0f1e54] hover:brightness-95">
+                Add
+              </button>
+            </form>
+          )}
+          {createError && <p className="text-xs text-red-300">{createError}</p>}
+        </div>
+      )}
       {loading ? (
         <p className="text-sm text-white/40">Loading…</p>
       ) : error ? (
@@ -187,44 +269,6 @@ export default function CompetitionsPanel({ session }) {
               removeCompetition={removeCompetition}
             />
           ))}
-          {session.signedIn && (
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => setShowAddForm((v) => !v)}
-                className={`self-start rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
-                  showAddForm ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
-                }`}
-              >
-                Add competition {showAddForm ? '▴' : '▾'}
-              </button>
-              {showAddForm && (
-                <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2 rounded-lg bg-white/5 px-3 py-2">
-                  <input
-                    type="text"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    placeholder="New competition name"
-                    className={`${inputClass} w-48`}
-                  />
-                  <input
-                    type="text"
-                    value={newLogoURL}
-                    onChange={(e) => setNewLogoURL(e.target.value)}
-                    placeholder="Logo image URL (optional)"
-                    className={`${inputClass} w-56`}
-                  />
-                  <select value={newScope} onChange={(e) => setNewScope(e.target.value)} className={inputClass}>
-                    <option value="national">National</option>
-                    <option value="european">European</option>
-                  </select>
-                  <button type="submit" className="rounded-md bg-[#1fd8c9] px-3 py-1.5 text-xs font-bold text-[#0f1e54] hover:brightness-95">
-                    Add
-                  </button>
-                </form>
-              )}
-            </div>
-          )}
-          {createError && <p className="text-xs text-red-300">{createError}</p>}
         </div>
       )}
     </div>

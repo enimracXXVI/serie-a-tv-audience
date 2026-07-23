@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
 import SimulcastBadge from './SimulcastBadge.jsx';
 import ToggleSwitch from './ToggleSwitch.jsx';
+import Card from './Card.jsx';
+import Dropdown from './Dropdown.jsx';
 import { computeTopGames } from '../lib/dashboardMetrics.js';
 import { formatNumber } from '../lib/formatNumber.js';
 
@@ -31,32 +33,27 @@ export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSi
   );
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-[#0f1e54]">Top games by audience</h3>
+    <Card
+      title="Top games by audience"
+      controls={
         <div className="flex flex-wrap items-center gap-2">
-          <select
+          <Dropdown
+            variant="header"
             value={teamFilter}
-            onChange={(e) => setTeamFilter(e.target.value)}
-            className="rounded-md border border-gray-200 px-2 py-1 text-xs font-semibold text-[#0f1e54] outline-none focus:border-[#1fd8c9]"
-          >
-            <option value="">
-              {focusedSlug ? `${teams.find((t) => t.slug === focusedSlug)?.name ?? 'Focused club'} (selected)` : 'All clubs'}
-            </option>
-            {teams.map((t) => (
-              <option key={t.slug} value={t.slug}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-          <ToggleSwitch checked={homeOnly} onChange={setHomeOnly} label="Home only" labelClassName="text-gray-400" />
+            onChange={setTeamFilter}
+            options={[
+              { value: '', label: focusedSlug ? `${teams.find((t) => t.slug === focusedSlug)?.name ?? 'Focused club'} (selected)` : 'All clubs' },
+              ...teams.map((t) => ({ value: t.slug, label: t.name })),
+            ]}
+          />
+          <ToggleSwitch checked={homeOnly} onChange={setHomeOnly} label="Home only" labelClassName="text-[#0f1e54]/70" />
           <div className="flex gap-1">
             {LIMITS.map((n) => (
               <button
                 key={n}
                 onClick={() => setLimit(n)}
                 className={`rounded-full px-2.5 py-1 text-xs font-bold ${
-                  limit === n ? 'bg-[#0f1e54] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  limit === n ? 'bg-white text-[#0f1e54]' : 'bg-black/10 text-[#0f1e54]/70 hover:bg-black/20'
                 }`}
               >
                 Top {n}
@@ -64,8 +61,8 @@ export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSi
             ))}
           </div>
         </div>
-      </div>
-
+      }
+    >
       {topGames.length === 0 ? (
         <p className="py-6 text-center text-xs text-gray-400">No played games match these filters.</p>
       ) : (
@@ -99,6 +96,6 @@ export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSi
           ))}
         </ol>
       )}
-    </div>
+    </Card>
   );
 }

@@ -53,32 +53,33 @@ export default function CupRoundGroup({ round, fixtures, onUpdate, onDelete, can
           </div>
         )}
       </header>
-      <div className="flex flex-col divide-y divide-gray-100">
-        {groupIntoTies(fixtures).map((legs) =>
-          legs.length === 2 ? (
-            <CupTieGroup
-              key={tieKeyFor(legs[0])}
-              legs={legs}
-              onUpdate={onUpdate}
-              onDelete={onDelete}
-              canEdit={canEdit}
-              editMode={activeTab}
-              broadcasters={broadcasters}
-            />
-          ) : (
-            legs.map((f) => (
-              <CupFixtureRow
-                key={f.id}
-                fixture={f}
+      <div className="flex flex-col">
+        {groupIntoTies(fixtures).map((legs, i) => (
+          <div key={legs.length === 2 ? tieKeyFor(legs[0]) : legs[0].id} style={i > 0 ? { borderTop: `1px solid ${ACCENT}33` } : undefined}>
+            {legs.length === 2 ? (
+              <CupTieGroup
+                legs={legs}
                 onUpdate={onUpdate}
                 onDelete={onDelete}
                 canEdit={canEdit}
                 editMode={activeTab}
                 broadcasters={broadcasters}
               />
-            ))
-          )
-        )}
+            ) : (
+              legs.map((f) => (
+                <CupFixtureRow
+                  key={f.id}
+                  fixture={f}
+                  onUpdate={onUpdate}
+                  onDelete={onDelete}
+                  canEdit={canEdit}
+                  editMode={activeTab}
+                  broadcasters={broadcasters}
+                />
+              ))
+            )}
+          </div>
+        ))}
       </div>
     </section>
   );

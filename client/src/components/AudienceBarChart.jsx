@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
+import Card from './Card.jsx';
+import Dropdown from './Dropdown.jsx';
 import { formatNumber } from '../lib/formatNumber.js';
 
 const METRICS = [
@@ -23,21 +25,17 @@ export default function AudienceBarChart({ metrics, focusedSlug, onFocus }) {
   const max = Math.max(...ranked.map((r) => r[metricKey]), 1);
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-[#0f1e54]">Clubs ranked by</h3>
-        <select
+    <Card
+      title="Clubs ranked by"
+      controls={
+        <Dropdown
+          variant="header"
           value={metricKey}
-          onChange={(e) => setMetricKey(e.target.value)}
-          className="rounded-md border border-gray-200 px-2 py-1 text-xs font-semibold text-[#0f1e54] outline-none focus:border-[#1fd8c9]"
-        >
-          {METRICS.map((m) => (
-            <option key={m.key} value={m.key}>
-              {m.label}
-            </option>
-          ))}
-        </select>
-      </div>
+          onChange={setMetricKey}
+          options={METRICS.map((m) => ({ value: m.key, label: m.label }))}
+        />
+      }
+    >
       <div className="flex flex-col gap-1.5">
         {ranked.map((row) => {
           const team = row.team;
@@ -74,6 +72,6 @@ export default function AudienceBarChart({ metrics, focusedSlug, onFocus }) {
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }

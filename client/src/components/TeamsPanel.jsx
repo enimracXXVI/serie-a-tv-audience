@@ -4,6 +4,13 @@ import ColorField from './ColorField.jsx';
 import PencilEditOverlay from './PencilEditOverlay.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
 import InfoTip from './InfoTip.jsx';
+import Dropdown from './Dropdown.jsx';
+
+const SCOPE_OPTIONS = [
+  { value: 'current', label: 'Current roster' },
+  { value: 'national', label: 'National' },
+  { value: 'european', label: 'European' },
+];
 import { useClubs } from '../lib/useClubs.jsx';
 import { clubScope, slugify } from '../lib/clubs.js';
 import { callWithReauth } from '../lib/reauth.js';
@@ -42,11 +49,7 @@ function TextField({ label, value, onCommit, maxLength, uppercase = false, width
 function ScopeField({ value, onCommit }) {
   return (
     <Field label="Scope">
-      <select value={clubScope({ scope: value })} onChange={(e) => onCommit(e.target.value)} className={`${inputClass} w-32`}>
-        <option value="current">Current roster</option>
-        <option value="national">National</option>
-        <option value="european">European</option>
-      </select>
+      <Dropdown variant="sidebar" className="w-32" value={clubScope({ scope: value })} onChange={onCommit} options={SCOPE_OPTIONS} />
     </Field>
   );
 }
@@ -94,12 +97,9 @@ function ClubRow({ club, session, saveClub, removeClub }) {
         <div className="flex flex-col gap-3 border-t border-white/10 px-3 py-3">
           {session.signedIn ? (
             <>
-              <div className="flex items-center gap-3">
-                <PencilEditOverlay value={club.crestUrl} onCommit={(v) => commit({ crestUrl: v })}>
-                  <Crest team={club} size={48} />
-                </PencilEditOverlay>
-                <span className="text-[10px] text-white/40">Click the crest to change its image URL</span>
-              </div>
+              <PencilEditOverlay value={club.crestUrl} onCommit={(v) => commit({ crestUrl: v })}>
+                <Crest team={club} size={48} />
+              </PencilEditOverlay>
               <div className="flex flex-wrap gap-2">
                 <TextField label="Name" value={club.name} onCommit={(v) => commit({ name: v })} />
                 <TextField
@@ -127,9 +127,9 @@ function ClubRow({ club, session, saveClub, removeClub }) {
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="w-fit rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+                className="w-fit rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold uppercase text-red-300 hover:bg-red-500/10 disabled:opacity-50"
               >
-                {deleting ? 'Deleting…' : 'Delete club'}
+                {deleting ? 'Deleting…' : 'Delete'}
               </button>
             </>
           ) : (
@@ -203,11 +203,7 @@ function AddClubForm({ session, createClub }) {
             placeholder="Crest URL (optional)"
             className={`${inputClass} w-48`}
           />
-          <select value={scope} onChange={(e) => setScope(e.target.value)} className={inputClass}>
-            <option value="current">Current roster</option>
-            <option value="national">National</option>
-            <option value="european">European</option>
-          </select>
+          <Dropdown variant="sidebar" value={scope} onChange={setScope} options={SCOPE_OPTIONS} />
         </div>
         <div className="flex flex-wrap items-end gap-2">
           <ColorField label="Primary colour" value={primary} onCommit={setPrimary} />
@@ -236,6 +232,19 @@ export default function TeamsPanel({ session }) {
         <span className="text-[10px] font-semibold uppercase tracking-wide text-white/30">About this section</span>
       </div>
       {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit clubs.</p>}
+      {session.signedIn && (
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => setShowAddForm((v) => !v)}
+            className={`self-start rounded-full px-3 py-1.5 text-xs font-bold uppercase transition-colors ${
+              showAddForm ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
+            }`}
+          >
+            Add club {showAddForm ? '▴' : '▾'}
+          </button>
+          {showAddForm && <AddClubForm session={session} createClub={createClub} />}
+        </div>
+      )}
       {loading ? (
         <p className="text-sm text-white/40">Loading…</p>
       ) : error ? (
@@ -250,6 +259,7 @@ export default function TeamsPanel({ session }) {
               ))}
             </div>
           </CollapsibleSection>
+          <div className="border-t border-white/10" />
           <CollapsibleSection title={`National (${national.length})`}>
             <div className="flex flex-col gap-1.5">
               {national.length === 0 && <p className="text-xs text-white/40">None added yet.</p>}
@@ -258,6 +268,7 @@ export default function TeamsPanel({ session }) {
               ))}
             </div>
           </CollapsibleSection>
+          <div className="border-t border-white/10" />
           <CollapsibleSection title={`European (${european.length})`}>
             <div className="flex flex-col gap-1.5">
               {european.length === 0 && <p className="text-xs text-white/40">None added yet.</p>}
@@ -266,19 +277,6 @@ export default function TeamsPanel({ session }) {
               ))}
             </div>
           </CollapsibleSection>
-          {session.signedIn && (
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => setShowAddForm((v) => !v)}
-                className={`self-start rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
-                  showAddForm ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
-                }`}
-              >
-                Add club {showAddForm ? '▴' : '▾'}
-              </button>
-              {showAddForm && <AddClubForm session={session} createClub={createClub} />}
-            </div>
-          )}
         </div>
       )}
     </div>

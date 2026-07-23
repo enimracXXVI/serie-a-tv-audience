@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { niceTicks } from '../lib/chartTicks.js';
 import { formatNumber, formatAbbreviated } from '../lib/formatNumber.js';
+import Card from './Card.jsx';
 
 const WIDTH = 780;
 const HEIGHT = 220;
@@ -69,20 +70,21 @@ export default function SeasonTrendChart({ trend, team }) {
       : 0;
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-[#0f1e54]">Season audience trend</h3>
+    <Card
+      title="Season audience trend"
+      controls={
         <div className="flex items-center gap-3 text-[10px] font-semibold">
-          <span className="flex items-center gap-1 text-gray-500">
-            <span className="inline-block h-0.5 w-3 rounded-full bg-gray-400" /> League average
+          <span className="flex items-center gap-1 text-[#0f1e54]/70">
+            <span className="inline-block h-0.5 w-3 rounded-full bg-[#0f1e54]/50" /> League average
           </span>
           {team && (
-            <span className="flex items-center gap-1" style={{ color: team.primary }}>
+            <span className="flex items-center gap-1 text-[#0f1e54]">
               <span className="inline-block h-0.5 w-3 rounded-full" style={{ background: team.primary }} /> {team.name}
             </span>
           )}
         </div>
-      </div>
+      }
+    >
       {trend.length === 0 ? (
         <p className="text-xs text-gray-400">No played games yet.</p>
       ) : (
@@ -147,6 +149,6 @@ export default function SeasonTrendChart({ trend, team }) {
         <span>Matchday 1</span>
         <span>Matchday {maxMatchday}</span>
       </div>
-    </div>
+    </Card>
   );
 }

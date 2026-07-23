@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { formatNumber } from '../lib/formatNumber.js';
 import GameListModal from './GameListModal.jsx';
+import Card from './Card.jsx';
 
 const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const LIMITS = [10, 20];
@@ -56,18 +57,19 @@ export default function DayTimeBreakdownTable({ rows, simulcastInfo }) {
   const visible = limit === null ? sorted : sorted.slice(0, limit);
 
   return (
-    <div className="overflow-x-auto rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-[#0f1e54]">Day + kickoff time breakdown</h3>
+    <Card
+      title="Day + kickoff time breakdown"
+      bodyClassName="overflow-x-auto p-4"
+      controls={
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] text-gray-400">Shift+click a column to sort by multiple columns</span>
+          <span className="text-[10px] text-white/80">Shift+click a column to sort by multiple columns</span>
           <div className="flex gap-1">
             {LIMITS.map((n) => (
               <button
                 key={n}
                 onClick={() => setLimit(n)}
                 className={`rounded-full px-2.5 py-1 text-xs font-bold ${
-                  limit === n ? 'bg-[#0f1e54] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  limit === n ? 'bg-white text-[#0f1e54]' : 'bg-black/10 text-[#0f1e54]/70 hover:bg-black/20'
                 }`}
               >
                 Top {n}
@@ -76,14 +78,15 @@ export default function DayTimeBreakdownTable({ rows, simulcastInfo }) {
             <button
               onClick={() => setLimit(null)}
               className={`rounded-full px-2.5 py-1 text-xs font-bold ${
-                limit === null ? 'bg-[#0f1e54] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                limit === null ? 'bg-white text-[#0f1e54]' : 'bg-black/10 text-[#0f1e54]/70 hover:bg-black/20'
               }`}
             >
               Show all
             </button>
           </div>
         </div>
-      </div>
+      }
+    >
       {rows.length === 0 ? (
         <p className="text-xs text-gray-400">No played games with this data yet.</p>
       ) : (
@@ -137,6 +140,6 @@ export default function DayTimeBreakdownTable({ rows, simulcastInfo }) {
           onClose={() => setSelected(null)}
         />
       )}
-    </div>
+    </Card>
   );
 }

@@ -71,7 +71,7 @@ function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain, remo
   return (
     <div className="flex flex-col gap-1 rounded-lg bg-white/5 px-3 py-2">
       {confirmDialog}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <PencilEditOverlay value={broadcaster.logoUrl} onCommit={commit} rounded="rounded-md">
           <LogoPreview url={broadcaster.logoUrl} />
         </PencilEditOverlay>
@@ -81,22 +81,22 @@ function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain, remo
             Main
           </span>
         )}
+        {session.signedIn && !broadcaster.isMain && (
+          <button onClick={setMain} className="text-[10px] font-semibold uppercase text-white/50 hover:text-white">
+            Set as main
+          </button>
+        )}
+        {session.signedIn && (
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="ml-auto w-fit rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold uppercase text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+          >
+            {deleting ? 'Deleting…' : 'Delete'}
+          </button>
+        )}
       </div>
-      {session.signedIn && !broadcaster.isMain && (
-        <button onClick={setMain} className="self-start text-[10px] font-semibold text-white/50 hover:text-white">
-          Set as main broadcaster
-        </button>
-      )}
       {error && <p className="text-xs text-red-300">{error}</p>}
-      {session.signedIn && (
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="w-fit rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
-        >
-          {deleting ? 'Deleting…' : 'Delete broadcaster'}
-        </button>
-      )}
     </div>
   );
 }
@@ -144,6 +144,40 @@ export default function BroadcastersPanel({ session }) {
         <span className="text-[10px] font-semibold uppercase tracking-wide text-white/30">About this section</span>
       </div>
       {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit broadcasters.</p>}
+      {session.signedIn && (
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => setShowAddForm((v) => !v)}
+            className={`self-start rounded-full px-3 py-1.5 text-xs font-bold uppercase transition-colors ${
+              showAddForm ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
+            }`}
+          >
+            Add broadcaster {showAddForm ? '▴' : '▾'}
+          </button>
+          {showAddForm && (
+            <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2 rounded-lg bg-white/5 px-3 py-2">
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="New broadcaster name"
+                className={`${inputClass} w-40`}
+              />
+              <input
+                type="text"
+                value={newLogoUrl}
+                onChange={(e) => setNewLogoUrl(e.target.value)}
+                placeholder="Logo image URL (optional)"
+                className={`${inputClass} w-56`}
+              />
+              <button type="submit" className="rounded-md bg-[#1fd8c9] px-3 py-1.5 text-xs font-bold text-[#0f1e54] hover:brightness-95">
+                Add
+              </button>
+            </form>
+          )}
+          {createError && <p className="text-xs text-red-300">{createError}</p>}
+        </div>
+      )}
       {loading ? (
         <p className="text-sm text-white/40">Loading…</p>
       ) : error ? (
@@ -160,40 +194,6 @@ export default function BroadcastersPanel({ session }) {
               removeBroadcaster={removeBroadcaster}
             />
           ))}
-          {session.signedIn && (
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => setShowAddForm((v) => !v)}
-                className={`self-start rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
-                  showAddForm ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
-                }`}
-              >
-                Add broadcaster {showAddForm ? '▴' : '▾'}
-              </button>
-              {showAddForm && (
-                <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2 rounded-lg bg-white/5 px-3 py-2">
-                  <input
-                    type="text"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    placeholder="New broadcaster name"
-                    className={`${inputClass} w-40`}
-                  />
-                  <input
-                    type="text"
-                    value={newLogoUrl}
-                    onChange={(e) => setNewLogoUrl(e.target.value)}
-                    placeholder="Logo image URL (optional)"
-                    className={`${inputClass} w-56`}
-                  />
-                  <button type="submit" className="rounded-md bg-[#1fd8c9] px-3 py-1.5 text-xs font-bold text-[#0f1e54] hover:brightness-95">
-                    Add
-                  </button>
-                </form>
-              )}
-            </div>
-          )}
-          {createError && <p className="text-xs text-red-300">{createError}</p>}
         </div>
       )}
     </div>

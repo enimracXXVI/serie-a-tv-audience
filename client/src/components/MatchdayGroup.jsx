@@ -83,18 +83,19 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, onDelete, 
           </div>
         )}
       </header>
-      <div className="flex flex-col divide-y divide-gray-100">
-        {orderedFixtures.map((f) => (
-          <FixtureRow
-            key={f.id}
-            fixture={f}
-            onUpdate={onUpdate}
-            onDelete={onDelete}
-            highlightSlugs={highlightSlugs}
-            canEdit={canEdit}
-            editMode={activeTab}
-            sponsorCounts={sponsorCounts}
-          />
+      <div className="flex flex-col">
+        {orderedFixtures.map((f, i) => (
+          <div key={f.id} style={i > 0 ? { borderTop: `1px solid ${accent}33` } : undefined}>
+            <FixtureRow
+              fixture={f}
+              onUpdate={onUpdate}
+              onDelete={onDelete}
+              highlightSlugs={highlightSlugs}
+              canEdit={canEdit}
+              editMode={activeTab}
+              sponsorCounts={sponsorCounts}
+            />
+          </div>
         ))}
       </div>
     </section>

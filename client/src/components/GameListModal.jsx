@@ -61,15 +61,15 @@ export default function GameListModal({ title, subtitle, games, simulcastInfo, o
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div className="relative flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-start justify-between gap-3 border-b border-gray-100 px-4 py-3">
+        <div className="flex items-start justify-between gap-3 px-4 py-3" style={{ background: '#1fd8c9' }}>
           <div>
             <h3 className="text-sm font-bold text-[#0f1e54]">{title}</h3>
-            {subtitle && <p className="text-xs text-gray-400">{subtitle}</p>}
+            {subtitle && <p className="text-xs text-[#0f1e54]/70">{subtitle}</p>}
           </div>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-[#0f1e54]"
+            className="rounded-full p-1.5 text-[#0f1e54]/70 hover:bg-black/10 hover:text-[#0f1e54]"
           >
             ✕
           </button>
