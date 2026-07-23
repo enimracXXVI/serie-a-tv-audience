@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Crest from './Crest.jsx';
 import ToggleSwitch from './ToggleSwitch.jsx';
+import Dropdown from './Dropdown.jsx';
 import { BroadcasterBadge } from './BroadcastBadges.jsx';
 import { resolveCupFixtureOutcome } from '../lib/cupFixtures.js';
 import { resolveBroadcasterList } from '../lib/broadcasters.js';
@@ -9,7 +10,7 @@ import { isCoppaItalia } from '../lib/competitions.js';
 import { useConfirm } from '../lib/useConfirm.jsx';
 
 const inputClass =
-  'w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
+  'w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-sm text-[#0f1e54] shadow-sm outline-none transition-colors focus:border-[#1fd8c9] focus:bg-white focus:ring-2 focus:ring-[#1fd8c9]/20';
 
 function formatDateShort(dateStr) {
   if (!dateStr) return null;
@@ -52,7 +53,7 @@ function TrophyIcon() {
 function Field({ label, children }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</span>
+      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{label}</span>
       {children}
     </label>
   );
@@ -117,18 +118,13 @@ function KickoffFields({ fixture, onUpdate, broadcasters }) {
         />
       </Field>
       <Field label="Broadcaster">
-        <select
+        <Dropdown
+          variant="light"
+          className="w-40"
           value={fixture.otherBroadcaster ?? ''}
-          className={`${inputClass} w-40`}
-          onChange={(e) => onUpdate(fixture.id, { otherBroadcaster: e.target.value || null })}
-        >
-          <option value="">None</option>
-          {broadcasters.map((b) => (
-            <option key={b.slug} value={b.slug}>
-              {b.name}
-            </option>
-          ))}
-        </select>
+          onChange={(v) => onUpdate(fixture.id, { otherBroadcaster: v || null })}
+          options={[{ value: '', label: 'None' }, ...broadcasters.map((b) => ({ value: b.slug, label: b.name }))]}
+        />
       </Field>
       <ToggleSwitch
         checked={Boolean(fixture.neutralVenue)}
@@ -317,7 +313,7 @@ export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, ed
         </div>
 
         {canEdit && editMode && (
-          <div className="mt-2 flex flex-col gap-2 rounded-lg bg-gray-50 p-2.5">
+          <div className="mt-2 flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 shadow-inner">
             {editMode === 'kickoff' && <KickoffFields fixture={fixture} onUpdate={onUpdate} broadcasters={broadcasters} />}
             {editMode === 'result' && <ResultFields fixture={fixture} onUpdate={onUpdate} />}
             {editMode === 'addedTime' && <AddedTimeFields fixture={fixture} onUpdate={onUpdate} />}
@@ -338,7 +334,7 @@ export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, ed
             {onDelete && (
               <button
                 onClick={handleDelete}
-                className="w-fit rounded-md border border-red-300 px-2.5 py-1 text-xs font-semibold text-red-500 hover:bg-red-50"
+                className="w-fit rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-semibold text-red-500 shadow-sm transition-colors hover:bg-red-50"
               >
                 Delete fixture
               </button>

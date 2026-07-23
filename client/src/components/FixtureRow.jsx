@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Crest from './Crest.jsx';
 import { BroadcasterBadge } from './BroadcastBadges.jsx';
 import SponsorBadges from './SponsorBadges.jsx';
+import Dropdown from './Dropdown.jsx';
 import { matchTagStyle } from '../lib/matchTags.js';
 import { SPONSOR_TYPES } from '../lib/sponsorCounts.js';
 import { useCupData } from '../lib/useCupData.jsx';
@@ -11,7 +12,7 @@ import ToggleSwitch from './ToggleSwitch.jsx';
 import { useConfirm } from '../lib/useConfirm.jsx';
 
 const inputClass =
-  'w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
+  'w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-sm text-[#0f1e54] shadow-sm outline-none transition-colors focus:border-[#1fd8c9] focus:bg-white focus:ring-2 focus:ring-[#1fd8c9]/20';
 
 function formatDateShort(dateStr) {
   if (!dateStr) return null;
@@ -33,7 +34,7 @@ function ScoreDisplay({ homeScore, awayScore }) {
 function Field({ label, children }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</span>
+      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{label}</span>
       {children}
     </label>
   );
@@ -79,18 +80,13 @@ function KickoffFields({ fixture, onUpdate, otherBroadcasterOptions }) {
         />
       </Field>
       <Field label="Other broadcaster">
-        <select
+        <Dropdown
+          variant="light"
+          className="w-40"
           value={fixture.otherBroadcaster ?? ''}
-          className={`${inputClass} w-40`}
-          onChange={(e) => onUpdate(fixture.id, { otherBroadcaster: e.target.value || null })}
-        >
-          <option value="">None</option>
-          {otherBroadcasterOptions.map((b) => (
-            <option key={b.slug} value={b.slug}>
-              {b.name}
-            </option>
-          ))}
-        </select>
+          onChange={(v) => onUpdate(fixture.id, { otherBroadcaster: v || null })}
+          options={[{ value: '', label: 'None' }, ...otherBroadcasterOptions.map((b) => ({ value: b.slug, label: b.name }))]}
+        />
       </Field>
     </div>
   );
@@ -335,8 +331,43 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
         </div>
       </div>
 
+      {/* The inline badges above are hidden below sm (no room next to the
+          team name), but matchday-sponsor/player-mascot/walkabout activity is
+          exactly what a sponsor rep wants to check on the go - surfaced here
+          as its own compact row instead, mobile-only, rather than left
+          invisible until a wider screen happens to be available. */}
+      {(fixture.homeMatchdaySponsor ||
+        fixture.homePlayerMascot ||
+        fixture.homeWalkabout ||
+        fixture.awayMatchdaySponsor ||
+        fixture.awayPlayerMascot ||
+        fixture.awayWalkabout) && (
+        <div className="mt-1 flex items-center justify-center gap-3 sm:hidden">
+          {(fixture.homeMatchdaySponsor || fixture.homePlayerMascot || fixture.homeWalkabout) && (
+            <div className="flex items-center gap-1">
+              <span className="text-[8px] font-bold uppercase text-gray-400">{home.short ?? home.name}</span>
+              <SponsorBadges
+                matchdaySponsor={fixture.homeMatchdaySponsor}
+                playerMascot={fixture.homePlayerMascot}
+                walkabout={fixture.homeWalkabout}
+              />
+            </div>
+          )}
+          {(fixture.awayMatchdaySponsor || fixture.awayPlayerMascot || fixture.awayWalkabout) && (
+            <div className="flex items-center gap-1">
+              <span className="text-[8px] font-bold uppercase text-gray-400">{away.short ?? away.name}</span>
+              <SponsorBadges
+                matchdaySponsor={fixture.awayMatchdaySponsor}
+                playerMascot={fixture.awayPlayerMascot}
+                walkabout={fixture.awayWalkabout}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {canEdit && editMode && (
-        <div className="mt-2 flex flex-col gap-2 rounded-lg bg-gray-50 p-2.5">
+        <div className="mt-2 flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 shadow-inner">
           {editMode === 'kickoff' && (
             <KickoffFields fixture={fixture} onUpdate={onUpdate} otherBroadcasterOptions={otherBroadcasterOptions} />
           )}
@@ -362,7 +393,7 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
           {onDelete && (
             <button
               onClick={handleDelete}
-              className="w-fit rounded-md border border-red-300 px-2.5 py-1 text-xs font-semibold text-red-500 hover:bg-red-50"
+              className="w-fit rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-semibold text-red-500 shadow-sm transition-colors hover:bg-red-50"
             >
               Delete fixture
             </button>

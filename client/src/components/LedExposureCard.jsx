@@ -31,9 +31,18 @@ function minutesBreakdown(game) {
   return parts.join(' ');
 }
 
+// A cup fixture has no numeric matchday at all, so sorting by matchday
+// number would leave every cup game bunched at one end instead of in its
+// real chronological place alongside the Serie A games around it - date
+// (falling back to kickoff time for same-day ties) is the one ordering
+// every fixture actually has.
+function dateSortKey(fixture) {
+  return `${fixture.date ?? ''}T${fixture.kickoffTime ?? '00:00'}`;
+}
+
 function compareValue(key, a, b) {
   if (key === 'opponent') return (a.fixture.away.name ?? '').localeCompare(b.fixture.away.name ?? '');
-  if (key === 'matchday') return (a.fixture.matchday ?? 0) - (b.fixture.matchday ?? 0);
+  if (key === 'matchday') return dateSortKey(a.fixture).localeCompare(dateSortKey(b.fixture));
   if (key === 'penalty') return Number(Boolean(a.penaltyExposure)) - Number(Boolean(b.penaltyExposure));
   return (a[key] ?? 0) - (b[key] ?? 0);
 }

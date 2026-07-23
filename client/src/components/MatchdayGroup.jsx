@@ -63,9 +63,14 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, onDelete, 
             <span className="text-xs" style={{ color: textColor, opacity: 0.7 }}>
               {range}
             </span>
-            <a href="#matchday-nav" className="text-xs font-semibold hover:opacity-100" style={{ color: textColor, opacity: 0.7 }}>
+            <button
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="text-xs font-semibold hover:opacity-100"
+              style={{ color: textColor, opacity: 0.7 }}
+            >
               ↑ Top
-            </a>
+            </button>
           </div>
         </div>
         {canEdit && (
@@ -74,7 +79,7 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, onDelete, 
               <button
                 key={t.key}
                 onClick={() => setActiveTab((cur) => (cur === t.key ? null : t.key))}
-                className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wide transition-colors hover:bg-white/20"
+                className="rounded-full bg-black/20 px-3 py-1 text-[11px] font-bold uppercase tracking-wide transition-colors hover:bg-black/30"
                 style={activeTab === t.key ? { background: 'white', color: accent } : { color: textColor, opacity: 0.85 }}
               >
                 {t.label}

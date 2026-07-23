@@ -81,19 +81,21 @@ function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain, remo
             Main
           </span>
         )}
-        {session.signedIn && !broadcaster.isMain && (
-          <button onClick={setMain} className="text-[10px] font-semibold uppercase text-white/50 hover:text-white">
-            Set as main
-          </button>
-        )}
         {session.signedIn && (
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="ml-auto w-fit rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold uppercase text-red-300 hover:bg-red-500/10 disabled:opacity-50"
-          >
-            {deleting ? 'Deleting…' : 'Delete'}
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            {!broadcaster.isMain && (
+              <button onClick={setMain} className="text-[10px] font-semibold uppercase text-white/50 hover:text-white">
+                Set as main
+              </button>
+            )}
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="w-fit rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold uppercase text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+            >
+              {deleting ? 'Deleting…' : 'Delete'}
+            </button>
+          </div>
         )}
       </div>
       {error && <p className="text-xs text-red-300">{error}</p>}
@@ -139,42 +141,44 @@ export default function BroadcastersPanel({ session }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-1.5">
-        <InfoTip text={'Mark exactly one broadcaster as main (e.g. DAZN) - its name/logo replaces every hardcoded "DAZN" label on the Serie A calendar and Dashboard. Every other broadcaster here (e.g. Sky Sport) becomes a per-fixture "other broadcaster" choice - pick one when a game is also shown somewhere else, or leave it unset.'} />
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-white/30">About this section</span>
-      </div>
-      {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit broadcasters.</p>}
-      {session.signedIn && (
-        <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <InfoTip text={'Mark exactly one broadcaster as main (e.g. DAZN) - its name/logo replaces every hardcoded "DAZN" label on the Serie A calendar and Dashboard. Every other broadcaster here (e.g. Sky Sport) becomes a per-fixture "other broadcaster" choice - pick one when a game is also shown somewhere else, or leave it unset.'} />
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-white/30">About this section</span>
+        </div>
+        {session.signedIn && (
           <button
             onClick={() => setShowAddForm((v) => !v)}
-            className={`self-start rounded-full px-3 py-1.5 text-xs font-bold uppercase transition-colors ${
+            className={`rounded-full px-3 py-1.5 text-xs font-bold uppercase transition-colors ${
               showAddForm ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
             }`}
           >
             Add broadcaster {showAddForm ? '▴' : '▾'}
           </button>
-          {showAddForm && (
-            <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2 rounded-lg bg-white/5 px-3 py-2">
-              <input
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="New broadcaster name"
-                className={`${inputClass} w-40`}
-              />
-              <input
-                type="text"
-                value={newLogoUrl}
-                onChange={(e) => setNewLogoUrl(e.target.value)}
-                placeholder="Logo image URL (optional)"
-                className={`${inputClass} w-56`}
-              />
-              <button type="submit" className="rounded-md bg-[#1fd8c9] px-3 py-1.5 text-xs font-bold text-[#0f1e54] hover:brightness-95">
-                Add
-              </button>
-            </form>
-          )}
+        )}
+      </div>
+      {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit broadcasters.</p>}
+      {session.signedIn && showAddForm && (
+        <div className="flex flex-col gap-2">
+          <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2 rounded-lg bg-white/5 px-3 py-2">
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="New broadcaster name"
+              className={`${inputClass} w-40`}
+            />
+            <input
+              type="text"
+              value={newLogoUrl}
+              onChange={(e) => setNewLogoUrl(e.target.value)}
+              placeholder="Logo image URL (optional)"
+              className={`${inputClass} w-56`}
+            />
+            <button type="submit" className="rounded-md bg-[#1fd8c9] px-3 py-1.5 text-xs font-bold text-[#0f1e54] hover:brightness-95">
+              Add
+            </button>
+          </form>
           {createError && <p className="text-xs text-red-300">{createError}</p>}
         </div>
       )}
