@@ -68,7 +68,7 @@ export default function HomePage() {
       <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-br from-[#0a1440] to-[#16297a] px-6 py-3">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 pr-36">
           <h1 className="flex items-center gap-2 text-lg font-black text-white sm:text-xl">
-            {serieALogoUrl && <img src={serieALogoUrl} alt="" className="h-6 w-auto object-contain sm:h-7" />}
+            {serieALogoUrl && <img src={serieALogoUrl} alt="" className="hidden h-6 w-auto object-contain sm:block sm:h-7" />}
             Serie A
           </h1>
           <SeasonSelector season={season} onChange={setSeason} />
