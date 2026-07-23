@@ -1,5 +1,5 @@
 import { SPREADSHEET_ID, GOOGLE_API_KEY } from './config.js';
-import { buildHeaderIndex, cell } from './sheetsCommon.js';
+import { buildHeaderIndex, normalizeHeaderIndex, cell } from './sheetsCommon.js';
 
 // Same parsing rules as sheets.js's rowToFixture (numeric/boolean coercion,
 // Excel serial date handling) - kept as its own copy rather than sharing
@@ -34,6 +34,32 @@ const BOOLEAN_FIELDS = new Set([
   'neutralVenue',
   'penaltyTaken',
 ]);
+
+// Every field this module ever reads by name - see normalizeHeaderIndex's
+// use below for why this matters (a header cell typed with different
+// casing/spacing than the code expects would otherwise silently read blank).
+const ALL_FIXTURE_FIELDS = [
+  ...new Set([
+    ...NUMERIC_FIELDS,
+    ...BOOLEAN_FIELDS,
+    'id',
+    'matchday',
+    'day',
+    'date',
+    'kickoffTime',
+    'home',
+    'away',
+    'otherBroadcaster',
+    'homeMatchdaySponsor',
+    'homePlayerMascot',
+    'homeWalkabout',
+    'awayMatchdaySponsor',
+    'awayPlayerMascot',
+    'awayWalkabout',
+    'competition',
+    'round',
+  ]),
+];
 
 function excelSerialToISODate(serial) {
   const epoch = Date.UTC(1899, 11, 30);
@@ -95,7 +121,7 @@ export async function fetchSeasonFixtures(tabName) {
   const data = await res.json();
   const rows = data.values || [];
   const [headerRow, ...dataRows] = rows;
-  const headerIndex = buildHeaderIndex(headerRow || []);
+  const headerIndex = normalizeHeaderIndex(buildHeaderIndex(headerRow || []), ALL_FIXTURE_FIELDS);
   if (headerIndex.id === undefined) {
     throw new Error(`The "${tabName}" tab is missing an "id" column header - see README.`);
   }

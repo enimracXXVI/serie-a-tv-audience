@@ -90,19 +90,21 @@ function SeasonRow({ season, session, saveSeason, onSetCurrent, removeSeason }) 
             className={`${inputClass} w-28`}
           />
         </label>
-        {session.signedIn && !season.current && (
-          <button onClick={setCurrent} className="text-[10px] font-semibold uppercase text-white/50 hover:text-white">
-            Set as current
-          </button>
-        )}
         {session.signedIn && (
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="ml-auto w-fit rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold uppercase text-red-300 hover:bg-red-500/10 disabled:opacity-50"
-          >
-            {deleting ? 'Deleting…' : 'Delete'}
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            {!season.current && (
+              <button onClick={setCurrent} className="text-[10px] font-semibold uppercase text-white/50 hover:text-white">
+                Set as current
+              </button>
+            )}
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="w-fit rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold uppercase text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+            >
+              {deleting ? 'Deleting…' : 'Delete'}
+            </button>
+          </div>
         )}
       </div>
       {error && <p className="text-xs text-red-300">{error}</p>}
@@ -155,52 +157,54 @@ export default function SeasonsPanel({ session }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-1.5">
-        <InfoTip
-          text={
-            'Every season the app knows about, live or archived. Exactly one should be current - that\'s the season Fixtures/Standings/Dashboard/Cups default to, and the tab actively written to when a game is edited or added. Creating a season here only registers it - you still need to create its fixtures tab in the sheet by hand (copy the current tab\'s header row) before picking it here.'
-          }
-        />
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-white/30">About this section</span>
-      </div>
-      {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit seasons.</p>}
-      {session.signedIn && (
-        <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <InfoTip
+            text={
+              'Every season the app knows about, live or archived. Exactly one should be current - that\'s the season Fixtures/Standings/Dashboard/Cups default to, and the tab actively written to when a game is edited or added. Creating a season here only registers it - you still need to create its fixtures tab in the sheet by hand (copy the current tab\'s header row) before picking it here.'
+            }
+          />
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-white/30">About this section</span>
+        </div>
+        {session.signedIn && (
           <button
             onClick={() => setShowAddForm((v) => !v)}
-            className={`self-start rounded-full px-3 py-1.5 text-xs font-bold uppercase transition-colors ${
+            className={`rounded-full px-3 py-1.5 text-xs font-bold uppercase transition-colors ${
               showAddForm ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
             }`}
           >
             Add season {showAddForm ? '▴' : '▾'}
           </button>
-          {showAddForm && (
-            <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2 rounded-lg bg-white/5 px-3 py-2">
-              <label className="flex flex-col gap-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Label</span>
-                <input
-                  type="text"
-                  value={newLabel}
-                  onChange={(e) => setNewLabel(e.target.value)}
-                  placeholder="27/28"
-                  className={`${inputClass} w-24`}
-                />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Fixtures tab</span>
-                <input
-                  type="text"
-                  value={newTab}
-                  onChange={(e) => setNewTab(e.target.value)}
-                  placeholder="fixtures_27_28"
-                  className={`${inputClass} w-40`}
-                />
-              </label>
-              <button type="submit" className="rounded-md bg-[#1fd8c9] px-3 py-1.5 text-xs font-bold text-[#0f1e54] hover:brightness-95">
-                Add
-              </button>
-            </form>
-          )}
+        )}
+      </div>
+      {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit seasons.</p>}
+      {session.signedIn && showAddForm && (
+        <div className="flex flex-col gap-2">
+          <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2 rounded-lg bg-white/5 px-3 py-2">
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Label</span>
+              <input
+                type="text"
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                placeholder="27/28"
+                className={`${inputClass} w-24`}
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Fixtures tab</span>
+              <input
+                type="text"
+                value={newTab}
+                onChange={(e) => setNewTab(e.target.value)}
+                placeholder="fixtures_27_28"
+                className={`${inputClass} w-40`}
+              />
+            </label>
+            <button type="submit" className="rounded-md bg-[#1fd8c9] px-3 py-1.5 text-xs font-bold text-[#0f1e54] hover:brightness-95">
+              Add
+            </button>
+          </form>
           {createError && <p className="text-xs text-red-300">{createError}</p>}
         </div>
       )}

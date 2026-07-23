@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import CalendarView from '../components/CalendarView.jsx';
 import CalendarNavBar from '../components/CalendarNavBar.jsx';
 import AddSerieAFixtureForm from '../components/AddSerieAFixtureForm.jsx';
 import SeasonSelector from '../components/SeasonSelector.jsx';
 import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
+import { teamsInFixtures } from '../lib/teams.js';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useSession } from '../lib/useSession.jsx';
 import { useCupData } from '../lib/useCupData.jsx';
@@ -29,6 +30,16 @@ export default function HomePage() {
   const serieALogoUrl = serieALogo(competitions);
   const [updateError, setUpdateError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
+
+  // A past season's actual roster isn't necessarily this year's - so that
+  // "Build calendar"/"Sponsored teams" (which navigate off to a branded
+  // calendar for whichever season is currently being viewed here) offer the
+  // right clubs instead of always the live roster.
+  const effectiveTeams = useMemo(
+    () => (season.current ? teams : teamsInFixtures(fixtures)),
+    [season, fixtures, teams]
+  );
+  const seasonQuery = season.current ? '' : `?season=${season.slug}`;
 
   async function handleUpdate(id, fields) {
     try {
@@ -66,7 +77,8 @@ export default function HomePage() {
 
       <main className="mx-auto max-w-6xl px-6 py-8">
         <CalendarNavBar
-          teams={teams}
+          teams={effectiveTeams}
+          seasonQuery={seasonQuery}
           rightSlot={
             canEdit &&
             !fixturesLoading &&

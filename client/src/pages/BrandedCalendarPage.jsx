@@ -4,8 +4,11 @@ import Crest from '../components/Crest.jsx';
 import CalendarView from '../components/CalendarView.jsx';
 import TeamCalendarView from '../components/TeamCalendarView.jsx';
 import CalendarNavBar from '../components/CalendarNavBar.jsx';
+import SeasonSelector from '../components/SeasonSelector.jsx';
 import { useTeams } from '../lib/useTeams.jsx';
-import { useFixtures } from '../lib/useFixtures.js';
+import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
+import { teamsInFixtures } from '../lib/teams.js';
+import { useSeasonParam } from '../lib/useSeasonParam.js';
 import { themeGradient, contrastText } from '../lib/color.js';
 import { FIXTURE_FILTERS, applyFixtureFilters } from '../lib/fixtureFilters.js';
 
@@ -19,7 +22,27 @@ export default function BrandedCalendarPage() {
     [slugsParam]
   );
   const { teams, loading: teamsLoading } = useTeams();
-  const { fixtures, loading: fixturesLoading, error: fixturesError } = useFixtures(slugs, teams);
+  const [season, setSeason] = useSeasonParam();
+  const { fixtures: seasonFixtures, loading: fixturesLoading, error: fixturesError } = useSeasonFixtures(season, teams);
+
+  // A past season's real roster isn't necessarily this year's - a
+  // promoted/relegated club since then needs to still show up here (as a
+  // pill, in the team picker, as the page's own branded team) rather than
+  // silently vanishing because it's missing from the current live roster.
+  const effectiveTeams = useMemo(
+    () => (season.current ? teams : teamsInFixtures(seasonFixtures)),
+    [season, seasonFixtures, teams]
+  );
+
+  // useSeasonFixtures returns the whole season unfiltered (there's no
+  // per-team fetch for an archive tab) - narrow to just the requested
+  // club(s) here, the same filter useFixtures used to apply internally.
+  const fixtures = useMemo(() => {
+    if (slugs.length === 0) return seasonFixtures;
+    const wanted = new Set(slugs);
+    return seasonFixtures.filter((f) => wanted.has(f.home.slug) || wanted.has(f.away.slug));
+  }, [seasonFixtures, slugs]);
+
   const [activeFilters, setActiveFilters] = useState([]);
   const filteredFixtures = useMemo(() => applyFixtureFilters(fixtures, activeFilters), [fixtures, activeFilters]);
   function toggleFilter(key) {
@@ -27,8 +50,8 @@ export default function BrandedCalendarPage() {
   }
 
   const selectedTeams = useMemo(
-    () => slugs.map((s) => teams.find((t) => t.slug === s)).filter(Boolean),
-    [slugs, teams]
+    () => slugs.map((s) => effectiveTeams.find((t) => t.slug === s)).filter(Boolean),
+    [slugs, effectiveTeams]
   );
 
   // The full set of clubs the header's pills offer to toggle - stays put as
@@ -45,15 +68,20 @@ export default function BrandedCalendarPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slugs]);
   const pillTeams = useMemo(
-    () => pillSlugs.map((s) => teams.find((t) => t.slug === s)).filter(Boolean),
-    [pillSlugs, teams]
+    () => pillSlugs.map((s) => effectiveTeams.find((t) => t.slug === s)).filter(Boolean),
+    [pillSlugs, effectiveTeams]
   );
+
+  // Preserves whichever season is currently being viewed across every
+  // in-page navigation below - otherwise toggling a team pill (or using the
+  // "Build calendar" panel) would silently snap back to the live season.
+  const seasonQuery = season.current ? '' : `?season=${season.slug}`;
 
   function toggleTeamInView(slug) {
     const next = slugs.includes(slug) ? slugs.filter((s) => s !== slug) : [...slugs, slug];
     if (next.length === 0) return;
     internalNavRef.current = true;
-    navigate(`/calendar/${next.join(',')}`, { replace: true });
+    navigate(`/calendar/${next.join(',')}${seasonQuery}`, { replace: true });
   }
 
   const gradient = themeGradient(selectedTeams.map((t) => t.primary));
@@ -72,14 +100,16 @@ export default function BrandedCalendarPage() {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-white/10 px-6 py-3" style={{ background: gradient }}>
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 pr-16">
           <div className="flex items-center gap-3">
             {selectedTeams.length === 1 && <Crest team={selectedTeams[0]} size={26} />}
             <h1 className="text-lg font-black sm:text-xl" style={{ color: headerText }}>
               {selectedTeams.length === 1 ? selectedTeams[0].name : 'Combined Calendar'}
-              <span className="ml-1.5 text-xs font-semibold opacity-60">26/27</span>
+              <span className="ml-1.5 text-xs font-semibold opacity-60">{season.label}</span>
             </h1>
           </div>
+
+          <SeasonSelector season={season} onChange={setSeason} />
 
           {pillTeams.length > 1 && (
             <div className="flex flex-wrap items-center gap-1.5">
@@ -107,7 +137,7 @@ export default function BrandedCalendarPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-6">
-        {!teamsLoading && <CalendarNavBar teams={teams} />}
+        {!teamsLoading && <CalendarNavBar teams={effectiveTeams} seasonQuery={seasonQuery} />}
 
         {!teamsLoading && !fixturesLoading && !fixturesError && fixtures.length > 0 && (
           <div className="mb-4 flex flex-wrap items-center gap-1.5">

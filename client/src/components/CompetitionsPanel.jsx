@@ -5,6 +5,7 @@ import { callWithReauth } from '../lib/reauth.js';
 import { useConfirm } from '../lib/useConfirm.jsx';
 import PencilEditOverlay from './PencilEditOverlay.jsx';
 import Dropdown from './Dropdown.jsx';
+import InfoTip from './InfoTip.jsx';
 
 const SCOPE_OPTIONS = [
   { value: 'national', label: 'National' },
@@ -217,39 +218,45 @@ export default function CompetitionsPanel({ session }) {
 
   return (
     <div className="flex flex-col gap-3">
-      {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit competition logos.</p>}
-      {session.signedIn && (
-        <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <InfoTip text="Every cup/competition the app knows about besides Serie A itself - each gets its own logo and a scope (national or European) deciding which clubs a cup fixture in it can offer as an opponent." />
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-white/30">About this section</span>
+        </div>
+        {session.signedIn && (
           <button
             onClick={() => setShowAddForm((v) => !v)}
-            className={`self-start rounded-full px-3 py-1.5 text-xs font-bold uppercase transition-colors ${
+            className={`rounded-full px-3 py-1.5 text-xs font-bold uppercase transition-colors ${
               showAddForm ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
             }`}
           >
             Add competition {showAddForm ? '▴' : '▾'}
           </button>
-          {showAddForm && (
-            <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2 rounded-lg bg-white/5 px-3 py-2">
-              <input
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="New competition name"
-                className={`${inputClass} w-48`}
-              />
-              <input
-                type="text"
-                value={newLogoURL}
-                onChange={(e) => setNewLogoURL(e.target.value)}
-                placeholder="Logo image URL (optional)"
-                className={`${inputClass} w-56`}
-              />
-              <Dropdown variant="sidebar" value={newScope} onChange={setNewScope} options={SCOPE_OPTIONS} />
-              <button type="submit" className="rounded-md bg-[#1fd8c9] px-3 py-1.5 text-xs font-bold text-[#0f1e54] hover:brightness-95">
-                Add
-              </button>
-            </form>
-          )}
+        )}
+      </div>
+      {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit competition logos.</p>}
+      {session.signedIn && showAddForm && (
+        <div className="flex flex-col gap-2">
+          <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2 rounded-lg bg-white/5 px-3 py-2">
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="New competition name"
+              className={`${inputClass} w-48`}
+            />
+            <input
+              type="text"
+              value={newLogoURL}
+              onChange={(e) => setNewLogoURL(e.target.value)}
+              placeholder="Logo image URL (optional)"
+              className={`${inputClass} w-56`}
+            />
+            <Dropdown variant="sidebar" value={newScope} onChange={setNewScope} options={SCOPE_OPTIONS} />
+            <button type="submit" className="rounded-md bg-[#1fd8c9] px-3 py-1.5 text-xs font-bold text-[#0f1e54] hover:brightness-95">
+              Add
+            </button>
+          </form>
           {createError && <p className="text-xs text-red-300">{createError}</p>}
         </div>
       )}

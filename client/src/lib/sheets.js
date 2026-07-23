@@ -1,5 +1,5 @@
 import { SPREADSHEET_ID, GOOGLE_API_KEY } from './config.js';
-import { columnIndexToLetter, buildHeaderIndex, cell, getSheetId } from './sheetsCommon.js';
+import { columnIndexToLetter, buildHeaderIndex, normalizeHeaderIndex, cell, getSheetId } from './sheetsCommon.js';
 import { computeMatchTags } from './matchTags.js';
 import { computeDayOfWeek } from './matchdays.js';
 
@@ -75,6 +75,15 @@ const EDITABLE_FIELDS = [
   // Italia up to the semifinals (see the NUMERIC_FIELDS comment above).
   'extraLedMinutes',
   'penaltyTaken',
+];
+
+// Every field this module ever reads or writes by name - used to alias a
+// header cell typed with different casing/spacing (e.g. "Audience" instead
+// of "audience") back onto the exact field name the app expects (see
+// normalizeHeaderIndex) - without this, that column's value would silently
+// read as blank/0 on every row instead of erroring loudly.
+const ALL_FIXTURE_FIELDS = [
+  ...new Set([...NUMERIC_FIELDS, ...BOOLEAN_FIELDS, ...EDITABLE_FIELDS, 'id', 'matchday', 'home', 'away', 'competition', 'round', 'updatedAt']),
 ];
 
 // Every function here takes the live season's tab name explicitly (from
@@ -163,7 +172,7 @@ export async function fetchFixtures(sheetName) {
   const data = await res.json();
   const rows = data.values || [];
   const [headerRow, ...dataRows] = rows;
-  const headerIndex = buildHeaderIndex(headerRow);
+  const headerIndex = normalizeHeaderIndex(buildHeaderIndex(headerRow), ALL_FIXTURE_FIELDS);
   headerIndexCache = headerIndex;
 
   const rowIndex = {};
@@ -189,7 +198,7 @@ async function fetchHeaderIndexFor(tabName) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to read the "${tabName}" tab's header row`);
   const data = await res.json();
-  return buildHeaderIndex((data.values && data.values[0]) || []);
+  return normalizeHeaderIndex(buildHeaderIndex((data.values && data.values[0]) || []), ALL_FIXTURE_FIELDS);
 }
 
 export async function updateFixtureRow(fixture, accessToken, sheetName) {

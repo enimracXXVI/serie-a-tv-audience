@@ -43,6 +43,27 @@ export function buildHeaderIndex(headerRow) {
   return index;
 }
 
+// A header row is manually typed/edited in the sheet - a column meant to be
+// "audience" but typed as "Audience" (or with stray spacing) would otherwise
+// silently vanish: buildHeaderIndex keys on the exact header text, so every
+// row's value for that column would read as undefined rather than erroring
+// loudly. This aliases each expected field name onto whichever header
+// actually matches it case-insensitively, so a real column always resolves
+// even if its casing doesn't exactly match the code's field name.
+export function normalizeHeaderIndex(headerIndex, canonicalFields) {
+  const byLowerCase = new Map();
+  for (const key of Object.keys(headerIndex)) {
+    if (!byLowerCase.has(key.toLowerCase())) byLowerCase.set(key.toLowerCase(), key);
+  }
+  const result = { ...headerIndex };
+  for (const field of canonicalFields) {
+    if (result[field] !== undefined) continue;
+    const match = byLowerCase.get(field.toLowerCase());
+    if (match !== undefined) result[field] = headerIndex[match];
+  }
+  return result;
+}
+
 export function cell(row, index) {
   return row[index] === undefined || row[index] === '' ? null : row[index];
 }

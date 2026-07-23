@@ -372,18 +372,16 @@ export default function TeamSeasonsPanel({ session }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         {session.signedIn && (
-          <div className="flex items-center gap-1.5">
-            <InfoTip text="Writes isBigMatch/isDerby to every configured season's own tab in one go - run this once after changing a season's sponsorship/big-club/derby designations above, rather than waiting for someone to happen to edit one of that season's fixture rows." />
-            <button
-              onClick={handleSyncAllSeasons}
-              disabled={syncStatus === 'syncing'}
-              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold uppercase text-white transition-colors hover:bg-white/20 disabled:opacity-50"
-            >
-              {syncStatus === 'syncing' ? 'Syncing…' : 'Sync big / derby'}
-            </button>
-          </div>
+          <button
+            onClick={handleSyncAllSeasons}
+            disabled={syncStatus === 'syncing'}
+            title="Writes isBigMatch/isDerby to every configured season's own tab in one go - run this once after changing a season's sponsorship/big-club/derby designations above, rather than waiting for someone to happen to edit one of that season's fixture rows."
+            className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold uppercase text-white transition-colors hover:bg-white/20 disabled:opacity-50"
+          >
+            {syncStatus === 'syncing' ? 'Syncing…' : 'Sync big / derby'}
+          </button>
         )}
         <span className="text-xs font-semibold uppercase tracking-wide text-white/40">Season</span>
         <Dropdown

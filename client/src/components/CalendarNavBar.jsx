@@ -8,7 +8,7 @@ import { getSavedTeams, saveTeams } from '../lib/savedTeams.js';
 // switching views never requires going back through the hamburger menu.
 // `rightSlot` is an optional extra control (HomePage's "Add fixture" toggle)
 // pushed to the far right of the same row instead of getting its own row.
-export default function CalendarNavBar({ teams, rightSlot }) {
+export default function CalendarNavBar({ teams, rightSlot, seasonQuery = '' }) {
   const navigate = useNavigate();
   const [showBuildPanel, setShowBuildPanel] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState(() => getSavedTeams());
@@ -24,21 +24,21 @@ export default function CalendarNavBar({ teams, rightSlot }) {
 
   function viewTeamCalendar() {
     if (selectedTeams.length === 0) return;
-    navigate(`/calendar/${selectedTeams.join(',')}`);
+    navigate(`/calendar/${selectedTeams.join(',')}${seasonQuery}`);
   }
 
   // A one-off shortcut, like the picker's "View" button - doesn't touch
   // selectedTeams, so it never shows up pre-checked in the picker afterwards.
   function viewAllSponsored() {
     if (sponsoredSlugs.length === 0) return;
-    navigate(`/calendar/${sponsoredSlugs.join(',')}`);
+    navigate(`/calendar/${sponsoredSlugs.join(',')}${seasonQuery}`);
   }
 
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center gap-1.5">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate(`/${seasonQuery}`)}
           className="rounded-full bg-white/15 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-white/25"
         >
           All teams

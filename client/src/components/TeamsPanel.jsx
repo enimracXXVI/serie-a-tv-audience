@@ -227,24 +227,24 @@ export default function TeamsPanel({ session }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-1.5">
-        <InfoTip text={'Every club the app knows about - the current Serie A roster and everyone else (a former Serie A club, a domestic cup opponent, a European cup opponent) - in one place. "Scope" decides which group a club shows up in and which cup fixtures offer it as an opponent.'} />
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-white/30">About this section</span>
-      </div>
-      {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit clubs.</p>}
-      {session.signedIn && (
-        <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <InfoTip text={'Every club the app knows about - the current Serie A roster and everyone else (a former Serie A club, a domestic cup opponent, a European cup opponent) - in one place. "Scope" decides which group a club shows up in and which cup fixtures offer it as an opponent.'} />
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-white/30">About this section</span>
+        </div>
+        {session.signedIn && (
           <button
             onClick={() => setShowAddForm((v) => !v)}
-            className={`self-start rounded-full px-3 py-1.5 text-xs font-bold uppercase transition-colors ${
+            className={`rounded-full px-3 py-1.5 text-xs font-bold uppercase transition-colors ${
               showAddForm ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
             }`}
           >
             Add club {showAddForm ? '▴' : '▾'}
           </button>
-          {showAddForm && <AddClubForm session={session} createClub={createClub} />}
-        </div>
-      )}
+        )}
+      </div>
+      {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit clubs.</p>}
+      {session.signedIn && showAddForm && <AddClubForm session={session} createClub={createClub} />}
       {loading ? (
         <p className="text-sm text-white/40">Loading…</p>
       ) : error ? (

@@ -32,9 +32,13 @@ export default function CupRoundGroup({ round, fixtures, onUpdate, onDelete, can
       <header className="flex flex-col gap-2 px-4 py-2.5" style={{ background: ACCENT }}>
         <div className="flex items-baseline justify-between">
           <h3 className="text-sm font-bold tracking-wide text-white">{round}</h3>
-          <a href="#cup-nav" className="text-xs font-semibold text-white/70 hover:text-white">
+          <button
+            type="button"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="text-xs font-semibold text-white/70 hover:text-white"
+          >
             ↑ Top
-          </a>
+          </button>
         </div>
         {canEdit && (
           <div className="flex flex-wrap justify-center gap-1.5">
@@ -43,7 +47,7 @@ export default function CupRoundGroup({ round, fixtures, onUpdate, onDelete, can
                 key={t.key}
                 onClick={() => setActiveTab((cur) => (cur === t.key ? null : t.key))}
                 className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide transition-colors ${
-                  activeTab === t.key ? 'bg-white' : 'bg-white/10 text-white/80 hover:bg-white/20'
+                  activeTab === t.key ? 'bg-white' : 'bg-black/20 text-white/80 hover:bg-black/30'
                 }`}
                 style={activeTab === t.key ? { color: ACCENT } : undefined}
               >
