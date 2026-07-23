@@ -118,9 +118,9 @@ function KickoffFields({ fixture, onUpdate, broadcasters }) {
       </Field>
       <Field label="Broadcaster">
         <select
-          value={fixture.broadcaster ?? ''}
+          value={fixture.otherBroadcaster ?? ''}
           className={`${inputClass} w-40`}
-          onChange={(e) => onUpdate(fixture.id, { broadcaster: e.target.value || null })}
+          onChange={(e) => onUpdate(fixture.id, { otherBroadcaster: e.target.value || null })}
         >
           <option value="">None</option>
           {broadcasters.map((b) => (
@@ -243,7 +243,7 @@ function LedFields({ fixture, onUpdate }) {
 
 export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, editMode, broadcasters, legLabel }) {
   const dateShort = formatDateShort(fixture.date);
-  const broadcasterList = resolveBroadcasterList(fixture.broadcaster, broadcasters);
+  const broadcasterList = resolveBroadcasterList(fixture.otherBroadcaster, broadcasters);
   const outcome = resolveCupFixtureOutcome(fixture);
   const scoreNote = outcome.wentToPens
     ? `pens ${outcome.penHomeScore}-${outcome.penAwayScore}`

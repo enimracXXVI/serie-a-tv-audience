@@ -1,7 +1,14 @@
 import { isPlayed } from './standings.js';
 import { computeMatchTags } from './matchTags.js';
 import { SPONSOR_TYPES } from './sponsorCounts.js';
-import { hasLedDeal, hasLedMinutesConcept, ledMinutesApplyToFixture, goalCarpetAppliesToFixture } from './teams.js';
+import {
+  hasLedDeal,
+  hasLedMinutesConcept,
+  ledBaseMinutesApplyToFixture,
+  addedTimeLedAppliesToFixture,
+  penaltyLedAppliesToFixture,
+  goalCarpetAppliesToFixture,
+} from './teams.js';
 
 function blockKey(fixture) {
   return `${fixture.date ?? ''}|${fixture.kickoffTime ?? ''}`;
@@ -313,20 +320,23 @@ export function computeLedExposure(team, fixtures, simulcastInfo, includeSimulca
     };
   }
 
-  // A deal signed partway through the season (ledStartMatchday) only
-  // applies to fixtures from that matchday on - earlier home games never
-  // had the board there at all, so they're excluded rather than counted
-  // with 0 minutes.
-  const eligibleGames = homeGames.filter((fixture) => ledMinutesApplyToFixture(team, fixture));
-  const games = eligibleGames.map((fixture) => {
-    const base = Number(team.ledMinutes) || 0;
+  // Base rate, added-time exclusivity and penalty exposure are each gated by
+  // their own independent start-matchday (see the *AppliesToFixture helpers
+  // in teams.js) - a game only drops out entirely if literally nothing
+  // applies to it. `extraLedMinutes` is a one-off per-fixture purchase, not
+  // a running deal, so it's never gated by any start-matchday - it counts
+  // whenever it's set, same as always.
+  const games = [];
+  for (const fixture of homeGames) {
+    const base = ledBaseMinutesApplyToFixture(team, fixture) ? Number(team.ledMinutes) || 0 : 0;
     const extra = Number(fixture.extraLedMinutes) || 0;
-    const addedTime = team.addedTimeLed ? addedTimeMinutes(fixture) : 0;
+    const addedTime = addedTimeLedAppliesToFixture(team, fixture) ? addedTimeMinutes(fixture) : 0;
     const minutes = base + extra + addedTime;
+    const penaltyExposure = Boolean(penaltyLedAppliesToFixture(team, fixture) && fixture.penaltyTaken);
+    if (minutes === 0 && !penaltyExposure) continue;
     const audience = effectiveAudience(fixture, simulcastInfo, includeSimulcast, includeOther);
-    const penaltyExposure = Boolean(team.penaltyLed && fixture.penaltyTaken);
-    return { fixture, audience, minutes, base, extra, addedTime, penaltyExposure };
-  });
+    games.push({ fixture, audience, minutes, base, extra, addedTime, penaltyExposure });
+  }
   return {
     goalCarpetOnly: false,
     games,

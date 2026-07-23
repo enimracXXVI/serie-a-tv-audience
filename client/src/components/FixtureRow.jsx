@@ -6,7 +6,7 @@ import { matchTagStyle } from '../lib/matchTags.js';
 import { SPONSOR_TYPES } from '../lib/sponsorCounts.js';
 import { useCupData } from '../lib/useCupData.jsx';
 import { resolveBroadcaster } from '../lib/broadcasters.js';
-import { hasLedDeal, hasLedMinutesConcept, ledMinutesApplyToFixture } from '../lib/teams.js';
+import { hasLedDeal, hasLedMinutesConcept } from '../lib/teams.js';
 import ToggleSwitch from './ToggleSwitch.jsx';
 import { useConfirm } from '../lib/useConfirm.jsx';
 
@@ -166,13 +166,6 @@ function LedFields({ fixture, onUpdate }) {
     // Goal-carpet-only - there's no per-fixture minutes concept to edit at
     // all (see hasLedMinutesConcept), just the season-level fact itself.
     return <p className="text-xs text-gray-400">{home.name} has goal carpet branding this season - no per-fixture LED minutes to track.</p>;
-  }
-  if (!ledMinutesApplyToFixture(home, fixture)) {
-    return (
-      <p className="text-xs text-gray-400">
-        {home.name}&apos;s LED deal doesn&apos;t start until matchday {home.ledStartMatchday}.
-      </p>
-    );
   }
   return (
     <div className="flex flex-wrap items-end gap-2">

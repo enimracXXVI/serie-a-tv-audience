@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
 import ColorField from './ColorField.jsx';
+import UrlField from './UrlField.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
 import { useClubs } from '../lib/useClubs.jsx';
 import { clubScope, slugify } from '../lib/clubs.js';
@@ -101,16 +102,17 @@ function ClubRow({ club, session, saveClub, removeClub }) {
                   uppercase
                   onCommit={(v) => commit({ short: v })}
                 />
-                <ColorField label="Primary colour" value={club.primary} onCommit={(v) => commit({ primary: v })} />
-                <ColorField label="Secondary colour" value={club.secondary} onCommit={(v) => commit({ secondary: v })} />
                 <ScopeField value={club.scope} onCommit={(v) => commit({ scope: v })} />
               </div>
-              <TextField
-                label="Crest image URL"
-                value={club.crestUrl}
-                width="w-full"
-                onCommit={(v) => commit({ crestUrl: v })}
-              />
+              {/* Own row, always side by side - grouped separately from the
+                  fields above rather than left to flex-wrap, which was
+                  splitting the two colour fields onto their own separate
+                  rows instead of keeping them together. */}
+              <div className="flex flex-wrap gap-2">
+                <ColorField label="Primary colour" value={club.primary} onCommit={(v) => commit({ primary: v })} />
+                <ColorField label="Secondary colour" value={club.secondary} onCommit={(v) => commit({ secondary: v })} />
+              </div>
+              <UrlField label="Crest image URL" value={club.crestUrl} onCommit={(v) => commit({ crestUrl: v })} />
               {saveError && (
                 <p className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-xs text-red-300">
                   {saveError}
@@ -179,31 +181,35 @@ function AddClubForm({ session, createClub }) {
 
   return (
     <>
-      <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2 rounded-lg bg-white/5 px-3 py-2">
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Club name"
-          className={`${inputClass} w-48`}
-        />
-        <input
-          type="text"
-          value={crestUrl}
-          onChange={(e) => setCrestUrl(e.target.value)}
-          placeholder="Crest URL (optional)"
-          className={`${inputClass} w-48`}
-        />
-        <ColorField label="Primary colour" value={primary} onCommit={setPrimary} />
-        <ColorField label="Secondary colour" value={secondary} onCommit={setSecondary} />
-        <select value={scope} onChange={(e) => setScope(e.target.value)} className={inputClass}>
-          <option value="current">Current roster</option>
-          <option value="national">National</option>
-          <option value="european">European</option>
-        </select>
-        <button type="submit" className="rounded-md bg-[#1fd8c9] px-3 py-1.5 text-xs font-bold text-[#0f1e54] hover:brightness-95">
-          Add
-        </button>
+      <form onSubmit={handleAdd} className="flex flex-col gap-2 rounded-lg bg-white/5 px-3 py-2">
+        <div className="flex flex-wrap items-end gap-2">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Club name"
+            className={`${inputClass} w-48`}
+          />
+          <input
+            type="text"
+            value={crestUrl}
+            onChange={(e) => setCrestUrl(e.target.value)}
+            placeholder="Crest URL (optional)"
+            className={`${inputClass} w-48`}
+          />
+          <select value={scope} onChange={(e) => setScope(e.target.value)} className={inputClass}>
+            <option value="current">Current roster</option>
+            <option value="national">National</option>
+            <option value="european">European</option>
+          </select>
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <ColorField label="Primary colour" value={primary} onCommit={setPrimary} />
+          <ColorField label="Secondary colour" value={secondary} onCommit={setSecondary} />
+          <button type="submit" className="rounded-md bg-[#1fd8c9] px-3 py-1.5 text-xs font-bold text-[#0f1e54] hover:brightness-95">
+            Add
+          </button>
+        </div>
       </form>
       {createError && <p className="text-xs text-red-300">{createError}</p>}
     </>

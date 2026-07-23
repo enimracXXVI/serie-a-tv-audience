@@ -71,7 +71,6 @@ export function enrichFixture(raw, clubsBySlug, clubsByName) {
     competition: raw.competition || null,
     round: raw.round || null,
     neutralVenue: raw.neutralVenue,
-    broadcaster: raw.broadcaster || null,
     audience: raw.audience,
     etHomeScore: raw.etHomeScore,
     etAwayScore: raw.etAwayScore,
@@ -142,6 +141,13 @@ export function overrideTeamAttributes(roster, seasonLabel, attributeRows) {
           // signed partway through the season. null means "from matchday 1"
           // (the whole season), same as always before this field existed.
           ledStartMatchday: row?.ledStartMatchday ?? null,
+          // addedTimeLed/penaltyLed each have their own independent start
+          // matchday too - a club can add "exclusive during added time" or
+          // "LED during penalties" to an existing deal partway through the
+          // season, on a date that has nothing to do with ledStartMatchday
+          // or each other.
+          addedTimeLedStartMatchday: row?.addedTimeLedStartMatchday ?? null,
+          penaltyLedStartMatchday: row?.penaltyLedStartMatchday ?? null,
           // A branded pitch-side goal carpet - a different sponsorship
           // element from the LED perimeter boards above (no per-fixture
           // minutes concept at all), but grouped with LED in hasLedDeal()
@@ -178,15 +184,29 @@ export function hasLedMinutesConcept(team) {
   return (team?.ledMinutes !== null && team?.ledMinutes !== undefined) || Boolean(team?.addedTimeLed) || Boolean(team?.penaltyLed);
 }
 
-// A minutes-based LED deal only counts for a specific Serie A fixture once
-// that club's `ledStartMatchday` (if any) has been reached - a deal signed
-// partway through the season shouldn't retroactively apply to earlier
-// matchdays. Cup fixtures have no numeric matchday to compare against, so
-// this is a no-op there (cupFixtureHasLed's competition/neutralVenue gate is
-// the only thing that applies to cup rows - see CupFixtureRow).
-export function ledMinutesApplyToFixture(team, fixture) {
-  if (!hasLedMinutesConcept(team)) return false;
+// The base contracted LED rate, added-time exclusivity, and penalty
+// exposure are three independent deals that can each start on their own
+// matchday - a club adding "exclusive during added time" partway through
+// the season shouldn't retroactively apply to earlier matchdays, and that
+// has nothing to do with when the base rate or the penalty add-on started.
+// Each helper below gates just its own component; `extraLedMinutes` (a
+// one-off per-fixture purchase, not a running deal) is never gated by any
+// of these - see computeLedExposure.
+export function ledBaseMinutesApplyToFixture(team, fixture) {
+  if (team?.ledMinutes === null || team?.ledMinutes === undefined) return false;
   if (team.ledStartMatchday && fixture.matchday != null && fixture.matchday < team.ledStartMatchday) return false;
+  return true;
+}
+
+export function addedTimeLedAppliesToFixture(team, fixture) {
+  if (!team?.addedTimeLed) return false;
+  if (team.addedTimeLedStartMatchday && fixture.matchday != null && fixture.matchday < team.addedTimeLedStartMatchday) return false;
+  return true;
+}
+
+export function penaltyLedAppliesToFixture(team, fixture) {
+  if (!team?.penaltyLed) return false;
+  if (team.penaltyLedStartMatchday && fixture.matchday != null && fixture.matchday < team.penaltyLedStartMatchday) return false;
   return true;
 }
 
