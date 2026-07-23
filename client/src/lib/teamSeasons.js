@@ -21,7 +21,7 @@ const client = createSheetTabClient({
   autoIncrementId: false,
   bookkeepingIdField: 'id',
   booleanFields: ['sponsored', 'bigClub', 'addedTimeLed', 'penaltyLed', 'goalCarpet'],
-  numericFields: ['matchdaySponsors', 'playerMascots', 'walkabouts', 'ledMinutes', 'ledStartMatchday'],
+  numericFields: ['matchdaySponsors', 'playerMascots', 'walkabouts', 'ledMinutes', 'ledStartMatchday', 'goalCarpetStartMatchday'],
 });
 
 export const fetchTeamSeasons = client.fetchAll;

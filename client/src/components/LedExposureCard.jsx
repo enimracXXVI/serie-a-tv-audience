@@ -2,10 +2,13 @@ import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
 import { formatNumber } from '../lib/formatNumber.js';
 
+// Same convention as the Fixtures page (FixtureRow's formatDateShort) - day,
+// short month, 2-digit year - so a date reads identically everywhere in the
+// app instead of this card inventing its own shorter format.
 function formatDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(`${dateStr}T00:00:00`);
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
 }
 
 // "5 base + 2 extra + 3 AT" - only the parts that actually apply to this
@@ -52,6 +55,28 @@ const COLUMNS = [
   { key: 'penalty', label: 'Penalty', className: 'text-center' },
 ];
 
+const GOAL_CARPET_COLUMNS = [
+  { key: 'matchday', label: 'Game', className: 'text-left' },
+  { key: 'opponent', label: 'Opponent', className: 'text-left' },
+  { key: 'audience', label: 'Audience', className: 'text-center' },
+];
+
+function useSortedGames(exposure, sortChain) {
+  return useMemo(() => {
+    if (!exposure?.games) return [];
+    const list = [...exposure.games];
+    list.sort((a, b) => {
+      for (const { key, dir } of sortChain) {
+        const mul = dir === 'asc' ? 1 : -1;
+        const cmp = compareValue(key, a, b);
+        if (cmp !== 0) return cmp * mul;
+      }
+      return 0;
+    });
+    return list;
+  }, [exposure, sortChain]);
+}
+
 // Minutes (how long the board ran) and audience (how many people watched
 // the match at all) are shown side by side, never multiplied together -
 // duration doesn't scale reach, and a viewer watching the board for twice
@@ -76,20 +101,7 @@ export default function LedExposureCard({ team, exposure }) {
     });
   }
 
-  const sortedGames = useMemo(() => {
-    if (!exposure?.games) return [];
-    const list = [...exposure.games];
-    list.sort((a, b) => {
-      for (const { key, dir } of sortChain) {
-        const mul = dir === 'asc' ? 1 : -1;
-        const cmp = compareValue(key, a, b);
-        if (cmp !== 0) return cmp * mul;
-      }
-      return 0;
-    });
-    return list;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exposure, sortChain]);
+  const sortedGames = useSortedGames(exposure, sortChain);
 
   if (!team) {
     return (
@@ -129,17 +141,18 @@ export default function LedExposureCard({ team, exposure }) {
             Total audience across {exposure.count} home game{exposure.count === 1 ? '' : 's'}
           </p>
         </div>
-        <div className="max-h-72 overflow-y-auto overflow-x-auto">
+        <p className="mb-2 text-[10px] text-gray-400">Shift+click a column to sort by multiple columns</p>
+        <div className="overflow-x-auto">
           <table className="w-full min-w-[320px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                <th className="px-2 py-2 text-left">Game</th>
-                <th className="px-2 py-2 text-left">Opponent</th>
-                <th className="px-2 py-2 text-center">Audience</th>
+                {GOAL_CARPET_COLUMNS.map((col) => (
+                  <SortableTh key={col.key} col={col} sortChain={sortChain} onHeaderClick={headerClick} className={col.className} />
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {exposure.games.map((g) => (
+              {sortedGames.map((g) => (
                 <tr key={g.fixture.id}>
                   <td className="px-2 py-2 text-left">
                     <span className="font-semibold text-gray-700">MD{g.fixture.matchday}</span>
@@ -182,7 +195,7 @@ export default function LedExposureCard({ team, exposure }) {
         </div>
       </div>
       <p className="mb-2 text-[10px] text-gray-400">Shift+click a column to sort by multiple columns</p>
-      <div className="max-h-72 overflow-y-auto overflow-x-auto">
+      <div className="overflow-x-auto">
         <table className="w-full min-w-[480px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wide text-gray-400">

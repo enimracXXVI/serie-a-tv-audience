@@ -317,8 +317,9 @@ separate "live" version of these fields on the `teams` tab anymore.
 Add a `teamSeasons` tab (doesn't exist in the seeded sheet - add it
 yourself) with header row: `slug`, `team`, `season`, `sponsored`, `bigClub`,
 `derbyRival`, `matchdaySponsors`, `playerMascots`, `walkabouts`, `ledMinutes`,
-`addedTimeLed`, `penaltyLed`, `ledStartMatchday`, `goalCarpet` (an `id`
-column is also fine to keep, same auto-fill deal as the other tabs above).
+`addedTimeLed`, `penaltyLed`, `ledStartMatchday`, `goalCarpet`,
+`goalCarpetStartMatchday` (an `id` column is also fine to keep, same
+auto-fill deal as the other tabs above).
 
 - `slug` here is this **row's own key** - always `season::teamSlug` (e.g.
   `26/27::roma`) - the app fills this in for you when you save from
@@ -336,10 +337,10 @@ column is also fine to keep, same auto-fill deal as the other tabs above).
   your company's in-stadium sponsorship activity at that club that season;
   leave blank for a club you don't sponsor that season.
 - `ledMinutes`, `addedTimeLed`, `penaltyLed`, `ledStartMatchday`,
-  `goalCarpet` - this club's LED perimeter-board (and goal carpet) deal for
-  that season, if any - see "LED perimeter-board tracking" below.
-  Independent of `sponsored` - a club can have an LED deal without being a
-  matchday-sponsor/mascot/walkabout club, or vice versa.
+  `goalCarpet`, `goalCarpetStartMatchday` - this club's LED perimeter-board
+  (and goal carpet) deal for that season, if any - see "LED perimeter-board
+  tracking" below. Independent of `sponsored` - a club can have an LED deal
+  without being a matchday-sponsor/mascot/walkabout club, or vice versa.
 
 A club with **no row** for a given season shows as not sponsored, not a big
 club, no derby rival, no caps, no LED deal for that season - there's no
@@ -388,12 +389,16 @@ columns on the fixtures tab (see "Y-Z" above):
 - **`penaltyTaken`** (per fixture) - a penalty was actually taken during that
   game's 90 minutes - only shown (and only meaningful) if that game's home
   club has `penaltyLed` checked for the season.
-- **`ledStartMatchday`** (per season/club, optional) - if the deal only
-  started partway through the season (signed after the season kicked off),
-  the matchday it starts from - earlier home games are excluded from the
-  Dashboard's LED exposure card and the per-fixture LED tab entirely, rather
-  than counted with 0 minutes. Leave blank for a deal that's been live since
-  matchday 1 (the default, and the common case).
+- **`ledStartMatchday`** (per season/club, optional) - if the **LED**
+  (perimeter-board minutes) deal only started partway through the season
+  (signed after the season kicked off), the matchday it starts from -
+  earlier home games are excluded from the Dashboard's LED exposure card
+  and the per-fixture LED tab entirely, rather than counted with 0 minutes.
+  Leave blank for a deal that's been live since matchday 1 (the default,
+  and the common case). This only gates `ledMinutes`/`addedTimeLed`/
+  `penaltyLed` - it has no effect on `goalCarpet`, which has its own start
+  date below, since a carpet deal and an LED deal for the same club can
+  easily start on different dates.
 - **`goalCarpet`** (per season/club) - a branded pitch-side goal carpet, a
   completely different piece of signage from the LED boards above with no
   per-fixture minutes concept of its own. A club whose *only* checked LED
@@ -401,9 +406,12 @@ columns on the fixtures tab (see "Y-Z" above):
   in Settings, gets a Dashboard LED exposure card), but that card reports
   audience reach only - it never fabricates a minutes figure for something
   that was never measured in minutes to begin with.
+- **`goalCarpetStartMatchday`** (per season/club, optional) - same idea as
+  `ledStartMatchday`, but for the goal carpet specifically, independent of
+  it. Leave blank for a carpet deal that's been live since matchday 1.
 
-All seven are managed the same way as everything else here: the season-level
-five from Settings' **Sponsorship / big match / derby** panel (a club with
+All eight are managed the same way as everything else here: the season-level
+six from Settings' **Sponsorship / big match / derby** panel (a club with
 nothing set has no LED deal, same "no fallback to another season" rule as
 sponsored/bigClub), the per-fixture two from a **LED** tab on the home
 page's matchday cards, which only shows up at all for a fixture whose home
@@ -690,8 +698,12 @@ the sheet directly - pick the competition, round, then a home club and an
 away club, each from the exact same combined list (every current-scope
 `teams` row plus every `national`/`european` row whose scope matches this
 competition), or add a brand new one inline, right there in the form, for
-either side; it's still fine to add a cup fixture by pasting a row into the
-sheet directly instead, whichever's quicker for what you're doing. **Past
+either side. There's also a free-text broadcaster field right there (not a
+dropdown) so a fixture doesn't start broadcaster-less - type one slug, or
+several comma-separated (e.g. `dazn,Rai Sport`), matching the same
+comma-separated format the fixture row itself uses (see "Broadcaster
+naming" above); it's still fine to add a cup fixture by pasting a row into
+the sheet directly instead, whichever's quicker for what you're doing. **Past
 cup seasons are frozen** - no Add fixture, no editing an existing row - same
 precedent as Serie A's archive tabs. Backfilling an already-completed cup
 season (a past Coppa Italia bracket, say) is a direct sheet paste: add rows

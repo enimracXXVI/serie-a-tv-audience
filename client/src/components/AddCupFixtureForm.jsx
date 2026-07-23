@@ -44,7 +44,7 @@ function ClubSelect({ label, value, onChange, currentRoster, opponents }) {
 // sponsored clubs can meet each other just as easily as either meeting a
 // club you've never heard of. Both sides write the picked club's SLUG (not
 // name text) into the fixture - see clubs.js/teams.js for why.
-export default function AddCupFixtureForm({ clubs, competitions, onCreate, onCreateOpponent, onDone }) {
+export default function AddCupFixtureForm({ clubs, competitions, broadcasters, onCreate, onCreateOpponent, onDone }) {
   const [competition, setCompetition] = useState(competitions[0].slug);
   const [round, setRound] = useState('');
   const [home, setHome] = useState('');
@@ -56,6 +56,12 @@ export default function AddCupFixtureForm({ clubs, competitions, onCreate, onCre
   const [neutralVenue, setNeutralVenue] = useState(false);
   const [date, setDate] = useState('');
   const [kickoffTime, setKickoffTime] = useState('');
+  // Free text, not a <select> - a cup tie often airs on more than one
+  // platform at once (see CupFixtureRow), so this is typed comma-separated
+  // (e.g. "dazn,Rai Sport") rather than picked one at a time. Set here so a
+  // fixture doesn't start broadcaster-less and need a separate edit-tab trip
+  // just to show anything at all.
+  const [broadcaster, setBroadcaster] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -117,6 +123,7 @@ export default function AddCupFixtureForm({ clubs, competitions, onCreate, onCre
         neutralVenue,
         date: date || '',
         kickoffTime: kickoffTime || '',
+        broadcaster: broadcaster.trim(),
       });
       // Round/competition stay put; everything else resets for the next add.
       setHome('');
@@ -128,6 +135,7 @@ export default function AddCupFixtureForm({ clubs, competitions, onCreate, onCre
       setNeutralVenue(false);
       setDate('');
       setKickoffTime('');
+      setBroadcaster('');
       onDone?.();
     } catch (err) {
       setError(err.message);
@@ -195,6 +203,17 @@ export default function AddCupFixtureForm({ clubs, competitions, onCreate, onCre
         <ToggleSwitch checked={neutralVenue} onChange={setNeutralVenue} label="Neutral venue" />
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} />
         <input type="time" value={kickoffTime} onChange={(e) => setKickoffTime(e.target.value)} className={inputClass} />
+        <input
+          type="text"
+          list="cup-broadcasters"
+          value={broadcaster}
+          onChange={(e) => setBroadcaster(e.target.value)}
+          placeholder="Broadcaster(s), comma-separated"
+          className={`${inputClass} w-56`}
+        />
+        <datalist id="cup-broadcasters">
+          {broadcasters?.map((b) => <option key={b.slug} value={b.slug} />)}
+        </datalist>
       </div>
       {error && <p className="text-xs text-red-300">{error}</p>}
       <button

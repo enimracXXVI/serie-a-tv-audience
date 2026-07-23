@@ -146,7 +146,11 @@ export function overrideTeamAttributes(roster, seasonLabel, attributeRows) {
           // element from the LED perimeter boards above (no per-fixture
           // minutes concept at all), but grouped with LED in hasLedDeal()
           // since it's the same "signage" bucket everywhere that's checked.
+          // Has its own independent start-matchday, since a carpet deal and
+          // an LED deal for the same club can easily start on different
+          // dates - it isn't tied to ledStartMatchday at all.
           goalCarpet: Boolean(row?.goalCarpet),
+          goalCarpetStartMatchday: row?.goalCarpetStartMatchday ?? null,
         },
       ];
     })
@@ -183,6 +187,15 @@ export function hasLedMinutesConcept(team) {
 export function ledMinutesApplyToFixture(team, fixture) {
   if (!hasLedMinutesConcept(team)) return false;
   if (team.ledStartMatchday && fixture.matchday != null && fixture.matchday < team.ledStartMatchday) return false;
+  return true;
+}
+
+// Same idea as ledMinutesApplyToFixture, but for the goal carpet - its own
+// independent start-matchday, since a carpet deal can start on a completely
+// different date than any LED deal the same club also has.
+export function goalCarpetAppliesToFixture(team, fixture) {
+  if (!team?.goalCarpet) return false;
+  if (team.goalCarpetStartMatchday && fixture.matchday != null && fixture.matchday < team.goalCarpetStartMatchday) return false;
   return true;
 }
 
