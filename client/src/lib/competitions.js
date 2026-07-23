@@ -25,6 +25,17 @@ export const deleteCompetition = client.deleteRow;
 // "add a cup fixture" under Serie A.
 export const SERIE_A_VALUE = 'serie-a';
 
+// LED perimeter-board tracking only extends to Coppa Italia (see
+// CupFixtureRow's cupFixtureHasLed) - matched loosely rather than against
+// the exact default seed slug 'CoppaItalia', since a competition row the
+// user creates themselves through Settings gets `slugify(name)` instead
+// (e.g. typing "Coppa Italia" produces 'coppa-italia'), which would
+// otherwise silently never match and disable LED tracking for every one of
+// that competition's fixtures regardless of round.
+export function isCoppaItalia(competitionSlug) {
+  return /^coppaitalia$/.test(String(competitionSlug ?? '').toLowerCase().replace(/[^a-z0-9]/g, ''));
+}
+
 // Used only if the "competitions" tab hasn't been set up yet (or is
 // temporarily empty), so the rest of the app - the Add fixture form, the
 // Cup competitions page - still has somewhere to group fixtures.

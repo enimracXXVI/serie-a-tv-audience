@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useCupData } from '../lib/useCupData.jsx';
 import { competitionScope, SERIE_A_VALUE } from '../lib/competitions.js';
 import { callWithReauth } from '../lib/reauth.js';
+import { useConfirm } from '../lib/useConfirm.jsx';
 
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9] placeholder:text-white/30';
@@ -57,6 +58,7 @@ function CompetitionRow({ competition, session, saveCompetition, removeCompetiti
   const [logoURL, setLogoURL] = useState(competition.logoURL ?? '');
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [confirm, confirmDialog] = useConfirm();
 
   async function commitLogoURL() {
     if (logoURL === (competition.logoURL ?? '')) return;
@@ -78,7 +80,7 @@ function CompetitionRow({ competition, session, saveCompetition, removeCompetiti
   }
 
   async function handleDelete() {
-    if (!window.confirm(`Delete "${competition.name}"? This can't be undone from here - you'd need to re-add it by hand.`)) {
+    if (!(await confirm(`Delete "${competition.name}"? This can't be undone from here - you'd need to re-add it by hand.`))) {
       return;
     }
     setDeleting(true);
@@ -93,6 +95,7 @@ function CompetitionRow({ competition, session, saveCompetition, removeCompetiti
 
   return (
     <div className="flex flex-col gap-1.5 rounded-lg bg-white/5 px-3 py-2">
+      {confirmDialog}
       <div className="flex items-center gap-2">
         {competition.logoURL && <img src={competition.logoURL} alt="" className="h-5 max-w-[80px] object-contain" />}
         <span className="text-sm font-semibold text-white">{competition.name}</span>

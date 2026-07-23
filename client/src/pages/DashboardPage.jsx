@@ -182,6 +182,11 @@ export default function DashboardPage() {
   const { teams, loading: teamsLoading } = useTeams();
   const { broadcasters } = useCupData();
   const mainBroadcasterName = broadcasters.find((b) => b.isMain)?.name || 'main broadcaster';
+  // Collapsed by default on mobile only (sm:flex below always shows it on
+  // wider screens regardless of this) - four controls stacking one per row
+  // under flex-wrap was eating close to a quarter of the viewport height
+  // before any dashboard content appeared at all.
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [season, setSeason] = useSeasonParam();
   const { fixtures, loading: fixturesLoading, error: fixturesError } = useSeasonFixtures(season, teams);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -319,7 +324,15 @@ export default function DashboardPage() {
           <h1 className="text-lg font-black text-white sm:text-xl">
             Dashboard <span className="ml-1.5 text-xs font-semibold opacity-60">{season.label}</span>
           </h1>
-          <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setMobileFiltersOpen((v) => !v)}
+            className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-white/20 sm:hidden"
+          >
+            Filters {mobileFiltersOpen ? '▴' : '▾'}
+          </button>
+          <div
+            className={`w-full flex-wrap items-center gap-3 sm:flex sm:w-auto ${mobileFiltersOpen ? 'flex' : 'hidden'}`}
+          >
             <SeasonSelector season={season} onChange={setSeason} />
             <label className="flex items-center gap-1.5 text-xs font-semibold text-white/70">
               Focus club

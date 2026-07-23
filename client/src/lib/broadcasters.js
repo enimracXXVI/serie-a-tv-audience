@@ -27,3 +27,17 @@ export function resolveBroadcaster(raw, broadcasters) {
   if (!raw) return null;
   return broadcasters.find((b) => b.slug === raw) ?? broadcasters.find((b) => b.name === raw) ?? null;
 }
+
+// Cup fixtures can air on more than one broadcaster at once (unlike Serie A,
+// which has its own dedicated main/other columns) - this cell holds a plain
+// comma-separated list instead. Splits and resolves each token, keeping the
+// original text alongside so an unresolved/typo'd entry still renders as
+// plain text rather than silently vanishing (see resolveBroadcaster above).
+export function resolveBroadcasterList(raw, broadcasters) {
+  if (!raw) return [];
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((token) => ({ broadcaster: resolveBroadcaster(token, broadcasters), fallbackName: token }));
+}

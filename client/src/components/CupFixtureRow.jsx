@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import Crest from './Crest.jsx';
 import ToggleSwitch from './ToggleSwitch.jsx';
+import { BroadcasterBadge } from './BroadcastBadges.jsx';
 import { resolveCupFixtureOutcome } from '../lib/cupFixtures.js';
-import { resolveBroadcaster } from '../lib/broadcasters.js';
-import { hasLedDeal } from '../lib/teams.js';
+import { resolveBroadcasterList } from '../lib/broadcasters.js';
+import { hasLedDeal, hasLedMinutesConcept } from '../lib/teams.js';
+import { isCoppaItalia } from '../lib/competitions.js';
+import { useConfirm } from '../lib/useConfirm.jsx';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-[#0f1e54] outline-none focus:border-[#1fd8c9]';
@@ -205,13 +208,16 @@ function AudienceFields({ fixture, onUpdate }) {
 // perimeter boards would be on. `neutralVenue` already captures exactly that
 // distinction, so this gates on it directly rather than matching round text.
 function cupFixtureHasLed(fixture) {
-  return fixture.competition === 'CoppaItalia' && !fixture.neutralVenue;
+  return isCoppaItalia(fixture.competition) && !fixture.neutralVenue;
 }
 
 function LedFields({ fixture, onUpdate }) {
   const { home } = fixture;
   if (!hasLedDeal(home)) {
     return <p className="text-xs text-gray-400">No LED deal for {home.name} this season.</p>;
+  }
+  if (!hasLedMinutesConcept(home)) {
+    return <p className="text-xs text-gray-400">{home.name} has goal carpet branding this season - no per-fixture LED minutes to track.</p>;
   }
   return (
     <div className="flex flex-wrap items-end gap-2">
@@ -235,9 +241,9 @@ function LedFields({ fixture, onUpdate }) {
   );
 }
 
-export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, editMode, broadcasters }) {
+export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, editMode, broadcasters, legLabel }) {
   const dateShort = formatDateShort(fixture.date);
-  const broadcaster = resolveBroadcaster(fixture.broadcaster, broadcasters);
+  const broadcasterList = resolveBroadcasterList(fixture.broadcaster, broadcasters);
   const outcome = resolveCupFixtureOutcome(fixture);
   const scoreNote = outcome.wentToPens
     ? `pens ${outcome.penHomeScore}-${outcome.penAwayScore}`
@@ -245,10 +251,11 @@ export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, ed
       ? 'AET'
       : null;
   const winnerSlug = isFinalRound(fixture.round) ? finalWinnerSlug(fixture, outcome) : null;
+  const [confirm, confirmDialog] = useConfirm();
 
-  function handleDelete() {
+  async function handleDelete() {
     if (
-      !window.confirm(`Delete this fixture (${fixture.home.name} vs ${fixture.away.name})? This can't be undone from here.`)
+      !(await confirm(`Delete this fixture (${fixture.home.name} vs ${fixture.away.name})? This can't be undone from here.`))
     ) {
       return;
     }
@@ -257,6 +264,7 @@ export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, ed
 
   return (
     <div className="flex items-stretch bg-white">
+      {confirmDialog}
       <div className="min-w-0 flex-1 px-2 py-1.5 sm:px-3 sm:py-2">
         <div className="flex items-center gap-1 sm:gap-2">
           <div className="flex h-11 w-14 shrink-0 flex-col items-center justify-center text-center text-[9px] leading-tight text-gray-400">
@@ -280,7 +288,10 @@ export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, ed
               <Crest team={fixture.home} size={20} />
             </div>
 
-            <div className="rounded-md px-0.5 py-1 sm:px-1">
+            <div className="flex flex-col items-center rounded-md px-0.5 py-1 sm:px-1">
+              {legLabel && (
+                <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400">{legLabel}</span>
+              )}
               <ScoreDisplay homeScore={outcome.homeScore} awayScore={outcome.awayScore} note={scoreNote} />
             </div>
 
@@ -297,10 +308,15 @@ export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, ed
             </div>
           </div>
 
-          <div className="flex w-14 shrink-0 items-center justify-end overflow-hidden">
-            {broadcaster?.logoUrl && (
-              <img src={broadcaster.logoUrl} alt={broadcaster.name} className="h-3.5 w-full max-w-full object-contain" />
-            )}
+          <div className="flex w-14 shrink-0 flex-col items-center justify-center gap-0.5 overflow-hidden">
+            {broadcasterList.map(({ broadcaster, fallbackName }, i) => (
+              <BroadcasterBadge
+                key={`${fallbackName}-${i}`}
+                broadcaster={broadcaster}
+                fallbackName={fallbackName}
+                className="h-3 w-full"
+              />
+            ))}
           </div>
         </div>
 

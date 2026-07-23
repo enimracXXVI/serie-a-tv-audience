@@ -1,3 +1,5 @@
+import { useMemo, useState } from 'react';
+import Crest from './Crest.jsx';
 import { formatNumber } from '../lib/formatNumber.js';
 
 function formatDate(dateStr) {
@@ -17,12 +19,78 @@ function minutesBreakdown(game) {
   return parts.join(' ');
 }
 
+function compareValue(key, a, b) {
+  if (key === 'opponent') return (a.fixture.away.name ?? '').localeCompare(b.fixture.away.name ?? '');
+  if (key === 'matchday') return (a.fixture.matchday ?? 0) - (b.fixture.matchday ?? 0);
+  if (key === 'penalty') return Number(Boolean(a.penaltyExposure)) - Number(Boolean(b.penaltyExposure));
+  return (a[key] ?? 0) - (b[key] ?? 0);
+}
+
+function SortableTh({ col, sortChain, onHeaderClick, className = '' }) {
+  const chainIdx = sortChain.findIndex((s) => s.key === col.key);
+  return (
+    <th
+      onClick={(e) => onHeaderClick(col.key, e)}
+      className={`cursor-pointer select-none px-2 py-2 hover:text-[#0f1e54] ${className}`}
+    >
+      {col.label}
+      {chainIdx !== -1 && (
+        <span className="ml-0.5">
+          {sortChain[chainIdx].dir === 'asc' ? '▲' : '▼'}
+          {sortChain.length > 1 && <sup>{chainIdx + 1}</sup>}
+        </span>
+      )}
+    </th>
+  );
+}
+
+const COLUMNS = [
+  { key: 'matchday', label: 'Game', className: 'text-left' },
+  { key: 'opponent', label: 'Opponent', className: 'text-left' },
+  { key: 'minutes', label: 'LED minutes', className: 'text-center' },
+  { key: 'audience', label: 'Audience', className: 'text-center' },
+  { key: 'penalty', label: 'Penalty', className: 'text-center' },
+];
+
 // Minutes (how long the board ran) and audience (how many people watched
 // the match at all) are shown side by side, never multiplied together -
 // duration doesn't scale reach, and a viewer watching the board for twice
 // as long isn't twice as aware of the brand. Scoped to this club's own
 // home games, same as everywhere else LED is tracked (see teams.js).
 export default function LedExposureCard({ team, exposure }) {
+  const [sortChain, setSortChain] = useState([{ key: 'matchday', dir: 'asc' }]);
+
+  function headerClick(key, event) {
+    setSortChain((prev) => {
+      if (!event.shiftKey) {
+        if (prev.length === 1 && prev[0].key === key) {
+          return [{ key, dir: prev[0].dir === 'asc' ? 'desc' : 'asc' }];
+        }
+        return [{ key, dir: 'desc' }];
+      }
+      const idx = prev.findIndex((s) => s.key === key);
+      if (idx === -1) return [...prev, { key, dir: 'desc' }];
+      const next = [...prev];
+      next[idx] = { key, dir: next[idx].dir === 'asc' ? 'desc' : 'asc' };
+      return next;
+    });
+  }
+
+  const sortedGames = useMemo(() => {
+    if (!exposure?.games) return [];
+    const list = [...exposure.games];
+    list.sort((a, b) => {
+      for (const { key, dir } of sortChain) {
+        const mul = dir === 'asc' ? 1 : -1;
+        const cmp = compareValue(key, a, b);
+        if (cmp !== 0) return cmp * mul;
+      }
+      return 0;
+    });
+    return list;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exposure, sortChain]);
+
   if (!team) {
     return (
       <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
@@ -48,13 +116,58 @@ export default function LedExposureCard({ team, exposure }) {
     );
   }
 
+  // Goal-carpet-only: no per-fixture minutes concept at all (see
+  // hasLedMinutesConcept in teams.js) - just the reach those home games got.
+  if (exposure.goalCarpetOnly) {
+    return (
+      <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
+        <h3 className="text-sm font-bold text-[#0f1e54]">{team.name} - LED exposure</h3>
+        <p className="mb-3 text-[10px] text-gray-400">Goal carpet branding only - no per-fixture LED minutes to report.</p>
+        <div className="mb-3 text-center">
+          <p className="text-xl font-black text-[#0f1e54]">{formatNumber(exposure.totalAudience)}</p>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+            Total audience across {exposure.count} home game{exposure.count === 1 ? '' : 's'}
+          </p>
+        </div>
+        <div className="max-h-72 overflow-y-auto overflow-x-auto">
+          <table className="w-full min-w-[320px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                <th className="px-2 py-2 text-left">Game</th>
+                <th className="px-2 py-2 text-left">Opponent</th>
+                <th className="px-2 py-2 text-center">Audience</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {exposure.games.map((g) => (
+                <tr key={g.fixture.id}>
+                  <td className="px-2 py-2 text-left">
+                    <span className="font-semibold text-gray-700">MD{g.fixture.matchday}</span>
+                    <span className="ml-1 text-gray-400">{formatDate(g.fixture.date)}</span>
+                  </td>
+                  <td className="px-2 py-2 text-left">
+                    <div className="flex items-center gap-1.5">
+                      <Crest team={g.fixture.away} size={16} />
+                      <span className="font-semibold text-gray-700">{g.fixture.away.short ?? g.fixture.away.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-2 py-2 text-center text-gray-600">{formatNumber(g.audience)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-2xl bg-white p-4 shadow-lg shadow-black/20">
       <h3 className="text-sm font-bold text-[#0f1e54]">{team.name} - LED exposure</h3>
       <p className="mb-3 text-[10px] text-gray-400">
         Minutes and audience reported separately, not multiplied - duration doesn&apos;t scale reach.
       </p>
-      <div className="mb-3 grid grid-cols-2 gap-3">
+      <div className="mb-3 grid grid-cols-2 gap-3 text-center">
         <div>
           <p className="text-xl font-black text-[#0f1e54]">{formatNumber(exposure.totalMinutes)} min</p>
           <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
@@ -63,27 +176,33 @@ export default function LedExposureCard({ team, exposure }) {
         </div>
         <div>
           <p className="text-xl font-black text-[#0f1e54]">{formatNumber(exposure.totalAudience)}</p>
-          <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Combined audience, same games</p>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+            Total audience, those same {exposure.count} game{exposure.count === 1 ? '' : 's'}
+          </p>
         </div>
       </div>
+      <p className="mb-2 text-[10px] text-gray-400">Shift+click a column to sort by multiple columns</p>
       <div className="max-h-72 overflow-y-auto overflow-x-auto">
-        <table className="w-full min-w-[420px] border-collapse text-sm">
+        <table className="w-full min-w-[480px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wide text-gray-400">
-              <th className="px-2 py-2 text-left">Game</th>
-              <th className="px-2 py-2 text-center">LED minutes</th>
-              <th className="px-2 py-2 text-center">Audience</th>
-              <th className="px-2 py-2 text-center">Penalty</th>
+              {COLUMNS.map((col) => (
+                <SortableTh key={col.key} col={col} sortChain={sortChain} onHeaderClick={headerClick} className={col.className} />
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {exposure.games.map((g) => (
+            {sortedGames.map((g) => (
               <tr key={g.fixture.id}>
                 <td className="px-2 py-2 text-left">
-                  <span className="font-semibold text-gray-700">
-                    MD{g.fixture.matchday} vs {g.fixture.away.short ?? g.fixture.away.name}
-                  </span>
+                  <span className="font-semibold text-gray-700">MD{g.fixture.matchday}</span>
                   <span className="ml-1 text-gray-400">{formatDate(g.fixture.date)}</span>
+                </td>
+                <td className="px-2 py-2 text-left">
+                  <div className="flex items-center gap-1.5">
+                    <Crest team={g.fixture.away} size={16} />
+                    <span className="font-semibold text-gray-700">{g.fixture.away.short ?? g.fixture.away.name}</span>
+                  </div>
                 </td>
                 <td className="px-2 py-2 text-center">
                   <span className="font-bold text-[#0f1e54]">{g.minutes} min</span>

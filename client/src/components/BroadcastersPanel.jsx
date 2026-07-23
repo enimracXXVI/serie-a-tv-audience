@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCupData } from '../lib/useCupData.jsx';
 import { callWithReauth } from '../lib/reauth.js';
+import { useConfirm } from '../lib/useConfirm.jsx';
 
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9] placeholder:text-white/30';
@@ -17,6 +18,7 @@ function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain, remo
   const [logoUrl, setLogoUrl] = useState(broadcaster.logoUrl ?? '');
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [confirm, confirmDialog] = useConfirm();
 
   async function commit() {
     if (logoUrl === (broadcaster.logoUrl ?? '')) return;
@@ -38,7 +40,7 @@ function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain, remo
   }
 
   async function handleDelete() {
-    if (!window.confirm(`Delete "${broadcaster.name}"? This can't be undone from here - you'd need to re-add it by hand.`)) {
+    if (!(await confirm(`Delete "${broadcaster.name}"? This can't be undone from here - you'd need to re-add it by hand.`))) {
       return;
     }
     setDeleting(true);
@@ -53,6 +55,7 @@ function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain, remo
 
   return (
     <div className="flex flex-col gap-1 rounded-lg bg-white/5 px-3 py-2">
+      {confirmDialog}
       <div className="flex items-center gap-2">
         {broadcaster.logoUrl && <img src={broadcaster.logoUrl} alt="" className="h-4 max-w-[60px] object-contain" />}
         <span className="text-sm font-semibold text-white">{broadcaster.name}</span>

@@ -1,7 +1,7 @@
 import { isPlayed } from './standings.js';
 import { computeMatchTags } from './matchTags.js';
 import { SPONSOR_TYPES } from './sponsorCounts.js';
-import { hasLedDeal } from './teams.js';
+import { hasLedDeal, hasLedMinutesConcept, ledMinutesApplyToFixture } from './teams.js';
 
 function blockKey(fixture) {
   return `${fixture.date ?? ''}|${fixture.kickoffTime ?? ''}`;
@@ -291,7 +291,29 @@ export function computeActivationAudience(team, fixtures, simulcastInfo, include
 export function computeLedExposure(team, fixtures, simulcastInfo, includeSimulcast, includeOther = true) {
   if (!hasLedDeal(team)) return null;
   const homeGames = fixtures.filter((f) => f.home.slug === team.slug && isPlayed(f));
-  const games = homeGames.map((fixture) => {
+
+  // A club whose only signage deal is the goal carpet has no per-fixture
+  // minutes concept at all (see hasLedMinutesConcept) - reach (audience) is
+  // still real and worth reporting, but fabricating a "0 min" LED number for
+  // every game would misrepresent a completely different sponsorship
+  // element as an inactive LED deal.
+  if (!hasLedMinutesConcept(team)) {
+    const audiences = homeGames.map((fixture) => effectiveAudience(fixture, simulcastInfo, includeSimulcast, includeOther));
+    return {
+      goalCarpetOnly: true,
+      games: homeGames.map((fixture, i) => ({ fixture, audience: audiences[i] })),
+      count: homeGames.length,
+      totalAudience: sum(audiences),
+      avgAudience: avg(audiences),
+    };
+  }
+
+  // A deal signed partway through the season (ledStartMatchday) only
+  // applies to fixtures from that matchday on - earlier home games never
+  // had the board there at all, so they're excluded rather than counted
+  // with 0 minutes.
+  const eligibleGames = homeGames.filter((fixture) => ledMinutesApplyToFixture(team, fixture));
+  const games = eligibleGames.map((fixture) => {
     const base = Number(team.ledMinutes) || 0;
     const extra = Number(fixture.extraLedMinutes) || 0;
     const addedTime = team.addedTimeLed ? addedTimeMinutes(fixture) : 0;
@@ -301,6 +323,7 @@ export function computeLedExposure(team, fixtures, simulcastInfo, includeSimulca
     return { fixture, audience, minutes, base, extra, addedTime, penaltyExposure };
   });
   return {
+    goalCarpetOnly: false,
     games,
     count: games.length,
     totalMinutes: sum(games.map((g) => g.minutes)),

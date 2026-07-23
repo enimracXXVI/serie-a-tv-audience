@@ -317,8 +317,8 @@ separate "live" version of these fields on the `teams` tab anymore.
 Add a `teamSeasons` tab (doesn't exist in the seeded sheet - add it
 yourself) with header row: `slug`, `team`, `season`, `sponsored`, `bigClub`,
 `derbyRival`, `matchdaySponsors`, `playerMascots`, `walkabouts`, `ledMinutes`,
-`addedTimeLed`, `penaltyLed` (an `id` column is also fine to keep, same
-auto-fill deal as the other tabs above).
+`addedTimeLed`, `penaltyLed`, `ledStartMatchday`, `goalCarpet` (an `id`
+column is also fine to keep, same auto-fill deal as the other tabs above).
 
 - `slug` here is this **row's own key** - always `season::teamSlug` (e.g.
   `26/27::roma`) - the app fills this in for you when you save from
@@ -335,11 +335,11 @@ auto-fill deal as the other tabs above).
 - `matchdaySponsors`, `playerMascots`, `walkabouts` - counters for tracking
   your company's in-stadium sponsorship activity at that club that season;
   leave blank for a club you don't sponsor that season.
-- `ledMinutes`, `addedTimeLed`, `penaltyLed` - this club's LED
-  perimeter-board advertising deal for that season, if any - see "LED
-  perimeter-board tracking" below. Independent of `sponsored` - a club can
-  have an LED deal without being a matchday-sponsor/mascot/walkabout club,
-  or vice versa.
+- `ledMinutes`, `addedTimeLed`, `penaltyLed`, `ledStartMatchday`,
+  `goalCarpet` - this club's LED perimeter-board (and goal carpet) deal for
+  that season, if any - see "LED perimeter-board tracking" below.
+  Independent of `sponsored` - a club can have an LED deal without being a
+  matchday-sponsor/mascot/walkabout club, or vice versa.
 
 A club with **no row** for a given season shows as not sponsored, not a big
 club, no derby rival, no caps, no LED deal for that season - there's no
@@ -388,9 +388,22 @@ columns on the fixtures tab (see "Y-Z" above):
 - **`penaltyTaken`** (per fixture) - a penalty was actually taken during that
   game's 90 minutes - only shown (and only meaningful) if that game's home
   club has `penaltyLed` checked for the season.
+- **`ledStartMatchday`** (per season/club, optional) - if the deal only
+  started partway through the season (signed after the season kicked off),
+  the matchday it starts from - earlier home games are excluded from the
+  Dashboard's LED exposure card and the per-fixture LED tab entirely, rather
+  than counted with 0 minutes. Leave blank for a deal that's been live since
+  matchday 1 (the default, and the common case).
+- **`goalCarpet`** (per season/club) - a branded pitch-side goal carpet, a
+  completely different piece of signage from the LED boards above with no
+  per-fixture minutes concept of its own. A club whose *only* checked LED
+  field is `goalCarpet` still counts as having a deal (shows the LED badge
+  in Settings, gets a Dashboard LED exposure card), but that card reports
+  audience reach only - it never fabricates a minutes figure for something
+  that was never measured in minutes to begin with.
 
-All five are managed the same way as everything else here: the season-level
-three from Settings' **Sponsorship / big match / derby** panel (a club with
+All seven are managed the same way as everything else here: the season-level
+five from Settings' **Sponsorship / big match / derby** panel (a club with
 nothing set has no LED deal, same "no fallback to another season" rule as
 sponsored/bigClub), the per-fixture two from a **LED** tab on the home
 page's matchday cards, which only shows up at all for a fixture whose home
@@ -604,6 +617,11 @@ main/official broadcaster there; it has no effect on cup fixtures, where
 every broadcaster (including the main one) is just a plain dropdown choice,
 picked and stored by `slug` (a plain broadcaster name typed by hand still
 resolves too, same slug-first/name-fallback rule as everywhere else).
+A cup fixture's own `broadcaster` cell can hold **more than one**,
+comma-separated (e.g. `dazn,Rai Sport`) - useful since a cup tie often airs
+on more than one platform at once, unlike a Serie A game's single
+main+other pair. Each one is resolved and shown independently; an
+unresolved/typo'd entry still shows as plain text rather than disappearing.
 
 **3. Cup fixture rows, on the season's own fixtures tab** - there's no
 separate `cupFixtures` tab anymore; a cup fixture is just another row on
