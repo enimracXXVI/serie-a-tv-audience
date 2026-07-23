@@ -317,9 +317,9 @@ separate "live" version of these fields on the `teams` tab anymore.
 Add a `teamSeasons` tab (doesn't exist in the seeded sheet - add it
 yourself) with header row: `slug`, `team`, `season`, `sponsored`, `bigClub`,
 `derbyRival`, `matchdaySponsors`, `playerMascots`, `walkabouts`, `ledMinutes`,
-`addedTimeLed`, `penaltyLed`, `ledStartMatchday`, `goalCarpet`,
-`goalCarpetStartMatchday` (an `id` column is also fine to keep, same
-auto-fill deal as the other tabs above).
+`addedTimeLed`, `penaltyLed`, `ledStartMatchday`, `addedTimeLedStartMatchday`,
+`penaltyLedStartMatchday`, `goalCarpet`, `goalCarpetStartMatchday` (an `id`
+column is also fine to keep, same auto-fill deal as the other tabs above).
 
 - `slug` here is this **row's own key** - always `season::teamSlug` (e.g.
   `26/27::roma`) - the app fills this in for you when you save from
@@ -337,10 +337,11 @@ auto-fill deal as the other tabs above).
   your company's in-stadium sponsorship activity at that club that season;
   leave blank for a club you don't sponsor that season.
 - `ledMinutes`, `addedTimeLed`, `penaltyLed`, `ledStartMatchday`,
-  `goalCarpet`, `goalCarpetStartMatchday` - this club's LED perimeter-board
-  (and goal carpet) deal for that season, if any - see "LED perimeter-board
-  tracking" below. Independent of `sponsored` - a club can have an LED deal
-  without being a matchday-sponsor/mascot/walkabout club, or vice versa.
+  `addedTimeLedStartMatchday`, `penaltyLedStartMatchday`, `goalCarpet`,
+  `goalCarpetStartMatchday` - this club's LED perimeter-board (and goal
+  carpet) deal for that season, if any - see "LED perimeter-board tracking"
+  below. Independent of `sponsored` - a club can have an LED deal without
+  being a matchday-sponsor/mascot/walkabout club, or vice versa.
 
 A club with **no row** for a given season shows as not sponsored, not a big
 club, no derby rival, no caps, no LED deal for that season - there's no
@@ -389,16 +390,22 @@ columns on the fixtures tab (see "Y-Z" above):
 - **`penaltyTaken`** (per fixture) - a penalty was actually taken during that
   game's 90 minutes - only shown (and only meaningful) if that game's home
   club has `penaltyLed` checked for the season.
-- **`ledStartMatchday`** (per season/club, optional) - if the **LED**
-  (perimeter-board minutes) deal only started partway through the season
-  (signed after the season kicked off), the matchday it starts from -
-  earlier home games are excluded from the Dashboard's LED exposure card
-  and the per-fixture LED tab entirely, rather than counted with 0 minutes.
-  Leave blank for a deal that's been live since matchday 1 (the default,
-  and the common case). This only gates `ledMinutes`/`addedTimeLed`/
-  `penaltyLed` - it has no effect on `goalCarpet`, which has its own start
-  date below, since a carpet deal and an LED deal for the same club can
-  easily start on different dates.
+- **`ledStartMatchday`** (per season/club, optional) - if the base
+  per-fixture **LED minutes** rate (`ledMinutes`) only started partway
+  through the season (signed after the season kicked off), the matchday it
+  starts from - earlier home games don't count the base rate at all,
+  rather than counting it with 0 minutes. Leave blank for a rate that's
+  been live since matchday 1 (the default, and the common case).
+- **`addedTimeLedStartMatchday`** (per season/club, optional) - same idea,
+  but for `addedTimeLed` specifically - a club can add "exclusive during
+  added time" to an existing deal on its own separate date.
+- **`penaltyLedStartMatchday`** (per season/club, optional) - same idea,
+  but for `penaltyLed` specifically. All three of these start-matchdays are
+  fully independent of each other and of `goalCarpetStartMatchday` below -
+  a club's base rate, added-time exclusivity, penalty exposure and goal
+  carpet can each start on a completely different matchday, and a fixture
+  only drops out of the Dashboard's LED exposure card and the per-fixture
+  LED tab entirely if literally none of them apply to it yet.
 - **`goalCarpet`** (per season/club) - a branded pitch-side goal carpet, a
   completely different piece of signage from the LED boards above with no
   per-fixture minutes concept of its own. A club whose *only* checked LED
@@ -625,19 +632,23 @@ main/official broadcaster there; it has no effect on cup fixtures, where
 every broadcaster (including the main one) is just a plain dropdown choice,
 picked and stored by `slug` (a plain broadcaster name typed by hand still
 resolves too, same slug-first/name-fallback rule as everywhere else).
-A cup fixture's own `broadcaster` cell can hold **more than one**,
-comma-separated (e.g. `dazn,Rai Sport`) - useful since a cup tie often airs
-on more than one platform at once, unlike a Serie A game's single
-main+other pair. Each one is resolved and shown independently; an
-unresolved/typo'd entry still shows as plain text rather than disappearing.
+A cup fixture reuses the same `otherBroadcaster` column a Serie A row uses
+(see "Broadcaster naming" above) rather than a separate column of its own -
+but its cell can hold **more than one** slug, comma-separated (e.g.
+`dazn,Rai Sport`), since a cup tie often airs on more than one platform at
+once, unlike a Serie A game's single main+other pair (which is never a
+list). Each one is resolved and shown independently; an unresolved/typo'd
+entry still shows as plain text rather than disappearing.
 
 **3. Cup fixture rows, on the season's own fixtures tab** - there's no
 separate `cupFixtures` tab anymore; a cup fixture is just another row on
 that season's `fixtures_XX_YY` tab (the exact same tab documented up in
 "Rolling over a new season"/"seasons"), using the extra columns after `Z`
 (`extraLedMinutes`/`penaltyTaken`) that a Serie A row leaves blank: `competition`,
-`round`, `neutralVenue`, `broadcaster`, `audience`, `etHomeScore`,
-`etAwayScore`, `penHomeScore`, `penAwayScore`. `competition` is what tells a
+`round`, `neutralVenue`, `audience`, `etHomeScore`,
+`etAwayScore`, `penHomeScore`, `penAwayScore` (broadcaster(s) reuse the
+shared `otherBroadcaster` column, not a cup-only one - see below).
+`competition` is what tells a
 row apart from a Serie A one (see "This same tab now also holds cup
 fixtures" above) - it holds the stable `value` key from the `competitions`
 tab below (e.g. `CoppaItalia`), never blank or `serie-a` for an actual cup
@@ -648,9 +659,7 @@ falls back to matching by name). There's no "your club vs the opponent"
 distinction, both are just whichever two clubs actually played, resolved the
 same way for either side - this is what lets two of your own sponsored
 clubs meet each other correctly, and lets any club's crest/colours show up
-as long as it has a `teams` row. `broadcaster` holds a `broadcasters`-tab
-**slug** the same way, with the same name-fallback for anything typed by
-hand. `round` is free text (`Round of 16`, `Group A`, whatever your
+as long as it has a `teams` row. `round` is free text (`Round of 16`, `Group A`, whatever your
 competition calls it - there's no fixed round list, a group stage and a
 knockout draw both just work); `neutralVenue` is TRUE/FALSE, for the rare
 match (typically a final) at neither club's own ground - see "LED

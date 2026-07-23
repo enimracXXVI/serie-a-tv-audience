@@ -3,6 +3,7 @@ import { useCupData } from '../lib/useCupData.jsx';
 import { competitionScope, SERIE_A_VALUE } from '../lib/competitions.js';
 import { callWithReauth } from '../lib/reauth.js';
 import { useConfirm } from '../lib/useConfirm.jsx';
+import UrlField from './UrlField.jsx';
 
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9] placeholder:text-white/30';
@@ -11,11 +12,9 @@ const inputClass =
 // gets a simplified block here - just the logo, no scope selector (scope
 // only matters for filtering cup-fixture opponents, which Serie A never is).
 function SerieARow({ competition, session, saveCompetition }) {
-  const [logoURL, setLogoURL] = useState(competition?.logoURL ?? '');
   const [error, setError] = useState(null);
 
-  async function commit() {
-    if (logoURL === (competition?.logoURL ?? '')) return;
+  async function commit(logoURL) {
     setError(null);
     try {
       await callWithReauth(session, (token) => saveCompetition(SERIE_A_VALUE, { logoURL }, token));
@@ -32,15 +31,7 @@ function SerieARow({ competition, session, saveCompetition }) {
         {competition.logoURL && <img src={competition.logoURL} alt="" className="h-5 max-w-[80px] object-contain" />}
         <span className="text-sm font-semibold text-white">Serie A</span>
       </div>
-      <input
-        type="text"
-        value={logoURL}
-        disabled={!session.signedIn}
-        onChange={(e) => setLogoURL(e.target.value)}
-        onBlur={commit}
-        placeholder="Logo image URL"
-        className={`${inputClass} w-full`}
-      />
+      <UrlField label="Logo image URL" value={competition.logoURL} onCommit={commit} disabled={!session.signedIn} />
       {error && <p className="text-xs text-red-300">{error}</p>}
     </div>
   );
@@ -55,13 +46,11 @@ function slugify(name) {
 }
 
 function CompetitionRow({ competition, session, saveCompetition, removeCompetition }) {
-  const [logoURL, setLogoURL] = useState(competition.logoURL ?? '');
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [confirm, confirmDialog] = useConfirm();
 
-  async function commitLogoURL() {
-    if (logoURL === (competition.logoURL ?? '')) return;
+  async function commitLogoURL(logoURL) {
     setError(null);
     try {
       await callWithReauth(session, (token) => saveCompetition(competition.slug, { logoURL }, token));
@@ -100,14 +89,7 @@ function CompetitionRow({ competition, session, saveCompetition, removeCompetiti
         {competition.logoURL && <img src={competition.logoURL} alt="" className="h-5 max-w-[80px] object-contain" />}
         <span className="text-sm font-semibold text-white">{competition.name}</span>
       </div>
-      <input
-        type="text"
-        value={logoURL}
-        onChange={(e) => setLogoURL(e.target.value)}
-        onBlur={commitLogoURL}
-        placeholder="Logo image URL"
-        className={`${inputClass} w-full`}
-      />
+      <UrlField label="Logo image URL" value={competition.logoURL} onCommit={commitLogoURL} />
       <label className="flex items-center gap-2">
         <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Scope</span>
         <select

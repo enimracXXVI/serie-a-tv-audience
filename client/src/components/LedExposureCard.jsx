@@ -155,8 +155,13 @@ export default function LedExposureCard({ team, exposure }) {
               {sortedGames.map((g) => (
                 <tr key={g.fixture.id}>
                   <td className="px-2 py-2 text-left">
-                    <span className="font-semibold text-gray-700">MD{g.fixture.matchday}</span>
-                    <span className="ml-1 text-gray-400">{formatDate(g.fixture.date)}</span>
+                    <div className="flex w-20 flex-col items-center text-center text-[10px] leading-tight text-gray-400">
+                      <span className="font-bold text-gray-500">MD{g.fixture.matchday}</span>
+                      <span className="whitespace-nowrap">{formatDate(g.fixture.date)}</span>
+                      <span className="whitespace-nowrap">
+                        {g.fixture.day} {g.fixture.kickoffTime}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-2 py-2 text-left">
                     <div className="flex items-center gap-1.5">
@@ -208,8 +213,13 @@ export default function LedExposureCard({ team, exposure }) {
             {sortedGames.map((g) => (
               <tr key={g.fixture.id}>
                 <td className="px-2 py-2 text-left">
-                  <span className="font-semibold text-gray-700">MD{g.fixture.matchday}</span>
-                  <span className="ml-1 text-gray-400">{formatDate(g.fixture.date)}</span>
+                  <div className="flex w-20 flex-col items-center text-center text-[10px] leading-tight text-gray-400">
+                    <span className="font-bold text-gray-500">MD{g.fixture.matchday}</span>
+                    <span className="whitespace-nowrap">{formatDate(g.fixture.date)}</span>
+                    <span className="whitespace-nowrap">
+                      {g.fixture.day} {g.fixture.kickoffTime}
+                    </span>
+                  </div>
                 </td>
                 <td className="px-2 py-2 text-left">
                   <div className="flex items-center gap-1.5">

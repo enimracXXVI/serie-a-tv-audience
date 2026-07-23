@@ -28,7 +28,7 @@ export default function CupRoundGroup({ round, fixtures, onUpdate, onDelete, can
   const [activeTab, setActiveTab] = useState(null);
 
   return (
-    <section className="scroll-mt-4 overflow-hidden rounded-2xl shadow-lg shadow-black/20">
+    <section className="scroll-mt-4 overflow-hidden rounded-2xl bg-red-50 shadow-lg shadow-black/20">
       <header className="flex flex-col gap-2 px-4 py-2.5" style={{ background: ACCENT }}>
         <div className="flex items-baseline justify-between">
           <h3 className="text-sm font-bold tracking-wide text-white">{round}</h3>
@@ -53,7 +53,7 @@ export default function CupRoundGroup({ round, fixtures, onUpdate, onDelete, can
           </div>
         )}
       </header>
-      <div className="flex flex-col divide-y divide-red-100 bg-red-50/40 px-1 py-1">
+      <div className="flex flex-col divide-y divide-red-100 px-1 py-1">
         {groupIntoTies(fixtures).map((legs) =>
           legs.length === 2 ? (
             <CupTieGroup

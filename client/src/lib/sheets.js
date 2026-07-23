@@ -61,9 +61,11 @@ const EDITABLE_FIELDS = [
   'isDerby',
   // Cup-only, edited post-creation from a cup fixture's own edit tabs -
   // competition/round/home/away aren't here, same as matchday/home/away
-  // above: set once at creation, never edited afterwards.
+  // above: set once at creation, never edited afterwards. Broadcaster(s)
+  // reuse otherBroadcaster (above) rather than a separate column - see
+  // resolveBroadcasterList for the comma-separated-list parsing that field's
+  // cup rows get.
   'neutralVenue',
-  'broadcaster',
   'audience',
   'etHomeScore',
   'etAwayScore',

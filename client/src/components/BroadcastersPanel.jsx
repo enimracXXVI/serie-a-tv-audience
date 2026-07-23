@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useCupData } from '../lib/useCupData.jsx';
 import { callWithReauth } from '../lib/reauth.js';
 import { useConfirm } from '../lib/useConfirm.jsx';
+import UrlField from './UrlField.jsx';
 
 const inputClass =
   'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9] placeholder:text-white/30';
@@ -15,13 +16,11 @@ function slugify(name) {
 }
 
 function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain, removeBroadcaster }) {
-  const [logoUrl, setLogoUrl] = useState(broadcaster.logoUrl ?? '');
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [confirm, confirmDialog] = useConfirm();
 
-  async function commit() {
-    if (logoUrl === (broadcaster.logoUrl ?? '')) return;
+  async function commit(logoUrl) {
     setError(null);
     try {
       await callWithReauth(session, (token) => saveBroadcaster(broadcaster.slug, { logoUrl }, token));
@@ -65,14 +64,7 @@ function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain, remo
           </span>
         )}
       </div>
-      <input
-        type="text"
-        value={logoUrl}
-        onChange={(e) => setLogoUrl(e.target.value)}
-        onBlur={commit}
-        placeholder="Logo image URL"
-        className={`${inputClass} w-full`}
-      />
+      <UrlField label="Logo image URL" value={broadcaster.logoUrl} onCommit={commit} />
       {session.signedIn && !broadcaster.isMain && (
         <button onClick={setMain} className="self-start text-[10px] font-semibold text-white/50 hover:text-white">
           Set as main broadcaster

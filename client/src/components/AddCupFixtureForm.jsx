@@ -123,7 +123,7 @@ export default function AddCupFixtureForm({ clubs, competitions, broadcasters, o
         neutralVenue,
         date: date || '',
         kickoffTime: kickoffTime || '',
-        broadcaster: broadcaster.trim(),
+        otherBroadcaster: broadcaster.trim(),
       });
       // Round/competition stay put; everything else resets for the next add.
       setHome('');

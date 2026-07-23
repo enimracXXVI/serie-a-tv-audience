@@ -12,7 +12,20 @@ import { callWithReauth } from '../lib/reauth.js';
 import { syncAllSeasonsMatchTags } from '../lib/syncSeasonTags.js';
 
 const inputClass =
-  'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-[#1fd8c9]';
+  'rounded-md border border-white/20 bg-white/5 px-2 py-1 text-center text-sm text-white outline-none focus:border-[#1fd8c9]';
+
+// Label-above, center-aligned wrapper for every plain text/number/select
+// field in the expanded form - toggles keep their own switch+label layout
+// (see ToggleSwitch) since a toggle isn't really a "field" in the same
+// sense.
+function Field({ label, children }) {
+  return (
+    <label className="flex flex-col items-center gap-1">
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">{label}</span>
+      {children}
+    </label>
+  );
+}
 
 function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
   const [expanded, setExpanded] = useState(false);
@@ -23,9 +36,15 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
   const [playerMascots, setPlayerMascots] = useState(row?.playerMascots ?? '');
   const [walkabouts, setWalkabouts] = useState(row?.walkabouts ?? '');
   const [ledMinutes, setLedMinutes] = useState(row?.ledMinutes ?? '');
+  // UI-only - not its own persisted column. Derived from whether ledMinutes
+  // is currently set, since that null-vs-number state already encodes "has
+  // a base LED-minutes deal" without needing a redundant boolean of its own.
+  const [ledEnabled, setLedEnabled] = useState(row?.ledMinutes !== null && row?.ledMinutes !== undefined);
   const [addedTimeLed, setAddedTimeLed] = useState(Boolean(row?.addedTimeLed));
   const [penaltyLed, setPenaltyLed] = useState(Boolean(row?.penaltyLed));
   const [ledStartMatchday, setLedStartMatchday] = useState(row?.ledStartMatchday ?? '');
+  const [addedTimeLedStartMatchday, setAddedTimeLedStartMatchday] = useState(row?.addedTimeLedStartMatchday ?? '');
+  const [penaltyLedStartMatchday, setPenaltyLedStartMatchday] = useState(row?.penaltyLedStartMatchday ?? '');
   const [goalCarpet, setGoalCarpet] = useState(Boolean(row?.goalCarpet));
   const [goalCarpetStartMatchday, setGoalCarpetStartMatchday] = useState(row?.goalCarpetStartMatchday ?? '');
   const [saveError, setSaveError] = useState(null);
@@ -40,6 +59,14 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
       await callWithReauth(session, (token) => saveTeamSeason(season, team.slug, fields, token));
     } catch (err) {
       setSaveError(err.message);
+    }
+  }
+
+  function toggleLed(v) {
+    setLedEnabled(v);
+    if (!v) {
+      setLedMinutes('');
+      commit({ ledMinutes: null });
     }
   }
 
@@ -85,27 +112,18 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
         <div className="flex flex-col gap-3 border-t border-white/10 px-3 py-3">
           {session.signedIn ? (
             <>
+              {/* Row 1: big club + derby rival (derby's own "None" option is
+                  its generic/default state). */}
               <div className="flex flex-wrap items-end gap-4">
-                <ToggleSwitch
-                  checked={sponsored}
-                  onChange={(v) => {
-                    setSponsored(v);
-                    commit({ sponsored: v });
-                  }}
-                  label={`Sponsored in ${season}`}
-                />
                 <ToggleSwitch
                   checked={bigClub}
                   onChange={(v) => {
                     setBigClub(v);
                     commit({ bigClub: v });
                   }}
-                  label={`Big club in ${season}`}
+                  label="Big club"
                 />
-                <label className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">
-                    Derby rival in {season}
-                  </span>
+                <Field label="Derby rival">
                   <select
                     value={derbyRival}
                     onChange={(e) => {
@@ -123,123 +141,162 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
                         </option>
                       ))}
                   </select>
-                </label>
+                </Field>
               </div>
-              {sponsored && (
-                <div className="flex flex-wrap gap-2">
-                  <label className="flex flex-col gap-1">
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">
-                      Matchday sponsors
-                    </span>
+
+              {/* Row 2: sponsored + activation caps. */}
+              <div className="flex flex-wrap items-end gap-4 border-t border-white/10 pt-3">
+                <ToggleSwitch
+                  checked={sponsored}
+                  onChange={(v) => {
+                    setSponsored(v);
+                    commit({ sponsored: v });
+                  }}
+                  label="Sponsored"
+                />
+                {sponsored && (
+                  <>
+                    <Field label="Matchday sponsor">
+                      <input
+                        type="number"
+                        min="0"
+                        value={matchdaySponsors}
+                        onChange={(e) => setMatchdaySponsors(e.target.value)}
+                        onBlur={() => commit({ matchdaySponsors: matchdaySponsors === '' ? null : Number(matchdaySponsors) })}
+                        className={`${inputClass} w-20`}
+                      />
+                    </Field>
+                    <Field label="Mascots">
+                      <input
+                        type="number"
+                        min="0"
+                        value={playerMascots}
+                        onChange={(e) => setPlayerMascots(e.target.value)}
+                        onBlur={() => commit({ playerMascots: playerMascots === '' ? null : Number(playerMascots) })}
+                        className={`${inputClass} w-20`}
+                      />
+                    </Field>
+                    <Field label="Walkabouts">
+                      <input
+                        type="number"
+                        min="0"
+                        value={walkabouts}
+                        onChange={(e) => setWalkabouts(e.target.value)}
+                        onBlur={() => commit({ walkabouts: walkabouts === '' ? null : Number(walkabouts) })}
+                        className={`${inputClass} w-20`}
+                      />
+                    </Field>
+                  </>
+                )}
+              </div>
+
+              {/* Row 3: LED (base minutes) toggle. */}
+              <div className="flex flex-wrap items-end gap-4 border-t border-white/10 pt-3">
+                <ToggleSwitch checked={ledEnabled} onChange={toggleLed} label="LED" />
+                {ledEnabled && (
+                  <>
+                    <Field label="LED minutes">
+                      <input
+                        type="number"
+                        min="0"
+                        value={ledMinutes}
+                        onChange={(e) => setLedMinutes(e.target.value)}
+                        onBlur={() => commit({ ledMinutes: ledMinutes === '' ? null : Number(ledMinutes) })}
+                        className={`${inputClass} w-20`}
+                      />
+                    </Field>
+                    <Field label="Starting MD">
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="1"
+                        value={ledStartMatchday}
+                        onChange={(e) => setLedStartMatchday(e.target.value)}
+                        onBlur={() => commit({ ledStartMatchday: ledStartMatchday === '' ? null : Number(ledStartMatchday) })}
+                        className={`${inputClass} w-20`}
+                      />
+                    </Field>
+                  </>
+                )}
+              </div>
+
+              {/* Row 4: penalties + added time, each with its own start MD. */}
+              <div className="flex flex-wrap items-end gap-4 border-t border-white/10 pt-3">
+                <ToggleSwitch
+                  checked={penaltyLed}
+                  onChange={(v) => {
+                    setPenaltyLed(v);
+                    commit({ penaltyLed: v });
+                  }}
+                  label="LED during penalties"
+                />
+                {penaltyLed && (
+                  <Field label="Starting MD">
                     <input
                       type="number"
-                      min="0"
-                      value={matchdaySponsors}
-                      onChange={(e) => setMatchdaySponsors(e.target.value)}
-                      onBlur={() => commit({ matchdaySponsors: matchdaySponsors === '' ? null : Number(matchdaySponsors) })}
-                      className={`${inputClass} w-24`}
+                      min="1"
+                      placeholder="1"
+                      value={penaltyLedStartMatchday}
+                      onChange={(e) => setPenaltyLedStartMatchday(e.target.value)}
+                      onBlur={() =>
+                        commit({ penaltyLedStartMatchday: penaltyLedStartMatchday === '' ? null : Number(penaltyLedStartMatchday) })
+                      }
+                      className={`${inputClass} w-20`}
                     />
-                  </label>
-                  <label className="flex flex-col gap-1">
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">
-                      Player mascots
-                    </span>
+                  </Field>
+                )}
+                <ToggleSwitch
+                  checked={addedTimeLed}
+                  onChange={(v) => {
+                    setAddedTimeLed(v);
+                    commit({ addedTimeLed: v });
+                  }}
+                  label="Exclusive during added time"
+                />
+                {addedTimeLed && (
+                  <Field label="Starting MD">
                     <input
                       type="number"
-                      min="0"
-                      value={playerMascots}
-                      onChange={(e) => setPlayerMascots(e.target.value)}
-                      onBlur={() => commit({ playerMascots: playerMascots === '' ? null : Number(playerMascots) })}
-                      className={`${inputClass} w-24`}
+                      min="1"
+                      placeholder="1"
+                      value={addedTimeLedStartMatchday}
+                      onChange={(e) => setAddedTimeLedStartMatchday(e.target.value)}
+                      onBlur={() =>
+                        commit({
+                          addedTimeLedStartMatchday: addedTimeLedStartMatchday === '' ? null : Number(addedTimeLedStartMatchday),
+                        })
+                      }
+                      className={`${inputClass} w-20`}
                     />
-                  </label>
-                  <label className="flex flex-col gap-1">
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Walkabouts</span>
+                  </Field>
+                )}
+              </div>
+
+              {/* Row 5: goal carpet. */}
+              <div className="flex flex-wrap items-end gap-4 border-t border-white/10 pt-3">
+                <ToggleSwitch
+                  checked={goalCarpet}
+                  onChange={(v) => {
+                    setGoalCarpet(v);
+                    commit({ goalCarpet: v });
+                  }}
+                  label="Goal carpet"
+                />
+                {goalCarpet && (
+                  <Field label="Starting MD">
                     <input
                       type="number"
-                      min="0"
-                      value={walkabouts}
-                      onChange={(e) => setWalkabouts(e.target.value)}
-                      onBlur={() => commit({ walkabouts: walkabouts === '' ? null : Number(walkabouts) })}
-                      className={`${inputClass} w-24`}
+                      min="1"
+                      placeholder="1"
+                      value={goalCarpetStartMatchday}
+                      onChange={(e) => setGoalCarpetStartMatchday(e.target.value)}
+                      onBlur={() =>
+                        commit({ goalCarpetStartMatchday: goalCarpetStartMatchday === '' ? null : Number(goalCarpetStartMatchday) })
+                      }
+                      className={`${inputClass} w-20`}
                     />
-                  </label>
-                </div>
-              )}
-              <div className="flex flex-wrap items-end gap-2 border-t border-white/10 pt-3">
-                <label className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">
-                    LED minutes per home fixture in {season}
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={ledMinutes}
-                    onChange={(e) => setLedMinutes(e.target.value)}
-                    onBlur={() => commit({ ledMinutes: ledMinutes === '' ? null : Number(ledMinutes) })}
-                    className={`${inputClass} w-24`}
-                  />
-                </label>
-                <div className="pb-1.5">
-                  <ToggleSwitch
-                    checked={addedTimeLed}
-                    onChange={(v) => {
-                      setAddedTimeLed(v);
-                      commit({ addedTimeLed: v });
-                    }}
-                    label="Exclusive during added time"
-                  />
-                </div>
-                <div className="pb-1.5">
-                  <ToggleSwitch
-                    checked={penaltyLed}
-                    onChange={(v) => {
-                      setPenaltyLed(v);
-                      commit({ penaltyLed: v });
-                    }}
-                    label="LED during penalties"
-                  />
-                </div>
-                <label className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">
-                    LED starts matchday
-                  </span>
-                  <input
-                    type="number"
-                    min="1"
-                    placeholder="1"
-                    value={ledStartMatchday}
-                    onChange={(e) => setLedStartMatchday(e.target.value)}
-                    onBlur={() => commit({ ledStartMatchday: ledStartMatchday === '' ? null : Number(ledStartMatchday) })}
-                    className={`${inputClass} w-24`}
-                  />
-                </label>
-                <div className="pb-1.5">
-                  <ToggleSwitch
-                    checked={goalCarpet}
-                    onChange={(v) => {
-                      setGoalCarpet(v);
-                      commit({ goalCarpet: v });
-                    }}
-                    label="Goal carpet"
-                  />
-                </div>
-                <label className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">
-                    Goal carpet starts matchday
-                  </span>
-                  <input
-                    type="number"
-                    min="1"
-                    placeholder="1"
-                    value={goalCarpetStartMatchday}
-                    onChange={(e) => setGoalCarpetStartMatchday(e.target.value)}
-                    onBlur={() =>
-                      commit({ goalCarpetStartMatchday: goalCarpetStartMatchday === '' ? null : Number(goalCarpetStartMatchday) })
-                    }
-                    className={`${inputClass} w-24`}
-                  />
-                </label>
+                  </Field>
+                )}
               </div>
               {saveError && (
                 <p className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-xs text-red-300">
@@ -261,11 +318,13 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
                 <span>Not sponsored</span>
               )}
               <span>LED minutes per home fixture: {ledMinutes || '-'}</span>
-              <span>Added time exclusive: {addedTimeLed ? 'Yes' : 'No'}</span>
-              <span>LED during penalties: {penaltyLed ? 'Yes' : 'No'}</span>
               {ledStartMatchday && <span>LED starts matchday {ledStartMatchday}</span>}
+              <span>LED during penalties: {penaltyLed ? 'Yes' : 'No'}</span>
+              {penaltyLed && penaltyLedStartMatchday && <span>Starts matchday {penaltyLedStartMatchday}</span>}
+              <span>Added time exclusive: {addedTimeLed ? 'Yes' : 'No'}</span>
+              {addedTimeLed && addedTimeLedStartMatchday && <span>Starts matchday {addedTimeLedStartMatchday}</span>}
               <span>Goal carpet: {goalCarpet ? 'Yes' : 'No'}</span>
-              {goalCarpetStartMatchday && <span>Goal carpet starts matchday {goalCarpetStartMatchday}</span>}
+              {goalCarpet && goalCarpetStartMatchday && <span>Starts matchday {goalCarpetStartMatchday}</span>}
             </div>
           )}
         </div>
