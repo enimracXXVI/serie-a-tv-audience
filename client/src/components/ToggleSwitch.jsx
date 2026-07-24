@@ -2,7 +2,19 @@
 // style every other Settings field label uses (see Field components across
 // TeamsPanel/TeamSeasonsPanel/CupFixtureRow) - a toggle is a field like any
 // other, so its label shouldn't look different from a text input's.
-export default function ToggleSwitch({ checked, onChange, label, title, disabled = false, labelClassName = 'text-white/40' }) {
+// onColor defaults to the app's teal accent - but a toggle sitting inside a
+// Card's own teal header needs a different "on" colour, or a checked track
+// would blend straight into the header behind it (see TopGamesList's "Home
+// only" toggle) rather than reading as visibly switched on.
+export default function ToggleSwitch({
+  checked,
+  onChange,
+  label,
+  title,
+  disabled = false,
+  labelClassName = 'text-white/40',
+  onColor = 'bg-[#1fd8c9]',
+}) {
   return (
     <div className={`flex flex-col items-center gap-1 ${disabled ? 'opacity-40' : ''}`} title={title}>
       {label && <span className={`text-[10px] font-semibold uppercase tracking-wide ${labelClassName}`}>{label}</span>}
@@ -12,7 +24,7 @@ export default function ToggleSwitch({ checked, onChange, label, title, disabled
         aria-checked={checked}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${checked ? 'bg-[#1fd8c9]' : 'bg-gray-300'} ${
+        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${checked ? onColor : 'bg-gray-300'} ${
           disabled ? 'cursor-not-allowed' : ''
         }`}
       >

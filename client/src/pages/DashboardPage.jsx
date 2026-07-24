@@ -28,6 +28,7 @@ import TopGamesList from '../components/TopGamesList.jsx';
 import AudienceByBucketChart from '../components/AudienceByBucketChart.jsx';
 import DayTimeBreakdownTable from '../components/DayTimeBreakdownTable.jsx';
 import SeasonTrendChart from '../components/SeasonTrendChart.jsx';
+import MatchdayAudienceTable from '../components/MatchdayAudienceTable.jsx';
 import DayTimeHeatmap from '../components/DayTimeHeatmap.jsx';
 import ActivationDonut from '../components/ActivationDonut.jsx';
 import OpponentAudienceChart from '../components/OpponentAudienceChart.jsx';
@@ -115,6 +116,7 @@ const NAV_SECTIONS = [
   { id: 'dash-ranked', label: 'Audience by club' },
   { id: 'dash-table', label: 'Club table' },
   { id: 'dash-trend', label: 'Season trend' },
+  { id: 'dash-matchday-audience', label: 'Audience by matchday' },
   { id: 'dash-scheduling', label: 'Scheduling patterns' },
   { id: 'dash-heatmap', label: 'Heatmap' },
   { id: 'dash-games', label: 'Top games' },
@@ -404,6 +406,12 @@ export default function DashboardPage() {
             <div id="dash-trend" className="scroll-mt-20">
               <ScreenshotableCard filename={`dashboard-season-trend-${season.label.replace('/', '-')}`}>
                 <SeasonTrendChart trend={seasonTrend} team={focusedTeam} />
+              </ScreenshotableCard>
+            </div>
+
+            <div id="dash-matchday-audience" className="scroll-mt-20">
+              <ScreenshotableCard filename={`dashboard-matchday-audience-${season.label.replace('/', '-')}`}>
+                <MatchdayAudienceTable trend={seasonTrend} team={focusedTeam} />
               </ScreenshotableCard>
             </div>
 

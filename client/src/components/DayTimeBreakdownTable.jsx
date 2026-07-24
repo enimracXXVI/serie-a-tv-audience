@@ -62,7 +62,7 @@ export default function DayTimeBreakdownTable({ rows, simulcastInfo }) {
       bodyClassName="overflow-x-auto p-4"
       controls={
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] text-white/80">Shift+click a column to sort by multiple columns</span>
+          <span className="text-[10px] text-[#0f1e54]/70">Shift+click a column to sort by multiple columns</span>
           <div className="flex gap-1">
             {LIMITS.map((n) => (
               <button

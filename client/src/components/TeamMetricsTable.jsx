@@ -67,7 +67,7 @@ export default function TeamMetricsTable({ metrics, focusedSlug, onFocus }) {
     <Card
       title="Club table"
       bodyClassName="overflow-x-auto"
-      controls={<span className="text-[10px] text-white/80">Shift+click a column to sort by multiple columns</span>}
+      controls={<span className="text-[10px] text-[#0f1e54]/70">Shift+click a column to sort by multiple columns</span>}
     >
       <table className="w-full min-w-[720px] border-collapse text-sm">
         <thead>
