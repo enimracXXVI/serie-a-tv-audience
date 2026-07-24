@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 // Native <select> can't have its open options list restyled reliably
 // across browsers/devices (Android Chrome in particular renders its own
@@ -27,6 +27,27 @@ const CLOSED_VARIANTS = {
 export default function Dropdown({ value, onChange, options, variant = 'sidebar', className = '' }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const listRef = useRef(null);
+  // Centering the list under the trigger (via a CSS transform alone) still
+  // runs it off-screen for a trigger sitting far enough toward either edge -
+  // a long option label needs real width, and no fixed CSS anchor keeps
+  // that width on-screen for every possible trigger position. Measured
+  // and clamped here instead, in a layout effect so it's positioned
+  // correctly before the browser ever paints the open state.
+  const [listLeft, setListLeft] = useState(null);
+
+  useLayoutEffect(() => {
+    if (!open || !ref.current || !listRef.current) {
+      setListLeft(null);
+      return;
+    }
+    const margin = 8;
+    const triggerRect = ref.current.getBoundingClientRect();
+    const listWidth = listRef.current.offsetWidth;
+    const desired = triggerRect.left + triggerRect.width / 2 - listWidth / 2;
+    const clamped = Math.min(Math.max(desired, margin), window.innerWidth - listWidth - margin);
+    setListLeft(clamped - triggerRect.left);
+  }, [open, options]);
 
   useEffect(() => {
     if (!open) return;
@@ -52,7 +73,18 @@ export default function Dropdown({ value, onChange, options, variant = 'sidebar'
         </span>
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 max-h-[70vh] w-max min-w-full overflow-y-auto rounded-md bg-[#0f1e54] py-1 shadow-xl ring-1 ring-white/10">
+        // Positioned via listLeft (measured above) instead of a fixed CSS
+        // anchor, and capped to the viewport width with labels allowed to
+        // wrap instead of forcing one long unbroken line - a long option
+        // (e.g. "Away audience (avg/game) - visitor draw power") on a
+        // trigger sitting anywhere but the far left of a phone screen used
+        // to run straight off the right edge of the viewport with no way
+        // to read the rest.
+        <div
+          ref={listRef}
+          className="absolute top-full z-50 mt-1 max-h-[70vh] w-max min-w-full max-w-[min(20rem,90vw)] overflow-y-auto rounded-md bg-[#0f1e54] py-1 shadow-xl ring-1 ring-white/10"
+          style={{ left: listLeft === null ? 0 : `${listLeft}px`, visibility: listLeft === null ? 'hidden' : 'visible' }}
+        >
           {options.map((o) =>
             // A non-selectable section heading (e.g. "Serie A" vs "Other
             // clubs" in a long club picker) - the one thing a native
@@ -73,7 +105,7 @@ export default function Dropdown({ value, onChange, options, variant = 'sidebar'
                   onChange(o.value);
                   setOpen(false);
                 }}
-                className={`block w-full whitespace-nowrap px-3 py-1.5 text-left text-sm font-semibold hover:bg-white/10 ${
+                className={`block w-full px-3 py-1.5 text-left text-sm font-semibold hover:bg-white/10 ${
                   o.value === value ? 'text-[#1fd8c9]' : 'text-white'
                 }`}
               >

@@ -13,13 +13,13 @@ export default function Card({ title, controls, accent = DEFAULT_ACCENT, childre
   return (
     <div className="overflow-hidden rounded-2xl shadow-lg shadow-black/20">
       <div
-        className="flex items-start justify-between gap-2 px-4 py-2.5"
+        className="flex flex-wrap items-start justify-between gap-2 px-4 py-2.5"
         style={{ background: accent }}
       >
         <h3 className="shrink-0 pt-0.5 text-sm font-bold" style={{ color: TITLE_COLOR }}>
           {title}
         </h3>
-        {controls && <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2">{controls}</div>}
+        {controls && <div className="flex flex-wrap items-center justify-end gap-2">{controls}</div>}
       </div>
       <div className={`bg-white ${bodyClassName}`}>{children}</div>
     </div>
