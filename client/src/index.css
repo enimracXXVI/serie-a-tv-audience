@@ -30,3 +30,53 @@ body {
 .score-input {
   -moz-appearance: textfield;
 }
+
+/* Swiping between matchday cards (see CalendarView.jsx) triggers a View
+   Transition instead of an instant swap - direction-aware slide (not the
+   API's default cross-fade) so a "next" swipe visibly continues the same
+   direction the finger moved, and "prev" reverses it. Browsers without
+   View Transitions support just get the plain instant change already built
+   into CalendarView - this block never runs there. */
+::view-transition-old(matchday-card),
+::view-transition-new(matchday-card) {
+  animation-duration: 360ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root[data-matchday-swipe='next']::view-transition-old(matchday-card) {
+  animation-name: matchday-slide-out-left;
+}
+:root[data-matchday-swipe='next']::view-transition-new(matchday-card) {
+  animation-name: matchday-slide-in-right;
+}
+:root[data-matchday-swipe='prev']::view-transition-old(matchday-card) {
+  animation-name: matchday-slide-out-right;
+}
+:root[data-matchday-swipe='prev']::view-transition-new(matchday-card) {
+  animation-name: matchday-slide-in-left;
+}
+
+@keyframes matchday-slide-out-left {
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+@keyframes matchday-slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+@keyframes matchday-slide-out-right {
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+@keyframes matchday-slide-in-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}

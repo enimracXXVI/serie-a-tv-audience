@@ -334,9 +334,9 @@ export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, ed
             {onDelete && (
               <button
                 onClick={handleDelete}
-                className="w-fit rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-semibold text-red-500 shadow-sm transition-colors hover:bg-red-50"
+                className="w-fit rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-bold text-red-500 shadow-sm transition-colors hover:bg-red-50"
               >
-                Delete fixture
+                DELETE
               </button>
             )}
           </div>

@@ -50,7 +50,7 @@ function downloadBlob(blob, filename) {
   URL.revokeObjectURL(url);
 }
 
-export default function ScreenshotableCard({ filename, background = '#ffffff', children }) {
+export default function ScreenshotableCard({ filename, background = '#ffffff', style, children }) {
   const ref = useRef(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null);
@@ -133,7 +133,7 @@ export default function ScreenshotableCard({ filename, background = '#ffffff', c
     // applied to that child, never `flex`/`flex-col` themselves - those
     // would override whatever internal layout (often `grid`, e.g. the stat
     // tiles) the child's own className already sets.
-    <div ref={ref} className="relative flex h-full flex-col [&>:last-child]:flex-1">
+    <div ref={ref} className="relative flex h-full flex-col [&>:last-child]:flex-1" style={style}>
       <button
         type="button"
         onClick={handleClick}
