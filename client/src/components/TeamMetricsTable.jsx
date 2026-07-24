@@ -34,15 +34,14 @@ export default function TeamMetricsTable({ metrics, focusedSlug, onFocus }) {
   const [sortChain, setSortChain] = useState([{ key: 'homeAudienceAvg', dir: 'desc' }]);
   const [multiSort, setMultiSort] = useState(false);
 
-  // Shift+click has no touch equivalent, so multi-column sorting is now a
-  // sticky mode toggled by its own button (see the "Multi-sort" pill below)
-  // rather than a modifier key - the same click behavior works on mouse and
-  // touch alike this way, and there's no longer a hint text to explain a
-  // gesture that only worked for half of this app's users.
-  function headerClick(key) {
+  // Shift+click still works for anyone using a mouse - the "Multi-sort"
+  // toggle (mobile-only, see the pill below) is purely an additional touch
+  // equivalent for it, not a replacement, since shift+click itself works
+  // fine on desktop and there's no reason to take it away there.
+  function headerClick(key, event) {
     if (key === 'team') return;
     setSortChain((prev) => {
-      if (!multiSort) {
+      if (!multiSort && !event.shiftKey) {
         if (prev.length === 1 && prev[0].key === key) {
           return [{ key, dir: prev[0].dir === 'asc' ? 'desc' : 'asc' }];
         }
@@ -78,7 +77,7 @@ export default function TeamMetricsTable({ metrics, focusedSlug, onFocus }) {
           type="button"
           onClick={() => setMultiSort((v) => !v)}
           title="When on, tapping a column adds it to the sort instead of replacing it"
-          className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+          className={`rounded-full px-2.5 py-1 text-xs font-bold sm:hidden ${
             multiSort ? 'bg-white text-[#0f1e54]' : 'bg-black/10 text-[#0f1e54]/70 hover:bg-black/20'
           }`}
         >
@@ -95,7 +94,7 @@ export default function TeamMetricsTable({ metrics, focusedSlug, onFocus }) {
                 <th
                   key={col.key}
                   title={col.title}
-                  onClick={() => headerClick(col.key)}
+                  onClick={(e) => headerClick(col.key, e)}
                   className={`px-3 py-2.5 text-center first:text-left ${
                     col.sortable === false ? '' : 'cursor-pointer select-none hover:text-[#0f1e54]'
                   }`}
