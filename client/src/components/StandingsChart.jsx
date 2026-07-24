@@ -261,7 +261,7 @@ function StandingSection({ title, metric, fixtures, teams, teamCount, maxMatchda
   const formatGridLabel = metric === 'points' ? (p) => p : (r) => `${r}${r === 1 ? 'st' : ''}`;
 
   return (
-    <Card title={title} controls={<span className="text-xs font-semibold text-white/80">Matchday {cutoff}</span>}>
+    <Card title={title} controls={<span className="text-xs font-semibold text-[#0f1e54]/70">Matchday {cutoff}</span>}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         <div className="flex flex-1 flex-col gap-3">
           <LineChart

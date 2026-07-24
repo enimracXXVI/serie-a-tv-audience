@@ -39,7 +39,7 @@ export default function OpponentAudienceChart({ team, data, simulcastInfo }) {
     <Card
       title={`${team.name} - home audience by opponent`}
       controls={
-        <span className="text-[10px] text-white/80">
+        <span className="text-[10px] text-[#0f1e54]/70">
           Range: {formatNumber(range.min)} - {formatNumber(range.max)} across {range.count} home games
         </span>
       }

@@ -224,13 +224,15 @@ export function computeSeasonTrend(fixtures, simulcastInfo, includeSimulcast, in
     .map((matchday) => {
       const played = fixtures.filter((f) => f.matchday === matchday && isPlayed(f));
       if (played.length === 0) return null; // nothing played yet this matchday - not a real zero
-      const leagueAvg = avg(played.map((f) => effectiveAudience(f, simulcastInfo, includeSimulcast, includeOther)));
+      const audiences = played.map((f) => effectiveAudience(f, simulcastInfo, includeSimulcast, includeOther));
+      const leagueAvg = avg(audiences);
+      const leagueTotal = sum(audiences);
       let teamValue = null;
       if (teamSlug) {
         const game = played.find((f) => f.home.slug === teamSlug || f.away.slug === teamSlug);
         teamValue = game ? effectiveAudience(game, simulcastInfo, includeSimulcast, includeOther) : null;
       }
-      return { matchday, leagueAvg, teamValue };
+      return { matchday, leagueAvg, leagueTotal, gamesPlayed: played.length, teamValue };
     })
     .filter(Boolean);
 }

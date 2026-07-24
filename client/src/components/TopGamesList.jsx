@@ -42,11 +42,17 @@ export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSi
             value={teamFilter}
             onChange={setTeamFilter}
             options={[
-              { value: '', label: focusedSlug ? `${teams.find((t) => t.slug === focusedSlug)?.name ?? 'Focused club'} (selected)` : 'All clubs' },
+              { value: '', label: focusedSlug ? teams.find((t) => t.slug === focusedSlug)?.name ?? 'Focused club' : 'All clubs' },
               ...teams.map((t) => ({ value: t.slug, label: t.name })),
             ]}
           />
-          <ToggleSwitch checked={homeOnly} onChange={setHomeOnly} label="Home only" labelClassName="text-[#0f1e54]/70" />
+          <ToggleSwitch
+            checked={homeOnly}
+            onChange={setHomeOnly}
+            label="Home only"
+            labelClassName="text-[#0f1e54]/70"
+            onColor="bg-[#0f1e54]"
+          />
           <div className="flex gap-1">
             {LIMITS.map((n) => (
               <button
