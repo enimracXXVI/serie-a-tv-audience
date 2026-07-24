@@ -38,7 +38,7 @@ export default function TopGamesList({ fixtures, teams, simulcastInfo, includeSi
       controls={
         <div className="flex flex-wrap items-center gap-2">
           <Dropdown
-            variant="header"
+            variant="tealHeader"
             value={teamFilter}
             onChange={setTeamFilter}
             options={[
