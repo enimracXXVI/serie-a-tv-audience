@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import MatchdayGroup from './MatchdayGroup.jsx';
 import MatchdaySelector from './MatchdaySelector.jsx';
+import ScreenshotableCard from './ScreenshotableCard.jsx';
 import { closestMatchday } from '../lib/matchdays.js';
 import { computeMatchTags } from '../lib/matchTags.js';
 import { computeSponsorCounts } from '../lib/sponsorCounts.js';
@@ -12,7 +13,14 @@ export default function CalendarView({
   onDelete,
   highlightSlugs = [],
   accent = '#1fd8c9',
+  // More than one club here (a multi-team branded calendar) rotates each
+  // matchday header through that club's own primary/secondary colours
+  // instead of every matchday using the same flat `accent` - which,
+  // without this, was always just the first selected club's colour,
+  // leaving every other selected club's brand invisible from the header.
+  accentTeams,
   canEdit = false,
+  screenshotPrefix = 'matchday',
 }) {
   const byMatchday = new Map();
   for (const f of fixtures) {
@@ -83,19 +91,24 @@ export default function CalendarView({
       <div className="sticky top-14 z-30 -mx-6 bg-[#0f1e54] px-6 py-2 sm:top-[60px]">
         <MatchdaySelector matchdays={matchdays} selected={selected ?? matchdays[0]} onChange={setSelected} />
       </div>
-      {visibleMatchdays.map((md) => (
-        <MatchdayGroup
-          key={md}
-          matchday={md}
-          fixtures={byMatchday.get(md)}
-          onUpdate={onUpdate}
-          onDelete={onDelete}
-          highlightSlugs={highlightSlugs}
-          accent={accent}
-          canEdit={canEdit}
-          sponsorCounts={sponsorCounts}
-        />
-      ))}
+      {visibleMatchdays.map((md) => {
+        const rotatingTeam = accentTeams?.length > 1 ? accentTeams[(md - 1) % accentTeams.length] : null;
+        return (
+          <ScreenshotableCard key={md} filename={`${screenshotPrefix}-md${md}`} background="#0f1e54">
+            <MatchdayGroup
+              matchday={md}
+              fixtures={byMatchday.get(md)}
+              onUpdate={onUpdate}
+              onDelete={onDelete}
+              highlightSlugs={highlightSlugs}
+              accent={rotatingTeam ? rotatingTeam.primary : accent}
+              textColor={rotatingTeam ? rotatingTeam.secondary : undefined}
+              canEdit={canEdit}
+              sponsorCounts={sponsorCounts}
+            />
+          </ScreenshotableCard>
+        );
+      })}
     </div>
   );
 }

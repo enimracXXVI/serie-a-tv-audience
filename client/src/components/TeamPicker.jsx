@@ -11,12 +11,14 @@ export default function TeamPicker({ teams, selected, onToggle, gridClassName = 
           <button
             key={team.slug}
             onClick={() => onToggle(team.slug)}
-            className={`flex flex-col items-center gap-1.5 rounded-xl border-2 bg-white px-2 py-3 shadow-sm transition-all ${
-              isActive ? 'border-[#1fd8c9] shadow-md' : 'border-transparent hover:border-[#1fd8c9]/40'
+            className={`flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 shadow-sm transition-all ${
+              isActive
+                ? 'border-[#1fd8c9] bg-[#1fd8c9] shadow-md'
+                : 'border-transparent bg-white hover:border-[#1fd8c9]/40'
             }`}
           >
             <Crest team={team} size={30} />
-            <span className={`text-[11px] font-medium ${isActive ? 'text-[#0f1e54] font-bold' : 'text-gray-500'}`}>
+            <span className={`text-[11px] font-medium ${isActive ? 'font-bold text-[#0f1e54]' : 'text-gray-500'}`}>
               {team.short}
             </span>
           </button>
