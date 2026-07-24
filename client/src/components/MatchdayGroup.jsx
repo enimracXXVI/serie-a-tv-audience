@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import FixtureRow from './FixtureRow.jsx';
-import { contrastText } from '../lib/color.js';
 
 const TABS = [
   { key: 'kickoff', label: 'Kickoff' },
@@ -42,15 +41,15 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, onDelete, 
         : `${formatDate(dates[0])} – ${formatDate(dates[dates.length - 1])}`
       : '';
 
-  // The header's own fill is whatever accent this view uses (teal by
-  // default, a team's own colour on a branded calendar) - text needs to
-  // stay readable against either a light or a dark fill, so its colour is
-  // derived from the accent rather than hardcoded white (which disappears
-  // on a light accent like the default teal). A multi-team calendar passes
-  // its own textColor explicitly (that team's secondary colour) instead,
-  // since a computed contrast colour would ignore the team's actual brand
-  // pairing.
-  const textColor = textColorProp ?? contrastText(accent);
+  // Every card header in the app uses this exact navy for its title text
+  // (see Card.jsx's TITLE_COLOR) - a computed contrast colour used to run
+  // here instead, which for the default teal accent came out as a
+  // near-black that didn't quite match the navy every other header uses. A
+  // multi-team calendar still passes its own textColor explicitly (that
+  // team's own secondary colour) since a fixed navy would ignore the team's
+  // actual brand pairing there - that's the one case an inline style is
+  // still needed for, an arbitrary runtime colour no static class can express.
+  const textColor = textColorProp;
 
   return (
     <section
@@ -59,18 +58,21 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, onDelete, 
     >
       <header className="flex flex-col gap-2 px-4 py-2.5" style={{ background: accent }}>
         <div className="flex items-baseline justify-between">
-          <h3 className="text-sm font-bold tracking-wide" style={{ color: textColor }}>
+          <h3
+            className={`text-sm font-bold tracking-wide ${textColor ? '' : 'text-[#0f1e54]'}`}
+            style={textColor ? { color: textColor } : undefined}
+          >
             Matchday {matchday}
           </h3>
           <div className="flex items-center gap-3">
-            <span className="text-xs" style={{ color: textColor, opacity: 0.7 }}>
+            <span className={`text-xs ${textColor ? '' : 'text-[#0f1e54]/70'}`} style={textColor ? { color: textColor, opacity: 0.7 } : undefined}>
               {range}
             </span>
             <button
               type="button"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="text-xs font-semibold hover:opacity-100"
-              style={{ color: textColor, opacity: 0.7 }}
+              className={`text-xs font-semibold hover:opacity-100 ${textColor ? '' : 'text-[#0f1e54]/70'}`}
+              style={textColor ? { color: textColor, opacity: 0.7 } : undefined}
             >
               ↑ Top
             </button>
@@ -82,8 +84,16 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, onDelete, 
               <button
                 key={t.key}
                 onClick={() => setActiveTab((cur) => (cur === t.key ? null : t.key))}
-                className="rounded-full bg-black/20 px-3 py-1 text-[11px] font-bold uppercase tracking-wide transition-colors hover:bg-black/30"
-                style={activeTab === t.key ? { background: 'white', color: accent } : { color: textColor, opacity: 0.85 }}
+                className={`rounded-full bg-black/20 px-3 py-1 text-[11px] font-bold uppercase tracking-wide transition-colors hover:bg-black/30 ${
+                  activeTab === t.key ? '' : textColor ? '' : 'text-[#0f1e54]/85'
+                }`}
+                style={
+                  activeTab === t.key
+                    ? { background: 'white', color: accent }
+                    : textColor
+                      ? { color: textColor, opacity: 0.85 }
+                      : undefined
+                }
               >
                 {t.label}
               </button>

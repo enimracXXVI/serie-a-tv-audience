@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 // On-brand replacement for window.confirm() - same overlay/card convention
 // as GameListModal, so a delete confirmation doesn't look like the browser
 // chrome dropped in uninvited.
-export default function ConfirmDialog({ message, confirmLabel = 'Delete', onConfirm, onCancel }) {
+export default function ConfirmDialog({ message, confirmLabel = 'DELETE', onConfirm, onCancel }) {
   useEffect(() => {
     function onKey(e) {
       if (e.key === 'Escape') onCancel();

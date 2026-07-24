@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import MatchdayGroup from './MatchdayGroup.jsx';
 import MatchdaySelector from './MatchdaySelector.jsx';
@@ -80,6 +80,47 @@ export default function CalendarView({
     );
   }
 
+  // A finger-drag on a single visible matchday card steps to the next/
+  // previous one, the same move the selector's ‹/› arrows make - tracked as
+  // a plain start/end delta (not a live drag-follow) so it never fights the
+  // page's own vertical scroll. The View Transitions API (where supported)
+  // gives the switch an actual directional slide instead of an instant
+  // swap - see the `[data-matchday-swipe]` keyframes in index.css - and
+  // falls back to a plain instant change wherever it isn't.
+  const touchStartRef = useRef(null);
+
+  function navigateWithSlide(next, direction) {
+    document.documentElement.setAttribute('data-matchday-swipe', direction);
+    const apply = () => setSelected(next);
+    if (document.startViewTransition) {
+      document.startViewTransition(apply);
+    } else {
+      apply();
+    }
+  }
+
+  function handleTouchStart(e) {
+    if (selected === 'all' || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY, time: Date.now() };
+  }
+
+  function handleTouchEnd(e) {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start || selected === 'all') return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    const elapsed = Date.now() - start.time;
+    // A short, mostly-horizontal, reasonably-quick drag reads as a swipe -
+    // anything slower/more vertical is a scroll or a tap, not a page-change.
+    if (elapsed > 800 || Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const idx = matchdays.indexOf(selected);
+    if (dx < 0 && idx < matchdays.length - 1) navigateWithSlide(matchdays[idx + 1], 'next');
+    else if (dx > 0 && idx > 0) navigateWithSlide(matchdays[idx - 1], 'prev');
+  }
+
   if (fixtures.length === 0) {
     return <p className="text-center text-white/40 py-12">No fixtures to show.</p>;
   }
@@ -91,24 +132,36 @@ export default function CalendarView({
       <div className="sticky top-14 z-30 -mx-6 bg-[#0f1e54] px-6 py-2 sm:top-[60px]">
         <MatchdaySelector matchdays={matchdays} selected={selected ?? matchdays[0]} onChange={setSelected} />
       </div>
-      {visibleMatchdays.map((md) => {
-        const rotatingTeam = accentTeams?.length > 1 ? accentTeams[(md - 1) % accentTeams.length] : null;
-        return (
-          <ScreenshotableCard key={md} filename={`${screenshotPrefix}-md${md}`} background="#0f1e54">
-            <MatchdayGroup
-              matchday={md}
-              fixtures={byMatchday.get(md)}
-              onUpdate={onUpdate}
-              onDelete={onDelete}
-              highlightSlugs={highlightSlugs}
-              accent={rotatingTeam ? rotatingTeam.primary : accent}
-              textColor={rotatingTeam ? rotatingTeam.secondary : undefined}
-              canEdit={canEdit}
-              sponsorCounts={sponsorCounts}
-            />
-          </ScreenshotableCard>
-        );
-      })}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        style={{ touchAction: 'pan-y' }}
+        className="flex flex-col gap-4"
+      >
+        {visibleMatchdays.map((md) => {
+          const rotatingTeam = accentTeams?.length > 1 ? accentTeams[(md - 1) % accentTeams.length] : null;
+          return (
+            <ScreenshotableCard
+              key={md}
+              filename={`${screenshotPrefix}-md${md}`}
+              background="#0f1e54"
+              style={selected !== 'all' ? { viewTransitionName: 'matchday-card' } : undefined}
+            >
+              <MatchdayGroup
+                matchday={md}
+                fixtures={byMatchday.get(md)}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
+                highlightSlugs={highlightSlugs}
+                accent={rotatingTeam ? rotatingTeam.primary : accent}
+                textColor={rotatingTeam ? rotatingTeam.secondary : undefined}
+                canEdit={canEdit}
+                sponsorCounts={sponsorCounts}
+              />
+            </ScreenshotableCard>
+          );
+        })}
+      </div>
     </div>
   );
 }
