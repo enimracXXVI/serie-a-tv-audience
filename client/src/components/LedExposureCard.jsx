@@ -51,7 +51,7 @@ function SortableTh({ col, sortChain, onHeaderClick, className = '' }) {
   const chainIdx = sortChain.findIndex((s) => s.key === col.key);
   return (
     <th
-      onClick={() => onHeaderClick(col.key)}
+      onClick={(e) => onHeaderClick(col.key, e)}
       className={`cursor-pointer select-none px-2 py-2 hover:text-[#0f1e54] ${className}`}
     >
       {col.label}
@@ -106,7 +106,7 @@ function MultiSortToggle({ multiSort, setMultiSort }) {
       type="button"
       onClick={() => setMultiSort((v) => !v)}
       title="When on, tapping a column adds it to the sort instead of replacing it"
-      className={`mb-2 rounded-full px-2.5 py-1 text-[10px] font-bold ${
+      className={`mb-2 rounded-full px-2.5 py-1 text-[10px] font-bold sm:hidden ${
         multiSort ? 'bg-[#0f1e54] text-white' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
       }`}
     >
@@ -119,12 +119,12 @@ export default function LedExposureCard({ team, exposure }) {
   const [sortChain, setSortChain] = useState([{ key: 'matchday', dir: 'asc' }]);
   const [multiSort, setMultiSort] = useState(false);
 
-  // Shift+click has no touch equivalent, so multi-column sorting is now a
-  // sticky mode toggled by its own button (see MultiSortToggle) rather than
-  // a modifier key - the same click behavior works on mouse and touch alike.
-  function headerClick(key) {
+  // Shift+click still works for anyone using a mouse - MultiSortToggle
+  // (mobile-only) is purely an additional touch equivalent for it, not a
+  // replacement.
+  function headerClick(key, event) {
     setSortChain((prev) => {
-      if (!multiSort) {
+      if (!multiSort && !event.shiftKey) {
         if (prev.length === 1 && prev[0].key === key) {
           return [{ key, dir: prev[0].dir === 'asc' ? 'desc' : 'asc' }];
         }
