@@ -29,7 +29,7 @@ export default function AudienceBarChart({ metrics, focusedSlug, onFocus }) {
       title="Clubs ranked by"
       controls={
         <Dropdown
-          variant="header"
+          variant="tealHeader"
           value={metricKey}
           onChange={setMetricKey}
           options={METRICS.map((m) => ({ value: m.key, label: m.label }))}

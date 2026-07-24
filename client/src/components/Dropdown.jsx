@@ -16,6 +16,12 @@ const CLOSED_VARIANTS = {
   // outlined pill, so it reads as one of that form's own inputs instead of a
   // page-chrome control that happens to sit on a white background.
   light: 'rounded-lg border-gray-200 bg-gray-50 text-[#0f1e54]',
+  // For use inside a Card's own teal header (AudienceBarChart, TopGamesList) -
+  // the 'header' variant's teal border/text is meant to contrast against the
+  // navy page header and reads as invisible teal-on-teal here instead, so this
+  // variant uses navy instead, matching ToggleSwitch's onColor treatment for
+  // the same context.
+  tealHeader: 'rounded-full border-[#0f1e54]/50 bg-white/25 text-[#0f1e54]',
 };
 
 export default function Dropdown({ value, onChange, options, variant = 'sidebar', className = '' }) {
@@ -34,7 +40,7 @@ export default function Dropdown({ value, onChange, options, variant = 'sidebar'
   const selected = options.find((o) => !o.divider && o.value === value);
 
   return (
-    <div ref={ref} className={`relative inline-block ${className}`}>
+    <div ref={ref} className={`relative inline-block min-w-0 ${className}`}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
