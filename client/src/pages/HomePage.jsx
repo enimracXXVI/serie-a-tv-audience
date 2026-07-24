@@ -114,7 +114,13 @@ export default function HomePage() {
             {fixturesError}
           </p>
         ) : (
-          <CalendarView fixtures={fixtures} onUpdate={handleUpdate} onDelete={canEdit ? handleDelete : null} canEdit={canEdit} />
+          <CalendarView
+            fixtures={fixtures}
+            onUpdate={handleUpdate}
+            onDelete={canEdit ? handleDelete : null}
+            canEdit={canEdit}
+            screenshotPrefix={`fixtures-${season.label.replace('/', '-')}`}
+          />
         )}
       </main>
     </div>

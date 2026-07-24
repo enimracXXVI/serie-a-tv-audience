@@ -18,7 +18,7 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 }
 
-export default function MatchdayGroup({ matchday, fixtures, onUpdate, onDelete, highlightSlugs, accent, canEdit, sponsorCounts }) {
+export default function MatchdayGroup({ matchday, fixtures, onUpdate, onDelete, highlightSlugs, accent, textColor: textColorProp, canEdit, sponsorCounts }) {
   const [activeTab, setActiveTab] = useState(null);
   // Editing a date re-sorts this matchday the instant it's saved, which
   // jumps the row out from under you mid-edit - so while any tab is open the
@@ -46,8 +46,11 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, onDelete, 
   // default, a team's own colour on a branded calendar) - text needs to
   // stay readable against either a light or a dark fill, so its colour is
   // derived from the accent rather than hardcoded white (which disappears
-  // on a light accent like the default teal).
-  const textColor = contrastText(accent);
+  // on a light accent like the default teal). A multi-team calendar passes
+  // its own textColor explicitly (that team's secondary colour) instead,
+  // since a computed contrast colour would ignore the team's actual brand
+  // pairing.
+  const textColor = textColorProp ?? contrastText(accent);
 
   return (
     <section

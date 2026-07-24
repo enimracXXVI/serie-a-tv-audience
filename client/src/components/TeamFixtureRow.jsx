@@ -3,6 +3,7 @@ import { BroadcasterBadge } from './BroadcastBadges.jsx';
 import SponsorBadges from './SponsorBadges.jsx';
 import { matchTagStyle } from '../lib/matchTags.js';
 import { useCupData } from '../lib/useCupData.jsx';
+import { resolveBroadcaster } from '../lib/broadcasters.js';
 
 function formatDateShort(dateStr) {
   if (!dateStr) return null;
@@ -55,19 +56,14 @@ export default function TeamFixtureRow({ fixture, team }) {
 
   const { broadcasters } = useCupData();
   const mainBroadcaster = broadcasters.find((b) => b.isMain) ?? null;
-  const otherBroadcasterRow = fixture.otherBroadcaster
-    ? broadcasters.find((b) => b.name === fixture.otherBroadcaster)
-    : null;
+  const otherBroadcasterRow = resolveBroadcaster(fixture.otherBroadcaster, broadcasters);
 
   return (
     <div className="flex items-stretch" style={{ background: tagStyle.background }}>
       <div className="w-1.5 shrink-0" style={{ background: tagStyle.bar }} />
       <div className="flex flex-1 items-center gap-1.5 px-2 py-2">
-        <div className="w-8 shrink-0 text-center text-[10px] font-bold uppercase tracking-wide text-gray-400">
-          MD{fixture.matchday}
-        </div>
-
-        <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center text-center text-[9px] leading-tight text-gray-400">
+        <div className="flex h-14 w-16 shrink-0 flex-col items-center justify-center text-center text-[9px] leading-tight text-gray-400">
+          <div className="font-bold text-gray-500">MD{fixture.matchday}</div>
           {dateShort && <div>{dateShort}</div>}
           {(fixture.day || fixture.kickoffTime) && (
             <div>{[fixture.day, fixture.kickoffTime].filter(Boolean).join(' ')}</div>

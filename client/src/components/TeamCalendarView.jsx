@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import TeamFixtureRow from './TeamFixtureRow.jsx';
+import ScreenshotableCard from './ScreenshotableCard.jsx';
 import { computeMatchTags } from '../lib/matchTags.js';
 
 // CSS multi-column (`columns-N`) lets the browser balance column heights
@@ -48,7 +49,7 @@ function splitIntoColumns(items, columns) {
 // A single team's full season as one continuous, chronological list - every
 // matchday one after another rather than filtered/paged, laid out in
 // multiple columns once there's enough width for it.
-export default function TeamCalendarView({ fixtures, team, accent = '#1fd8c9' }) {
+export default function TeamCalendarView({ fixtures, team, accent = '#1fd8c9', filename }) {
   const columnCount = useColumnCount();
 
   if (fixtures.length === 0) {
@@ -61,20 +62,22 @@ export default function TeamCalendarView({ fixtures, team, accent = '#1fd8c9' })
   const columns = splitIntoColumns(sorted, columnCount);
 
   return (
-    <div className="flex gap-3">
-      {columns.map((column, i) => (
-        <div key={i} className="flex flex-1 flex-col gap-3">
-          {column.map((f) => (
-            <div
-              key={f.id}
-              className="overflow-hidden rounded-2xl bg-white shadow-lg shadow-black/20"
-              style={{ borderTop: `3px solid ${accent}` }}
-            >
-              <TeamFixtureRow fixture={f} team={team} />
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
+    <ScreenshotableCard filename={filename ?? `${team.slug}-calendar`} background="#0f1e54">
+      <div className="flex gap-3">
+        {columns.map((column, i) => (
+          <div key={i} className="flex flex-1 flex-col gap-3">
+            {column.map((f) => (
+              <div
+                key={f.id}
+                className="overflow-hidden rounded-2xl bg-white shadow-lg shadow-black/20"
+                style={{ borderTop: `3px solid ${accent}` }}
+              >
+                <TeamFixtureRow fixture={f} team={team} />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </ScreenshotableCard>
   );
 }

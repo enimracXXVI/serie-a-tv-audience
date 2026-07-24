@@ -6,6 +6,7 @@ import BroadcastersPanel from './BroadcastersPanel.jsx';
 import CompetitionsPanel from './CompetitionsPanel.jsx';
 import SeasonsPanel from './SeasonsPanel.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
+import ExportPanel from './ExportPanel.jsx';
 import { useSession } from '../lib/useSession.jsx';
 
 function HamburgerIcon() {
@@ -34,14 +35,14 @@ function BackIcon() {
 
 // How many history entries each view sits behind the closed menu - used to
 // know how many popstate levels to unwind when closing programmatically.
-const VIEW_DEPTH = { main: 1, settings: 2 };
+const VIEW_DEPTH = { main: 1, settings: 2, export: 2 };
 
 // Menu open/closed and submenu state is mirrored into browser history (via
 // pushState + a popstate listener) so the hardware/browser back button
 // closes the menu - or steps back to the main menu from a submenu - instead
 // of navigating the underlying page away.
 export default function HamburgerMenu() {
-  const [view, setView] = useState('closed'); // 'closed' | 'main' | 'settings'
+  const [view, setView] = useState('closed'); // 'closed' | 'main' | 'settings' | 'export'
   // Keeps whatever content was last showing rendered during the close
   // transition, so the drawer slides away with its last screen still in it
   // instead of going blank the instant `view` becomes 'closed'.
@@ -151,7 +152,7 @@ export default function HamburgerMenu() {
             }`}
           >
             <div className="flex items-center border-b border-white/10 px-5 py-4">
-              {displayedView === 'settings' ? (
+              {displayedView === 'settings' || displayedView === 'export' ? (
                 <button
                   onClick={backToMain}
                   className="flex items-center gap-1.5 text-sm font-semibold text-white/70 hover:text-white"
@@ -213,6 +214,12 @@ export default function HamburgerMenu() {
                     >
                       Cups <span aria-hidden="true">›</span>
                     </button>
+                    <button
+                      onClick={() => pushView('export')}
+                      className="flex items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white hover:bg-white/10"
+                    >
+                      Export <span aria-hidden="true">›</span>
+                    </button>
                     {session.signedIn && (
                       <button
                         onClick={() => pushView('settings')}
@@ -224,6 +231,8 @@ export default function HamburgerMenu() {
                   </nav>
                 </div>
               )}
+
+              {displayedView === 'export' && <ExportPanel />}
 
               {displayedView === 'settings' && (
                 <div className="flex flex-col gap-6">

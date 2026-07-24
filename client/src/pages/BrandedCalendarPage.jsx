@@ -172,9 +172,21 @@ export default function BrandedCalendarPage() {
             {fixturesError}
           </p>
         ) : selectedTeams.length === 1 ? (
-          <TeamCalendarView fixtures={filteredFixtures} team={selectedTeams[0]} accent={accent} />
+          <TeamCalendarView
+            fixtures={filteredFixtures}
+            team={selectedTeams[0]}
+            accent={accent}
+            filename={`${selectedTeams[0].slug}-calendar-${season.label.replace('/', '-')}`}
+          />
         ) : (
-          <CalendarView fixtures={filteredFixtures} highlightSlugs={slugs} accent={accent} canEdit={false} />
+          <CalendarView
+            fixtures={filteredFixtures}
+            highlightSlugs={slugs}
+            accent={accent}
+            accentTeams={selectedTeams}
+            canEdit={false}
+            screenshotPrefix={`${slugs.join('-')}-calendar-${season.label.replace('/', '-')}`}
+          />
         )}
       </main>
     </div>

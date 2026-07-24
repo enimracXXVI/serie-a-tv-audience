@@ -67,12 +67,23 @@ export default function CalendarNavBar({ teams, rightSlot, seasonQuery = '' }) {
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-wide text-white/70">Build a team calendar</h2>
             {selectedTeams.length > 0 && (
-              <button
-                onClick={viewTeamCalendar}
-                className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-black transition-transform hover:scale-105"
-              >
-                View ({selectedTeams.length}) →
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setSelectedTeams([]);
+                    saveTeams([]);
+                  }}
+                  className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-white/20"
+                >
+                  Unselect all
+                </button>
+                <button
+                  onClick={viewTeamCalendar}
+                  className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-black transition-transform hover:scale-105"
+                >
+                  View ({selectedTeams.length}) →
+                </button>
+              </div>
             )}
           </div>
           <TeamPicker teams={teams} selected={selectedTeams} onToggle={toggleTeam} />
