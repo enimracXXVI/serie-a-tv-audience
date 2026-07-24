@@ -51,7 +51,7 @@ function SortableTh({ col, sortChain, onHeaderClick, className = '' }) {
   const chainIdx = sortChain.findIndex((s) => s.key === col.key);
   return (
     <th
-      onClick={(e) => onHeaderClick(col.key, e)}
+      onClick={() => onHeaderClick(col.key)}
       className={`cursor-pointer select-none px-2 py-2 hover:text-[#0f1e54] ${className}`}
     >
       {col.label}
@@ -100,12 +100,31 @@ function useSortedGames(exposure, sortChain) {
 // duration doesn't scale reach, and a viewer watching the board for twice
 // as long isn't twice as aware of the brand. Scoped to this club's own
 // home games, same as everywhere else LED is tracked (see teams.js).
+function MultiSortToggle({ multiSort, setMultiSort }) {
+  return (
+    <button
+      type="button"
+      onClick={() => setMultiSort((v) => !v)}
+      title="When on, tapping a column adds it to the sort instead of replacing it"
+      className={`mb-2 rounded-full px-2.5 py-1 text-[10px] font-bold ${
+        multiSort ? 'bg-[#0f1e54] text-white' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+      }`}
+    >
+      Multi-sort
+    </button>
+  );
+}
+
 export default function LedExposureCard({ team, exposure }) {
   const [sortChain, setSortChain] = useState([{ key: 'matchday', dir: 'asc' }]);
+  const [multiSort, setMultiSort] = useState(false);
 
-  function headerClick(key, event) {
+  // Shift+click has no touch equivalent, so multi-column sorting is now a
+  // sticky mode toggled by its own button (see MultiSortToggle) rather than
+  // a modifier key - the same click behavior works on mouse and touch alike.
+  function headerClick(key) {
     setSortChain((prev) => {
-      if (!event.shiftKey) {
+      if (!multiSort) {
         if (prev.length === 1 && prev[0].key === key) {
           return [{ key, dir: prev[0].dir === 'asc' ? 'desc' : 'asc' }];
         }
@@ -155,7 +174,7 @@ export default function LedExposureCard({ team, exposure }) {
             Total audience across {exposure.count} home game{exposure.count === 1 ? '' : 's'}
           </p>
         </div>
-        <p className="mb-2 text-[10px] text-gray-400">Shift+click a column to sort by multiple columns</p>
+        <MultiSortToggle multiSort={multiSort} setMultiSort={setMultiSort} />
         <div className="overflow-x-auto">
           <table className="w-full min-w-[320px] border-collapse text-sm">
             <thead>
@@ -212,7 +231,7 @@ export default function LedExposureCard({ team, exposure }) {
           </p>
         </div>
       </div>
-      <p className="mb-2 text-[10px] text-gray-400">Shift+click a column to sort by multiple columns</p>
+      <MultiSortToggle multiSort={multiSort} setMultiSort={setMultiSort} />
       <div className="overflow-x-auto">
         <table className="w-full min-w-[480px] border-collapse text-sm">
           <thead>
