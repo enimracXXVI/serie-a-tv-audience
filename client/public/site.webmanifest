@@ -1,6 +1,6 @@
 {
-  "name": "Serie A 2026/27 · TV Audience Tracker",
-  "short_name": "Serie A TV",
+  "name": "Calcio Spons and Audience Tracker",
+  "short_name": "Calcio Tracker",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
