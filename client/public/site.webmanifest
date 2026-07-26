@@ -13,6 +13,6 @@
     { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Cups", "short_name": "Cups", "url": "/cup" }
+    { "name": "Cups", "short_name": "Cups", "url": "./cup" }
   ]
 }
