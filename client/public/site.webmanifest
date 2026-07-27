@@ -13,6 +13,38 @@
     { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Cups", "short_name": "Cups", "url": "./cup" }
+    { "name": "Standing",
+      "short_name": "Standing",
+      "description": "Add description here",
+      "url": "./standings",
+      "icons": [
+        {
+          "src": "standing-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    { "name": "Deshboard",
+      "short_name": "Dashboard",
+      "description": "Add description here",
+      "url": "./dashboard",
+      "icons": [
+        {
+          "src": "dashboard-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    { "name": "Cups",
+      "short_name": "Cups",
+      "description": "Add description here",
+      "url": "./cup",
+      "icons": [
+        {
+          "src": "cup-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }
