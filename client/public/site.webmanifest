@@ -24,7 +24,7 @@
         }
       ]
     },
-    { "name": "Deshboard",
+    { "name": "Dashboard",
       "short_name": "Dashboard",
       "description": "Add description here",
       "url": "./dashboard",
