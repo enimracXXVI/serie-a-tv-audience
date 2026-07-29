@@ -4,11 +4,15 @@ import Crest from '../components/Crest.jsx';
 import CalendarView from '../components/CalendarView.jsx';
 import TeamCalendarView from '../components/TeamCalendarView.jsx';
 import CalendarNavBar from '../components/CalendarNavBar.jsx';
+import FixtureSearch from '../components/FixtureSearch.jsx';
+import CleanShareToggle from '../components/CleanShareToggle.jsx';
 import SeasonSelector from '../components/SeasonSelector.jsx';
 import { useTeams } from '../lib/useTeams.jsx';
 import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
 import { teamsInFixtures } from '../lib/teams.js';
 import { useSeasonParam } from '../lib/useSeasonParam.js';
+import { useCleanShare } from '../lib/useCleanShare.js';
+import { useFixtureSearchNav } from '../lib/useFixtureSearchNav.js';
 import { themeGradient, contrastText } from '../lib/color.js';
 import { FIXTURE_FILTERS, applyFixtureFilters } from '../lib/fixtureFilters.js';
 
@@ -48,6 +52,9 @@ export default function BrandedCalendarPage() {
   function toggleFilter(key) {
     setActiveFilters((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   }
+
+  const { clean, toggleClean } = useCleanShare();
+  const { highlightFixtureId, handleSearchSelect } = useFixtureSearchNav();
 
   const selectedTeams = useMemo(
     () => slugs.map((s) => effectiveTeams.find((t) => t.slug === s)).filter(Boolean),
@@ -137,7 +144,23 @@ export default function BrandedCalendarPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-6">
-        {!teamsLoading && <CalendarNavBar teams={effectiveTeams} seasonQuery={seasonQuery} />}
+        {!teamsLoading && (
+          <CalendarNavBar
+            teams={effectiveTeams}
+            seasonQuery={seasonQuery}
+            searchSlot={
+              !fixturesLoading &&
+              !fixturesError &&
+              selectedTeams.length !== 1 &&
+              filteredFixtures.length > 0 && (
+                <>
+                  <FixtureSearch fixtures={filteredFixtures} onSelect={handleSearchSelect} />
+                  <CleanShareToggle clean={clean} onToggle={toggleClean} />
+                </>
+              )
+            }
+          />
+        )}
 
         {!teamsLoading && !fixturesLoading && !fixturesError && fixtures.length > 0 && (
           <div className="mb-4 flex flex-wrap items-center gap-1.5">
@@ -186,6 +209,7 @@ export default function BrandedCalendarPage() {
             accentTeams={selectedTeams}
             canEdit={false}
             screenshotPrefix={`${slugs.join('-')}-calendar-${season.label.replace('/', '-')}`}
+            highlightFixtureId={highlightFixtureId}
           />
         )}
       </main>
