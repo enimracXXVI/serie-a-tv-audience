@@ -223,7 +223,7 @@ function SponsorshipFields({ fixture, onUpdate, sponsorCounts }) {
   );
 }
 
-export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs = [], canEdit, editMode, sponsorCounts }) {
+export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs = [], canEdit, editMode, sponsorCounts, clean = false }) {
   const { home, away } = fixture;
   const homeHighlighted = highlightSlugs.includes(home.slug);
   const awayHighlighted = highlightSlugs.includes(away.slug);
@@ -272,15 +272,17 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
                 code itself down to an ellipsis or nothing (see FixtureRow
                 mobile layout notes). The name always wins the space fight on
                 mobile; badges come back once there's room. */}
-            <SponsorBadges
-              matchdaySponsor={fixture.homeMatchdaySponsor}
-              playerMascot={fixture.homePlayerMascot}
-              walkabout={fixture.homeWalkabout}
-              className="hidden sm:flex"
-            />
-            {home.sponsored && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fd8c9]" />}
+            {!clean && (
+              <SponsorBadges
+                matchdaySponsor={fixture.homeMatchdaySponsor}
+                playerMascot={fixture.homePlayerMascot}
+                walkabout={fixture.homeWalkabout}
+                className="hidden sm:flex"
+              />
+            )}
+            {!clean && home.sponsored && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fd8c9]" />}
             <span
-              className={`truncate text-xs sm:text-sm text-right ${homeHighlighted || home.sponsored ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}
+              className={`truncate text-xs sm:text-sm text-right ${homeHighlighted || (!clean && home.sponsored) ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}
             >
               <span className="sm:hidden">{home.short ?? home.name}</span>
               <span className="hidden sm:inline">{home.name}</span>
@@ -294,17 +296,21 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
 
           <div className="flex items-center gap-1 min-w-0 sm:gap-2">
             <Crest team={away} size={20} />
-            <span className={`truncate text-xs sm:text-sm ${awayHighlighted || away.sponsored ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}>
+            <span
+              className={`truncate text-xs sm:text-sm ${awayHighlighted || (!clean && away.sponsored) ? 'font-bold text-[#0f1e54]' : 'text-gray-700'}`}
+            >
               <span className="sm:hidden">{away.short ?? away.name}</span>
               <span className="hidden sm:inline">{away.name}</span>
             </span>
-            {away.sponsored && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fd8c9]" />}
-            <SponsorBadges
-              matchdaySponsor={fixture.awayMatchdaySponsor}
-              playerMascot={fixture.awayPlayerMascot}
-              walkabout={fixture.awayWalkabout}
-              className="hidden sm:flex"
-            />
+            {!clean && away.sponsored && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1fd8c9]" />}
+            {!clean && (
+              <SponsorBadges
+                matchdaySponsor={fixture.awayMatchdaySponsor}
+                playerMascot={fixture.awayPlayerMascot}
+                walkabout={fixture.awayWalkabout}
+                className="hidden sm:flex"
+              />
+            )}
           </div>
         </div>
 
@@ -336,7 +342,8 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
           exactly what a sponsor rep wants to check on the go - surfaced here
           as its own compact row instead, mobile-only, rather than left
           invisible until a wider screen happens to be available. */}
-      {(fixture.homeMatchdaySponsor ||
+      {!clean &&
+        (fixture.homeMatchdaySponsor ||
         fixture.homePlayerMascot ||
         fixture.homeWalkabout ||
         fixture.awayMatchdaySponsor ||

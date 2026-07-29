@@ -50,7 +50,7 @@ function downloadBlob(blob, filename) {
   URL.revokeObjectURL(url);
 }
 
-export default function ScreenshotableCard({ filename, background = '#ffffff', style, children }) {
+export default function ScreenshotableCard({ filename, background = '#ffffff', style, extra, children }) {
   const ref = useRef(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null);
@@ -134,20 +134,22 @@ export default function ScreenshotableCard({ filename, background = '#ffffff', s
     // would override whatever internal layout (often `grid`, e.g. the stat
     // tiles) the child's own className already sets.
     <div ref={ref} className="relative flex h-full flex-col [&>:last-child]:flex-1" style={style}>
-      <button
-        type="button"
-        onClick={handleClick}
-        disabled={busy}
-        data-screenshot-ignore="true"
-        title="Copy this card as an image"
-        className="absolute -right-4 -top-4 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white text-gray-400 shadow-md transition-colors hover:bg-gray-50 hover:text-[#0f1e54] disabled:opacity-50"
-      >
-        <CameraIcon />
-      </button>
+      <div className="absolute -right-4 -top-4 z-10 flex items-center gap-1.5" data-screenshot-ignore="true">
+        {extra}
+        <button
+          type="button"
+          onClick={handleClick}
+          disabled={busy}
+          title="Copy this card as an image"
+          className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-gray-400 shadow-md transition-colors hover:bg-gray-50 hover:text-[#0f1e54] disabled:opacity-50"
+        >
+          <CameraIcon />
+        </button>
+      </div>
       {status && (
         <span
           data-screenshot-ignore="true"
-          className={`absolute -top-4 right-10 z-10 max-w-[220px] rounded-md px-2 py-1 text-[10px] font-semibold text-white shadow-md ${
+          className={`absolute -top-4 right-12 z-10 max-w-[220px] rounded-md px-2 py-1 text-[10px] font-semibold text-white shadow-md ${
             status.type === 'error' ? 'bg-red-600' : 'whitespace-nowrap bg-[#0f1e54]'
           }`}
         >
