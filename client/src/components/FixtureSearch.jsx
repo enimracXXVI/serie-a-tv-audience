@@ -145,18 +145,25 @@ export default function FixtureSearch({ fixtures, onSelect }) {
                   type="button"
                   key={f.id}
                   onClick={() => handlePick(f)}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-white/10"
+                  className="grid w-full grid-cols-[2.5rem_1fr_auto_1fr_2.5rem] items-center gap-1.5 px-3 py-1.5 text-left hover:bg-white/10"
                 >
-                  <span className="w-14 shrink-0 text-[10px] font-bold uppercase tracking-wide text-white/40">
-                    MD{f.matchday}
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-white/40">MD{f.matchday}</span>
+                  <span className="flex min-w-0 items-center justify-end gap-1.5">
+                    <span className="truncate text-sm font-semibold text-white">
+                      <span className="sm:hidden">{f.home.short ?? f.home.name}</span>
+                      <span className="hidden sm:inline">{f.home.name}</span>
+                    </span>
+                    <Crest team={f.home} size={16} />
                   </span>
-                  <Crest team={f.home} size={16} />
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-white">
-                    <span className="sm:hidden">{f.home.short ?? f.home.name} - {f.away.short ?? f.away.name}</span>
-                    <span className="hidden sm:inline">{f.home.name} - {f.away.name}</span>
+                  <span className="px-0.5 text-xs text-white/40">-</span>
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <Crest team={f.away} size={16} />
+                    <span className="truncate text-sm font-semibold text-white">
+                      <span className="sm:hidden">{f.away.short ?? f.away.name}</span>
+                      <span className="hidden sm:inline">{f.away.name}</span>
+                    </span>
                   </span>
-                  <Crest team={f.away} size={16} />
-                  <span className="w-14 shrink-0 text-right text-[10px] text-white/40">{formatDateShort(f.date)}</span>
+                  <span className="text-right text-[10px] text-white/40">{formatDateShort(f.date)}</span>
                 </button>
               ))}
               {hasMore && (
