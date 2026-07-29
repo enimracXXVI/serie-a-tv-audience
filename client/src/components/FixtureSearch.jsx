@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Crest from './Crest.jsx';
 import { searchFixtures } from '../lib/searchFixtures.js';
 
@@ -40,6 +40,29 @@ export default function FixtureSearch({ fixtures, onSelect }) {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
+  // This box now shares a wrapping flex row with other nav pills (Build
+  // calendar, Clean share) instead of always getting the full row to
+  // itself, so its own rendered width can be much narrower than the
+  // results actually need - anchoring the list with `left-0 right-0`
+  // (stretched to match the trigger's own width) used to squeeze every row
+  // down to nothing and clip the rest off the side. Measured and clamped
+  // here instead (mirrors Dropdown.jsx's open-list positioning), so the
+  // list keeps a sensible width of its own regardless of how narrow the
+  // search box itself ends up.
+  const [listLeft, setListLeft] = useState(null);
+
+  useLayoutEffect(() => {
+    if (!open || !query || !ref.current || !listRef.current) {
+      setListLeft(null);
+      return;
+    }
+    const margin = 8;
+    const triggerRect = ref.current.getBoundingClientRect();
+    const listWidth = listRef.current.offsetWidth;
+    const clamped = Math.min(Math.max(triggerRect.left, margin), window.innerWidth - listWidth - margin);
+    setListLeft(clamped - triggerRect.left);
+  }, [open, query, results.length, hasMore]);
+
   // The results list scrolls internally once it has more rows than fit
   // (see the container's max-h/overflow-y below) - `overscroll-behavior`
   // alone stops that internal scroll from chaining into the page's own
@@ -71,7 +94,7 @@ export default function FixtureSearch({ fixtures, onSelect }) {
   }
 
   return (
-    <div ref={ref} className="relative min-w-0 flex-1">
+    <div ref={ref} className="relative min-w-0 basis-full sm:basis-auto sm:flex-1">
       <div className="flex items-center gap-1.5 rounded-full border-2 border-[#1fd8c9] bg-transparent px-3 py-1.5">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0 text-[#1fd8c9]">
           <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
@@ -110,7 +133,8 @@ export default function FixtureSearch({ fixtures, onSelect }) {
       {open && query && (
         <div
           ref={listRef}
-          className="absolute left-0 right-0 z-40 mt-1 max-h-80 overflow-y-auto overscroll-contain rounded-lg bg-[#0f1e54] py-1 shadow-xl ring-1 ring-white/10"
+          className="absolute top-full z-40 mt-1 max-h-80 w-[min(24rem,90vw)] overflow-y-auto overscroll-contain rounded-lg bg-[#0f1e54] py-1 shadow-xl ring-1 ring-white/10"
+          style={{ left: listLeft === null ? 0 : `${listLeft}px`, visibility: listLeft === null ? 'hidden' : 'visible' }}
         >
           {results.length === 0 ? (
             <p className="px-3 py-2 text-xs text-white/40">No fixtures match &quot;{query}&quot;.</p>
