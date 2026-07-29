@@ -8,7 +8,7 @@ import { getSavedTeams, saveTeams } from '../lib/savedTeams.js';
 // switching views never requires going back through the hamburger menu.
 // `rightSlot` is an optional extra control (HomePage's "Add fixture" toggle)
 // pushed to the far right of the same row instead of getting its own row.
-export default function CalendarNavBar({ teams, rightSlot, seasonQuery = '' }) {
+export default function CalendarNavBar({ teams, rightSlot, searchSlot, seasonQuery = '' }) {
   const navigate = useNavigate();
   const [showBuildPanel, setShowBuildPanel] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState(() => getSavedTeams());
@@ -59,6 +59,7 @@ export default function CalendarNavBar({ teams, rightSlot, seasonQuery = '' }) {
         >
           Build calendar {showBuildPanel ? '▴' : '▾'}
         </button>
+        {searchSlot}
         {rightSlot && <div className="ml-auto">{rightSlot}</div>}
       </div>
 

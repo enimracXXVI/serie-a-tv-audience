@@ -1,15 +1,12 @@
 import { useState } from 'react';
 
-function LinkIcon() {
+function ShareIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M9 15l6-6M10 7l1-1a3 3 0 114 4l-1 1M14 17l-1 1a3 3 0 01-4-4l1-1"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="18" cy="5" r="2.8" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="6" cy="12" r="2.8" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="18" cy="19" r="2.8" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M8.4 10.6l7.2-4.2M8.4 13.4l7.2 4.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
@@ -43,7 +40,7 @@ export default function CopyLinkButton({ buildUrl, title }) {
         title={title ?? 'Copy a sponsor-free link to this matchday'}
         className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-gray-400 shadow-md transition-colors hover:bg-gray-50 hover:text-[#0f1e54]"
       >
-        <LinkIcon />
+        <ShareIcon />
       </button>
       {copied && (
         <span className="absolute -top-1 right-8 z-10 whitespace-nowrap rounded-md bg-[#0f1e54] px-2 py-1 text-[10px] font-semibold text-white shadow-md">

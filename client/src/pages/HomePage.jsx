@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import CalendarView from '../components/CalendarView.jsx';
 import CalendarNavBar from '../components/CalendarNavBar.jsx';
+import FixtureSearch from '../components/FixtureSearch.jsx';
+import CleanShareToggle from '../components/CleanShareToggle.jsx';
 import AddSerieAFixtureForm from '../components/AddSerieAFixtureForm.jsx';
 import SeasonSelector from '../components/SeasonSelector.jsx';
 import { useSeasonFixtures } from '../lib/useSeasonFixtures.js';
@@ -10,6 +12,8 @@ import { useSession } from '../lib/useSession.jsx';
 import { useCupData } from '../lib/useCupData.jsx';
 import { serieALogo } from '../lib/competitions.js';
 import { useSeasonParam } from '../lib/useSeasonParam.js';
+import { useCleanShare } from '../lib/useCleanShare.js';
+import { useFixtureSearchNav } from '../lib/useFixtureSearchNav.js';
 import { callWithReauth } from '../lib/reauth.js';
 
 export default function HomePage() {
@@ -30,6 +34,8 @@ export default function HomePage() {
   const serieALogoUrl = serieALogo(competitions);
   const [updateError, setUpdateError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const { clean, toggleClean } = useCleanShare();
+  const { highlightFixtureId, handleSearchSelect } = useFixtureSearchNav();
 
   // A past season's actual roster isn't necessarily this year's - so that
   // "Build calendar"/"Sponsored teams" (which navigate off to a branded
@@ -79,6 +85,16 @@ export default function HomePage() {
         <CalendarNavBar
           teams={effectiveTeams}
           seasonQuery={seasonQuery}
+          searchSlot={
+            !fixturesLoading &&
+            !fixturesError &&
+            fixtures.length > 0 && (
+              <>
+                <FixtureSearch fixtures={fixtures} onSelect={handleSearchSelect} />
+                <CleanShareToggle clean={clean} onToggle={toggleClean} />
+              </>
+            )
+          }
           rightSlot={
             canEdit &&
             !fixturesLoading &&
@@ -120,6 +136,7 @@ export default function HomePage() {
             onDelete={canEdit ? handleDelete : null}
             canEdit={canEdit}
             screenshotPrefix={`fixtures-${season.label.replace('/', '-')}`}
+            highlightFixtureId={highlightFixtureId}
           />
         )}
       </main>
