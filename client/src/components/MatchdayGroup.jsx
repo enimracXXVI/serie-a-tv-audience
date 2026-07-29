@@ -17,7 +17,7 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 }
 
-export default function MatchdayGroup({ matchday, fixtures, onUpdate, onDelete, highlightSlugs, accent, textColor: textColorProp, canEdit, sponsorCounts }) {
+export default function MatchdayGroup({ matchday, fixtures, onUpdate, onDelete, highlightSlugs, accent, textColor: textColorProp, canEdit, sponsorCounts, highlightFixtureId, clean }) {
   const [activeTab, setActiveTab] = useState(null);
   // Editing a date re-sorts this matchday the instant it's saved, which
   // jumps the row out from under you mid-edit - so while any tab is open the
@@ -103,7 +103,12 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, onDelete, 
       </header>
       <div className="flex flex-col">
         {orderedFixtures.map((f, i) => (
-          <div key={f.id} style={i > 0 ? { borderTop: `1px solid ${accent}33` } : undefined}>
+          <div
+            key={f.id}
+            id={`fixture-${f.id}`}
+            style={i > 0 ? { borderTop: `1px solid ${accent}33` } : undefined}
+            className={f.id === highlightFixtureId ? 'ring-2 ring-inset ring-amber-400 transition-shadow' : ''}
+          >
             <FixtureRow
               fixture={f}
               onUpdate={onUpdate}
@@ -112,6 +117,7 @@ export default function MatchdayGroup({ matchday, fixtures, onUpdate, onDelete, 
               canEdit={canEdit}
               editMode={activeTab}
               sponsorCounts={sponsorCounts}
+              clean={clean}
             />
           </div>
         ))}

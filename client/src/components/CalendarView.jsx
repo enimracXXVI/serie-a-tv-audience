@@ -1,8 +1,10 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import MatchdayGroup from './MatchdayGroup.jsx';
 import MatchdaySelector from './MatchdaySelector.jsx';
+import FixtureSearch from './FixtureSearch.jsx';
 import ScreenshotableCard from './ScreenshotableCard.jsx';
+import CopyLinkButton from './CopyLinkButton.jsx';
 import { closestMatchday } from '../lib/matchdays.js';
 import { computeMatchTags } from '../lib/matchTags.js';
 import { computeSponsorCounts } from '../lib/sponsorCounts.js';
@@ -80,6 +82,62 @@ export default function CalendarView({
     );
   }
 
+  // '?clean=1' hides sponsor dots/badges on every fixture row (see
+  // FixtureRow's `clean` prop) - a page in this state is what a screenshot
+  // taken right now, or this exact URL sent to someone else, will show.
+  // Toggled on this page's own URL rather than kept as private component
+  // state so those two things (the picture and the link) always agree with
+  // what's actually on screen.
+  const clean = searchParams.get('clean') === '1';
+
+  function toggleClean() {
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        if (clean) params.delete('clean');
+        else params.set('clean', '1');
+        return params;
+      },
+      { replace: true }
+    );
+  }
+
+  function buildCleanLink(matchday) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('matchday', String(matchday));
+    url.searchParams.set('clean', '1');
+    return url.toString();
+  }
+
+  // A fixture picked from the search box needs its matchday selected (if a
+  // single matchday is currently showing) and then to be scrolled to once
+  // that matchday's own fixtures are actually in the DOM - which, since
+  // setSelected only takes effect on the next render, can't happen in the
+  // same tick as the click itself.
+  const [highlightFixtureId, setHighlightFixtureId] = useState(null);
+  const pendingScrollIdRef = useRef(null);
+
+  function handleSearchSelect(fixture) {
+    if (selected !== 'all' && selected !== fixture.matchday) setSelected(fixture.matchday);
+    pendingScrollIdRef.current = fixture.id;
+    setHighlightFixtureId(fixture.id);
+  }
+
+  useEffect(() => {
+    if (!pendingScrollIdRef.current) return;
+    const el = document.getElementById(`fixture-${pendingScrollIdRef.current}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      pendingScrollIdRef.current = null;
+    }
+  });
+
+  useEffect(() => {
+    if (!highlightFixtureId) return undefined;
+    const t = setTimeout(() => setHighlightFixtureId(null), 2200);
+    return () => clearTimeout(t);
+  }, [highlightFixtureId]);
+
   // A finger-drag on a single visible matchday card steps to the next/
   // previous one, the same move the selector's ‹/› arrows make - tracked as
   // a plain start/end delta (not a live drag-follow) so it never fights the
@@ -129,8 +187,23 @@ export default function CalendarView({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="sticky top-14 z-30 -mx-6 bg-[#0f1e54] px-6 py-2 sm:top-[60px]">
-        <MatchdaySelector matchdays={matchdays} selected={selected ?? matchdays[0]} onChange={setSelected} />
+      <div className="sticky top-14 z-30 -mx-6 flex flex-col gap-2 bg-[#0f1e54] px-6 py-2 sm:top-[60px] sm:flex-row sm:items-center">
+        <div className="sm:w-72 sm:shrink-0">
+          <MatchdaySelector matchdays={matchdays} selected={selected ?? matchdays[0]} onChange={setSelected} />
+        </div>
+        <FixtureSearch fixtures={fixtures} onSelect={handleSearchSelect} />
+        <button
+          type="button"
+          onClick={toggleClean}
+          title="Hide sponsor dots/badges - what a screenshot taken now, or this page's link, will show"
+          className={`shrink-0 rounded-full border-2 px-3 py-1.5 text-xs font-bold transition-colors ${
+            clean
+              ? 'border-[#1fd8c9] bg-[#1fd8c9] text-[#0f1e54]'
+              : 'border-[#1fd8c9] bg-transparent text-[#1fd8c9] hover:bg-[#1fd8c9]/10'
+          }`}
+        >
+          Clean share
+        </button>
       </div>
       <div
         onTouchStart={handleTouchStart}
@@ -146,6 +219,7 @@ export default function CalendarView({
               filename={`${screenshotPrefix}-md${md}`}
               background="#0f1e54"
               style={selected !== 'all' ? { viewTransitionName: 'matchday-card' } : undefined}
+              extra={<CopyLinkButton buildUrl={() => buildCleanLink(md)} />}
             >
               <MatchdayGroup
                 matchday={md}
@@ -157,6 +231,8 @@ export default function CalendarView({
                 textColor={rotatingTeam ? rotatingTeam.secondary : undefined}
                 canEdit={canEdit}
                 sponsorCounts={sponsorCounts}
+                highlightFixtureId={highlightFixtureId}
+                clean={clean}
               />
             </ScreenshotableCard>
           );
