@@ -40,27 +40,27 @@ export default function FixtureSearch({ fixtures, onSelect }) {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
-  // This box now shares a wrapping flex row with other nav pills (Build
+  // This box shares a wrapping flex row with other nav pills (Build
   // calendar, Clean share) instead of always getting the full row to
-  // itself, so its own rendered width can be much narrower than the
-  // results actually need - anchoring the list with `left-0 right-0`
-  // (stretched to match the trigger's own width) used to squeeze every row
-  // down to nothing and clip the rest off the side. Measured and clamped
-  // here instead (mirrors Dropdown.jsx's open-list positioning), so the
-  // list keeps a sensible width of its own regardless of how narrow the
-  // search box itself ends up.
-  const [listLeft, setListLeft] = useState(null);
+  // itself, so its rendered width varies a lot with viewport size. The
+  // dropdown should track that width (so it doesn't look stranded/narrow
+  // next to a wide box) but never shrink below a floor that would squeeze
+  // team names/crests/dates into nothing, and never overflow the viewport
+  // when the box runs close to an edge - hence measuring and clamping both
+  // width and position here instead of a plain CSS `left-0 right-0` stretch.
+  const [listMetrics, setListMetrics] = useState(null);
 
   useLayoutEffect(() => {
-    if (!open || !query || !ref.current || !listRef.current) {
-      setListLeft(null);
+    if (!open || !query || !ref.current) {
+      setListMetrics(null);
       return;
     }
     const margin = 8;
+    const minWidth = 384; // 24rem - the narrowest a row can get before crests/names/dates get squished
     const triggerRect = ref.current.getBoundingClientRect();
-    const listWidth = listRef.current.offsetWidth;
-    const clamped = Math.min(Math.max(triggerRect.left, margin), window.innerWidth - listWidth - margin);
-    setListLeft(clamped - triggerRect.left);
+    const width = Math.min(Math.max(triggerRect.width, minWidth), window.innerWidth - margin * 2);
+    const left = Math.min(Math.max(triggerRect.left, margin), window.innerWidth - width - margin) - triggerRect.left;
+    setListMetrics({ left, width });
   }, [open, query, results.length, hasMore]);
 
   // The results list scrolls internally once it has more rows than fit
@@ -133,8 +133,12 @@ export default function FixtureSearch({ fixtures, onSelect }) {
       {open && query && (
         <div
           ref={listRef}
-          className="absolute top-full z-40 mt-1 max-h-80 w-[min(24rem,90vw)] overflow-y-auto overscroll-contain rounded-lg bg-[#0f1e54] py-1 shadow-xl ring-1 ring-white/10"
-          style={{ left: listLeft === null ? 0 : `${listLeft}px`, visibility: listLeft === null ? 'hidden' : 'visible' }}
+          className="absolute top-full z-40 mt-1 max-h-80 overflow-y-auto overscroll-contain rounded-lg bg-[#0f1e54] py-1 shadow-xl ring-1 ring-white/10"
+          style={{
+            left: listMetrics ? `${listMetrics.left}px` : 0,
+            width: listMetrics ? `${listMetrics.width}px` : '24rem',
+            visibility: listMetrics ? 'visible' : 'hidden',
+          }}
         >
           {results.length === 0 ? (
             <p className="px-3 py-2 text-xs text-white/40">No fixtures match &quot;{query}&quot;.</p>
