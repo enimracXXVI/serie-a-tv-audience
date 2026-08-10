@@ -18,15 +18,19 @@ function Field({ label, className = '', children }) {
   );
 }
 
+function byName(a, b) {
+  return a.name.localeCompare(b.name);
+}
+
 function clubSelectOptions(currentRoster, opponents) {
   const options = [{ value: '', label: 'Choose club…' }];
   if (currentRoster.length > 0) {
     options.push({ divider: true, label: 'Serie A' });
-    options.push(...currentRoster.map((c) => ({ value: c.slug, label: c.name })));
+    options.push(...currentRoster.slice().sort(byName).map((c) => ({ value: c.slug, label: c.name })));
   }
   if (opponents.length > 0) {
     options.push({ divider: true, label: 'Other clubs' });
-    options.push(...opponents.map((c) => ({ value: c.slug, label: c.name })));
+    options.push(...opponents.slice().sort(byName).map((c) => ({ value: c.slug, label: c.name })));
   }
   options.push({ divider: true, label: ' ' });
   options.push({ value: NEW_CLUB, label: '+ New club…' });

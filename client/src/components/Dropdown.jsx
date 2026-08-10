@@ -1,5 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+// Typing a letter on a native <select> jumps straight to the first option
+// starting with it - this custom listbox is real buttons in a div, so it
+// gets none of that for free. Buffers consecutive keystrokes (a short pause
+// resets it) and re-runs the prefix match each time, so typing "ju" narrows
+// past every other J-team straight to Juventus, same feel as the native
+// control despite not being one. Works whether the list is open or closed,
+// since the trigger button stays focused either way.
+const TYPEAHEAD_RESET_MS = 600;
+
 // Native <select> can't have its open options list restyled reliably
 // across browsers/devices (Android Chrome in particular renders its own
 // dark, barely-themed popup no CSS here reaches) - this is a fully custom
@@ -60,11 +69,33 @@ export default function Dropdown({ value, onChange, options, variant = 'sidebar'
 
   const selected = options.find((o) => !o.divider && o.value === value);
 
+  const typeahead = useRef({ query: '', timeoutId: null });
+
+  function handleKeyDown(e) {
+    if (e.key === 'Escape') {
+      setOpen(false);
+      return;
+    }
+    // Space/Enter are left to the button's own default (toggles open), and
+    // anything with a modifier or longer than one char (arrows, Tab, ...)
+    // isn't a character to search on.
+    if (e.key === ' ' || e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return;
+    clearTimeout(typeahead.current.timeoutId);
+    typeahead.current.query += e.key.toLowerCase();
+    const query = typeahead.current.query;
+    const match = options.find((o) => !o.divider && o.label.toLowerCase().startsWith(query));
+    if (match) onChange(match.value);
+    typeahead.current.timeoutId = setTimeout(() => {
+      typeahead.current.query = '';
+    }, TYPEAHEAD_RESET_MS);
+  }
+
   return (
     <div ref={ref} className={`relative inline-block min-w-0 ${className}`}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        onKeyDown={handleKeyDown}
         className={`flex w-full items-center justify-between gap-1.5 border px-3 py-1 text-sm font-bold ${CLOSED_VARIANTS[variant]}`}
       >
         <span className="truncate">{selected?.label ?? ''}</span>
