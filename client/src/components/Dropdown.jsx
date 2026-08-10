@@ -45,7 +45,10 @@ export default function Dropdown({ value, onChange, options, variant = 'sidebar'
   // whatever ancestor happened to clip. Position is computed in viewport
   // coordinates and kept in sync with `position: fixed`, same idea as the
   // old in-place `absolute` version just anchored to the viewport instead of
-  // a parent box.
+  // a parent box. Left-aligned to the trigger's own left edge (not centered
+  // under it) so the open list reads as belonging to the field it opened
+  // from instead of floating off to one side of it; only shifted if that
+  // would run the list past the right edge of the viewport.
   const [listPos, setListPos] = useState(null);
 
   useLayoutEffect(() => {
@@ -56,8 +59,7 @@ export default function Dropdown({ value, onChange, options, variant = 'sidebar'
     const margin = 8;
     const triggerRect = ref.current.getBoundingClientRect();
     const listWidth = listRef.current.offsetWidth;
-    const desiredLeft = triggerRect.left + triggerRect.width / 2 - listWidth / 2;
-    const left = Math.min(Math.max(desiredLeft, margin), window.innerWidth - listWidth - margin);
+    const left = Math.min(Math.max(triggerRect.left, margin), window.innerWidth - listWidth - margin);
     setListPos({ top: triggerRect.bottom + 4, left, minWidth: triggerRect.width });
   }, [open, options]);
 
@@ -71,11 +73,11 @@ export default function Dropdown({ value, onChange, options, variant = 'sidebar'
     // The list no longer scrolls along with its trigger (it's fixed-
     // positioned, outside the trigger's own scroll container) - closing on
     // any *other* scroll is simpler and safer than trying to keep a
-    // portaled popup glued to a trigger that might be moving under it - but
-    // the list's own internal scroll (once it has more options than fit
-    // its max-h) fires a real capturing 'scroll' event too, seen here
-    // before it ever reaches the list itself, so it has to be excluded or
-    // scrolling the list closes it after the very first wheel tick.
+    // portaled popup glued to a trigger that might be moving under it. The
+    // list's own internal scroll fires a real capturing 'scroll' event too,
+    // seen here before it ever reaches the list itself, so it's excluded -
+    // see the wheel listener below for stopping that scroll from chaining
+    // into the page (and re-triggering this) in the first place.
     function handleScroll(e) {
       if (listRef.current?.contains(e.target)) return;
       setOpen(false);
@@ -85,6 +87,31 @@ export default function Dropdown({ value, onChange, options, variant = 'sidebar'
     return () => {
       document.removeEventListener('mousedown', handleClick);
       window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [open]);
+
+  // `overscroll-contain` (see the list's className below) stops the list's
+  // own scroll from chaining into the page once it hits the list's top/
+  // bottom - but only once the list actually has somewhere to scroll. With
+  // few options (nothing to scroll at all) the browser treats the whole
+  // gesture as page scroll instead, which the listener above (correctly)
+  // reads as "the page moved out from under this" and closes the list on
+  // the very first wheel tick. Swallowing wheel/touch here when there's
+  // nothing to scroll (real, non-passive listeners - React's synthetic ones
+  // can't preventDefault) covers exactly that gap; overscroll-contain
+  // handles the "reached the end, still scrolling" case on its own.
+  useEffect(() => {
+    if (!open) return undefined;
+    const el = listRef.current;
+    if (!el) return undefined;
+    function swallowIfNotScrollable(e) {
+      if (el.scrollHeight <= el.clientHeight) e.preventDefault();
+    }
+    el.addEventListener('wheel', swallowIfNotScrollable, { passive: false });
+    el.addEventListener('touchmove', swallowIfNotScrollable, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', swallowIfNotScrollable);
+      el.removeEventListener('touchmove', swallowIfNotScrollable);
     };
   }, [open]);
 
@@ -119,7 +146,10 @@ export default function Dropdown({ value, onChange, options, variant = 'sidebar'
         onKeyDown={handleKeyDown}
         className={`flex w-full items-center justify-between gap-1.5 border px-3 py-1 text-sm font-bold ${CLOSED_VARIANTS[variant]}`}
       >
-        <span className="truncate">{selected?.label ?? ''}</span>
+        <span className="flex min-w-0 items-center gap-1.5 truncate">
+          {selected?.icon}
+          <span className="truncate">{selected?.label ?? ''}</span>
+        </span>
         <span aria-hidden="true" className="shrink-0 text-xs">
           ▾
         </span>
@@ -133,7 +163,7 @@ export default function Dropdown({ value, onChange, options, variant = 'sidebar'
           // off the right edge of the viewport with no way to read the rest.
           <div
             ref={listRef}
-            className="fixed z-50 max-h-[70vh] w-max max-w-[min(20rem,90vw)] overflow-y-auto rounded-md bg-[#0f1e54] py-1 shadow-xl ring-1 ring-white/10"
+            className="fixed z-50 max-h-[70vh] w-max max-w-[min(20rem,90vw)] overflow-y-auto overscroll-contain rounded-md bg-[#0f1e54] py-1 shadow-xl ring-1 ring-white/10"
             style={{
               top: listPos?.top ?? 0,
               left: listPos?.left ?? 0,
@@ -161,11 +191,12 @@ export default function Dropdown({ value, onChange, options, variant = 'sidebar'
                     onChange(o.value);
                     setOpen(false);
                   }}
-                  className={`block w-full px-3 py-1.5 text-left text-sm font-semibold hover:bg-white/10 ${
+                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm font-semibold hover:bg-white/10 ${
                     o.value === value ? 'text-[#1fd8c9]' : 'text-white'
                   }`}
                 >
-                  {o.label}
+                  {o.icon}
+                  <span className="truncate">{o.label}</span>
                 </button>
               )
             )}

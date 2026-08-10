@@ -14,10 +14,11 @@ const CLOSED_VARIANTS = {
 
 // A cup fixture can air on several broadcasters at once, so picking them
 // needs to stay open across multiple clicks (unlike Dropdown, which closes
-// the instant a single value is picked) - each row toggles its own value in
-// `values` via a checkbox instead of replacing the whole selection. Shares
-// Dropdown's portal-to-<body> positioning (see its own comment for why a
-// short overflow-hidden fixture-row card would otherwise clip the list).
+// the instant a single value is picked) - each tile toggles its own value in
+// `values` instead of replacing the whole selection. Shares Dropdown's
+// portal-to-<body> positioning (see its own comment for why a short
+// overflow-hidden fixture-row card would otherwise clip the list) and its
+// left-aligned-to-trigger placement and scroll handling.
 export default function MultiSelectDropdown({ values, onChange, options, variant = 'light', placeholder = 'None', className = '' }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -32,8 +33,7 @@ export default function MultiSelectDropdown({ values, onChange, options, variant
     const margin = 8;
     const triggerRect = ref.current.getBoundingClientRect();
     const listWidth = listRef.current.offsetWidth;
-    const desiredLeft = triggerRect.left + triggerRect.width / 2 - listWidth / 2;
-    const left = Math.min(Math.max(desiredLeft, margin), window.innerWidth - listWidth - margin);
+    const left = Math.min(Math.max(triggerRect.left, margin), window.innerWidth - listWidth - margin);
     setListPos({ top: triggerRect.bottom + 4, left, minWidth: triggerRect.width });
   }, [open, options]);
 
@@ -53,6 +53,25 @@ export default function MultiSelectDropdown({ values, onChange, options, variant
     return () => {
       document.removeEventListener('mousedown', handleClick);
       window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [open]);
+
+  // See Dropdown.jsx's identical listener for why this is needed alongside
+  // `overscroll-contain` - a grid with few enough rows to never actually
+  // scroll would otherwise chain straight into the page and get read as
+  // "the page moved, close this" by the listener above.
+  useEffect(() => {
+    if (!open) return undefined;
+    const el = listRef.current;
+    if (!el) return undefined;
+    function swallowIfNotScrollable(e) {
+      if (el.scrollHeight <= el.clientHeight) e.preventDefault();
+    }
+    el.addEventListener('wheel', swallowIfNotScrollable, { passive: false });
+    el.addEventListener('touchmove', swallowIfNotScrollable, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', swallowIfNotScrollable);
+      el.removeEventListener('touchmove', swallowIfNotScrollable);
     };
   }, [open]);
 
@@ -81,7 +100,7 @@ export default function MultiSelectDropdown({ values, onChange, options, variant
         createPortal(
           <div
             ref={listRef}
-            className="fixed z-50 max-h-[70vh] w-max max-w-[min(20rem,90vw)] overflow-y-auto rounded-md bg-[#0f1e54] py-1 shadow-xl ring-1 ring-white/10"
+            className="fixed z-50 max-h-[70vh] w-max max-w-[min(20rem,90vw)] overflow-y-auto overscroll-contain rounded-md bg-[#0f1e54] p-2 shadow-xl ring-1 ring-white/10"
             style={{
               top: listPos?.top ?? 0,
               left: listPos?.left ?? 0,
@@ -89,27 +108,33 @@ export default function MultiSelectDropdown({ values, onChange, options, variant
               visibility: listPos ? 'visible' : 'hidden',
             }}
           >
-            {options.map((o) => {
-              const checked = values.includes(o.value);
-              return (
-                <button
-                  type="button"
-                  key={o.value}
-                  onClick={() => toggleValue(o.value)}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm font-semibold text-white hover:bg-white/10"
-                >
-                  <span
-                    aria-hidden="true"
-                    className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border text-[10px] leading-none ${
-                      checked ? 'border-[#1fd8c9] bg-[#1fd8c9] text-[#0f1e54]' : 'border-white/40'
+            {/* Tile grid, same visual language as TeamPicker's own "Build
+                calendar" team grid - a filled teal tile reads as "selected"
+                at a glance the same way there, rather than a checkbox row
+                that looked like every other single-pick dropdown despite
+                behaving completely differently (staying open, multi-pick). */}
+            <div className="grid grid-cols-2 gap-1.5">
+              {options.map((o) => {
+                const checked = values.includes(o.value);
+                return (
+                  <button
+                    type="button"
+                    key={o.value}
+                    onClick={() => toggleValue(o.value)}
+                    className={`flex flex-col items-center gap-1 rounded-lg border-2 px-2 py-2 text-center transition-all ${
+                      checked ? 'border-[#1fd8c9] bg-[#1fd8c9] shadow-md' : 'border-transparent bg-white/10 hover:border-[#1fd8c9]/40'
                     }`}
                   >
-                    {checked && '✓'}
-                  </span>
-                  <span className="truncate">{o.label}</span>
-                </button>
-              );
-            })}
+                    {o.logoUrl ? (
+                      <img src={o.logoUrl} alt="" className="h-5 max-w-full object-contain" />
+                    ) : (
+                      <span className={`h-5 text-lg leading-5 ${checked ? 'text-[#0f1e54]' : 'text-white/70'}`}>📺</span>
+                    )}
+                    <span className={`truncate text-[11px] font-semibold ${checked ? 'text-[#0f1e54]' : 'text-white'}`}>{o.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>,
           document.body
         )}

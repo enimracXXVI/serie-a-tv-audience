@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Dropdown from './Dropdown.jsx';
+import Crest from './Crest.jsx';
 
 const inputClass =
   'w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-sm text-[#0f1e54] shadow-sm outline-none transition-colors focus:border-[#1fd8c9] focus:bg-white focus:ring-2 focus:ring-[#1fd8c9]/20';
@@ -56,7 +57,10 @@ export default function AddSerieAFixtureForm({ teams, onCreate, onDone }) {
     }
   }
 
-  const teamOptions = teams.map((t) => ({ value: t.slug, label: t.name }));
+  const teamOptions = teams
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((t) => ({ value: t.slug, label: t.name, icon: <Crest team={t} size={16} /> }));
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-xl">

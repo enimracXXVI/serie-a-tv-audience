@@ -119,16 +119,16 @@ function KickoffFields({ fixture, onUpdate, broadcasters }) {
       </Field>
       <Field label="Broadcaster(s)">
         {/* A cup tie can air on more than one platform at once (see the
-            display side's resolveBroadcasterList) - a checkbox per
-            broadcaster that stays open across picks, rather than a
-            single-select dropdown that can only ever hold one and clobbers
-            any others already saved here. */}
+            display side's resolveBroadcasterList) - a tile per broadcaster
+            that stays open across picks, rather than a single-select
+            dropdown that can only ever hold one and clobbers any others
+            already saved here. */}
         <MultiSelectDropdown
           variant="light"
           className="w-40"
           values={parseBroadcasterSlugs(fixture.otherBroadcaster)}
           onChange={(slugs) => onUpdate(fixture.id, { otherBroadcaster: slugs.join(',') || null })}
-          options={broadcasters.map((b) => ({ value: b.slug, label: b.name }))}
+          options={broadcasters.map((b) => ({ value: b.slug, label: b.name, logoUrl: b.logoUrl }))}
         />
       </Field>
       <ToggleSwitch

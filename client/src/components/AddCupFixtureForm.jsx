@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ToggleSwitch from './ToggleSwitch.jsx';
 import Dropdown from './Dropdown.jsx';
 import MultiSelectDropdown from './MultiSelectDropdown.jsx';
+import Crest from './Crest.jsx';
 import { competitionScope } from '../lib/competitions.js';
 import { clubScope, slugify } from '../lib/clubs.js';
 
@@ -23,15 +24,19 @@ function byName(a, b) {
   return a.name.localeCompare(b.name);
 }
 
+function clubOption(c) {
+  return { value: c.slug, label: c.name, icon: <Crest team={c} size={16} /> };
+}
+
 function clubSelectOptions(currentRoster, opponents) {
   const options = [{ value: '', label: 'Choose club…' }];
   if (currentRoster.length > 0) {
     options.push({ divider: true, label: 'Serie A' });
-    options.push(...currentRoster.slice().sort(byName).map((c) => ({ value: c.slug, label: c.name })));
+    options.push(...currentRoster.slice().sort(byName).map(clubOption));
   }
   if (opponents.length > 0) {
     options.push({ divider: true, label: 'Other clubs' });
-    options.push(...opponents.slice().sort(byName).map((c) => ({ value: c.slug, label: c.name })));
+    options.push(...opponents.slice().sort(byName).map(clubOption));
   }
   options.push({ divider: true, label: ' ' });
   options.push({ value: NEW_CLUB, label: '+ New club…' });
@@ -230,7 +235,7 @@ export default function AddCupFixtureForm({ clubs, competitions, broadcasters, o
             variant="light"
             values={broadcasterSlugs}
             onChange={setBroadcasterSlugs}
-            options={(broadcasters ?? []).map((b) => ({ value: b.slug, label: b.name }))}
+            options={(broadcasters ?? []).map((b) => ({ value: b.slug, label: b.name, logoUrl: b.logoUrl }))}
           />
         </Field>
         <div className="flex items-end pb-1.5">
