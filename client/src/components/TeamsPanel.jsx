@@ -224,11 +224,27 @@ function AddClubForm({ session, createClub }) {
   );
 }
 
+function byName(a, b) {
+  return a.name.localeCompare(b.name);
+}
+
 export default function TeamsPanel({ session }) {
   const { clubs, loading, error, saveClub, createClub, removeClub } = useClubs();
-  const current = useMemo(() => clubs.filter((c) => clubScope(c) === 'current'), [clubs]);
-  const national = useMemo(() => clubs.filter((c) => clubScope(c) === 'national'), [clubs]);
-  const european = useMemo(() => clubs.filter((c) => clubScope(c) === 'european'), [clubs]);
+  const [search, setSearch] = useState('');
+  const query = search.trim().toLowerCase();
+
+  const current = useMemo(() => clubs.filter((c) => clubScope(c) === 'current').sort(byName), [clubs]);
+  const national = useMemo(() => clubs.filter((c) => clubScope(c) === 'national').sort(byName), [clubs]);
+  const european = useMemo(() => clubs.filter((c) => clubScope(c) === 'european').sort(byName), [clubs]);
+  // Searching flattens the three scope groups into one matched list instead
+  // of leaving them collapsed behind their own headers - each
+  // CollapsibleSection owns its open/closed state internally, so there's no
+  // way to force one open from here without a search hit disappearing
+  // behind a still-collapsed section.
+  const searchResults = useMemo(
+    () => (query ? clubs.filter((c) => c.name.toLowerCase().includes(query)).sort(byName) : null),
+    [clubs, query]
+  );
   const [showAddForm, setShowAddForm] = useState(false);
 
   return (
@@ -251,13 +267,27 @@ export default function TeamsPanel({ session }) {
       </div>
       {!session.signedIn && <p className="text-xs text-white/50">Sign in to add or edit clubs.</p>}
       {session.signedIn && showAddForm && <AddClubForm session={session} createClub={createClub} />}
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search clubs…"
+        className={`${inputClass} w-full`}
+      />
       {loading ? (
         <p className="text-sm text-white/40">Loading…</p>
       ) : error ? (
         <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">{error}</p>
+      ) : searchResults ? (
+        <div className="flex flex-col gap-1.5">
+          {searchResults.length === 0 && <p className="text-xs text-white/40">No club matches “{search.trim()}”.</p>}
+          {searchResults.map((c) => (
+            <ClubRow key={c.slug} club={c} session={session} saveClub={saveClub} removeClub={removeClub} />
+          ))}
+        </div>
       ) : (
         <div className="flex flex-col gap-3">
-          <CollapsibleSection title={`Current roster (${current.length})`}>
+          <CollapsibleSection sub title={`Current roster (${current.length})`}>
             <div className="flex flex-col gap-1.5">
               {current.length === 0 && <p className="text-xs text-white/40">None added yet.</p>}
               {current.map((c) => (
@@ -266,7 +296,7 @@ export default function TeamsPanel({ session }) {
             </div>
           </CollapsibleSection>
           <div className="border-t border-white/10" />
-          <CollapsibleSection title={`National (${national.length})`}>
+          <CollapsibleSection sub title={`National (${national.length})`}>
             <div className="flex flex-col gap-1.5">
               {national.length === 0 && <p className="text-xs text-white/40">None added yet.</p>}
               {national.map((c) => (
@@ -275,7 +305,7 @@ export default function TeamsPanel({ session }) {
             </div>
           </CollapsibleSection>
           <div className="border-t border-white/10" />
-          <CollapsibleSection title={`European (${european.length})`}>
+          <CollapsibleSection sub title={`European (${european.length})`}>
             <div className="flex flex-col gap-1.5">
               {european.length === 0 && <p className="text-xs text-white/40">None added yet.</p>}
               {european.map((c) => (

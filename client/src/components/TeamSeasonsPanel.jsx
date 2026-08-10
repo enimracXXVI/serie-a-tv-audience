@@ -83,31 +83,32 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
         {/* Wraps onto its own line(s) rather than fighting the name/arrow for
             horizontal space - a club with all four badges (sponsor/big/
             derby/LED) was overflowing the row on narrow screens, pushing the
-            expand arrow off-screen entirely. */}
-        {(sponsored || bigClub || derbyRival || ledDeal) && (
-          <div className="flex flex-wrap gap-1.5 pl-[38px]">
-            {sponsored && (
-              <span className="rounded-full bg-[#1fd8c9]/20 px-2 py-0.5 text-[10px] font-bold uppercase text-[#1fd8c9]">
-                Sponsor
-              </span>
-            )}
-            {bigClub && (
-              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-400">
-                Big
-              </span>
-            )}
-            {derbyRival && (
-              <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-red-400">
-                Derby
-              </span>
-            )}
-            {ledDeal && (
-              <span className="rounded-full bg-sky-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-sky-400">
-                LED
-              </span>
-            )}
-          </div>
-        )}
+            expand arrow off-screen entirely. Always rendered (not just when
+            a badge is active) with a reserved min-height, so every club row
+            in the roster is the same height instead of only the badge-
+            carrying ones growing an extra line. */}
+        <div className="flex min-h-[19px] flex-wrap gap-1.5 pl-[38px]">
+          {sponsored && (
+            <span className="rounded-full bg-[#1fd8c9]/20 px-2 py-0.5 text-[10px] font-bold uppercase text-[#1fd8c9]">
+              Sponsor
+            </span>
+          )}
+          {bigClub && (
+            <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-400">
+              Big
+            </span>
+          )}
+          {derbyRival && (
+            <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-red-400">
+              Derby
+            </span>
+          )}
+          {ledDeal && (
+            <span className="rounded-full bg-sky-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-sky-400">
+              LED
+            </span>
+          )}
+        </div>
       </button>
 
       {expanded && (

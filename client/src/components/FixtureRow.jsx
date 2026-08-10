@@ -341,15 +341,13 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
           team name), but matchday-sponsor/player-mascot/walkabout activity is
           exactly what a sponsor rep wants to check on the go - surfaced here
           as its own compact row instead, mobile-only, rather than left
-          invisible until a wider screen happens to be available. */}
-      {!clean &&
-        (fixture.homeMatchdaySponsor ||
-        fixture.homePlayerMascot ||
-        fixture.homeWalkabout ||
-        fixture.awayMatchdaySponsor ||
-        fixture.awayPlayerMascot ||
-        fixture.awayWalkabout) && (
-        <div className="mt-1 flex items-center justify-center gap-3 sm:hidden">
+          invisible until a wider screen happens to be available. Always
+          rendered (not just when either side actually has something to
+          show) with a reserved min-height, so every row in a matchday list
+          is the same height on mobile instead of only the sponsored ones
+          growing an extra line. */}
+      {!clean && (
+        <div className="mt-1 flex min-h-4 items-center justify-center gap-3 sm:hidden">
           {(fixture.homeMatchdaySponsor || fixture.homePlayerMascot || fixture.homeWalkabout) && (
             <div className="flex items-center gap-1">
               <span className="text-[8px] font-bold uppercase text-gray-400">{home.short ?? home.name}</span>

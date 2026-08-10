@@ -71,31 +71,40 @@ function BroadcasterRow({ broadcaster, session, saveBroadcaster, onSetMain, remo
   return (
     <div className="flex flex-col gap-1 rounded-lg bg-white/5 px-3 py-2">
       {confirmDialog}
-      <div className="flex flex-wrap items-center gap-3">
-        <PencilEditOverlay value={broadcaster.logoUrl} onCommit={commit} rounded="rounded-md">
-          <LogoPreview url={broadcaster.logoUrl} />
-        </PencilEditOverlay>
-        <span className="text-sm font-semibold text-white">{broadcaster.name}</span>
-        {broadcaster.isMain && (
-          <span className="rounded-full bg-[#1fd8c9]/20 px-2 py-0.5 text-[10px] font-bold uppercase text-[#1fd8c9]">
-            Main
-          </span>
-        )}
-        {session.signedIn && (
-          <div className="ml-auto flex items-center gap-2">
+      {/* Fixed two-column grid instead of a flex-wrap row - a long
+          broadcaster name plus the Main badge and actions used to wrap onto
+          a second line only for some rows, leaving Delete at a different
+          height row to row instead of one consistent row height down the
+          whole list (same fix as CompetitionsPanel's rows). */}
+      <div className="grid grid-cols-[1fr_auto] items-center gap-2 sm:gap-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <PencilEditOverlay value={broadcaster.logoUrl} onCommit={commit} rounded="rounded-md">
+            <LogoPreview url={broadcaster.logoUrl} />
+          </PencilEditOverlay>
+          <span className="truncate text-sm font-semibold text-white">{broadcaster.name}</span>
+          {broadcaster.isMain && (
+            <span className="shrink-0 rounded-full bg-[#1fd8c9]/20 px-2 py-0.5 text-[10px] font-bold uppercase text-[#1fd8c9]">
+              Main
+            </span>
+          )}
+        </div>
+        {session.signedIn ? (
+          <div className="flex items-center gap-2 justify-self-end">
             {!broadcaster.isMain && (
-              <button onClick={setMain} className="text-[10px] font-semibold uppercase text-white/50 hover:text-white">
+              <button onClick={setMain} className="shrink-0 text-[10px] font-semibold uppercase text-white/50 hover:text-white">
                 Set as main
               </button>
             )}
             <button
               onClick={handleDelete}
               disabled={deleting}
-              className="w-fit rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold uppercase text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+              className="w-fit shrink-0 rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold uppercase text-red-300 hover:bg-red-500/10 disabled:opacity-50"
             >
               {deleting ? 'Deleting…' : 'Delete'}
             </button>
           </div>
+        ) : (
+          <span />
         )}
       </div>
       {error && <p className="text-xs text-red-300">{error}</p>}

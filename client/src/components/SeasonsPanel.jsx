@@ -59,52 +59,65 @@ function SeasonRow({ season, session, saveSeason, onSetCurrent, removeSeason }) 
   return (
     <div className="flex flex-col gap-1.5 rounded-lg bg-white/5 px-3 py-2">
       {confirmDialog}
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-white">{season.label}</span>
-          {season.current && (
-            <span className="rounded-full bg-[#1fd8c9]/20 px-2 py-0.5 text-[10px] font-bold uppercase text-[#1fd8c9]">
-              Current
-            </span>
-          )}
+      {/* Actions pinned to their own fixed grid column (not `ml-auto` inside
+          the same flex-wrap row as the label/inputs) so Delete sits in the
+          same spot on every row - the label+inputs group can still wrap
+          responsively on narrow screens, but that no longer drags the
+          actions along with it to a different position row to row (the
+          "Set as current" button is the one thing that differs between rows
+          here, and previously that alone could push a row's wrap point,
+          and therefore its actions' position, out of line with its
+          neighbours). */}
+      <div className="grid grid-cols-[1fr_auto] items-start gap-2 sm:gap-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-white">{season.label}</span>
+            {season.current && (
+              <span className="shrink-0 rounded-full bg-[#1fd8c9]/20 px-2 py-0.5 text-[10px] font-bold uppercase text-[#1fd8c9]">
+                Current
+              </span>
+            )}
+          </div>
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Fixtures tab</span>
+            <input
+              type="text"
+              value={tab}
+              onChange={(e) => setTab(e.target.value)}
+              onBlur={() => tab !== (season.tab ?? '') && commit({ tab })}
+              placeholder="fixtures_26_27"
+              className={`${inputClass} w-40`}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">URL slug</span>
+            <input
+              type="text"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              onBlur={() => slug !== (season.slug ?? '') && commit({ slug })}
+              placeholder="26-27"
+              className={`${inputClass} w-28`}
+            />
+          </label>
         </div>
-        <label className="flex flex-col gap-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Fixtures tab</span>
-          <input
-            type="text"
-            value={tab}
-            onChange={(e) => setTab(e.target.value)}
-            onBlur={() => tab !== (season.tab ?? '') && commit({ tab })}
-            placeholder="fixtures_26_27"
-            className={`${inputClass} w-40`}
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">URL slug</span>
-          <input
-            type="text"
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            onBlur={() => slug !== (season.slug ?? '') && commit({ slug })}
-            placeholder="26-27"
-            className={`${inputClass} w-28`}
-          />
-        </label>
-        {session.signedIn && (
-          <div className="ml-auto flex items-center gap-2">
+        {session.signedIn ? (
+          <div className="flex items-center gap-2 justify-self-end">
             {!season.current && (
-              <button onClick={setCurrent} className="text-[10px] font-semibold uppercase text-white/50 hover:text-white">
+              <button onClick={setCurrent} className="shrink-0 text-[10px] font-semibold uppercase text-white/50 hover:text-white">
                 Set as current
               </button>
             )}
             <button
               onClick={handleDelete}
               disabled={deleting}
-              className="w-fit rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold uppercase text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+              className="w-fit shrink-0 rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold uppercase text-red-300 hover:bg-red-500/10 disabled:opacity-50"
             >
               {deleting ? 'Deleting…' : 'Delete'}
             </button>
           </div>
+        ) : (
+          <span />
         )}
       </div>
       {error && <p className="text-xs text-red-300">{error}</p>}

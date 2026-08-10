@@ -121,7 +121,7 @@ function EditableCompetitionHeader({ competition, onSave }) {
   }
 
   return (
-    <button type="button" onClick={startEditing} className="flex items-center gap-3" title="Click to edit logo/name">
+    <button type="button" onClick={startEditing} className="flex min-w-0 items-center gap-3" title="Click to edit logo/name">
       <span className="relative inline-flex shrink-0">
         <LogoPreview url={competition.logoURL} />
         <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-md bg-[#1fd8c9] text-[#0f1e54] shadow ring-2 ring-[#0f1e54]">
@@ -130,7 +130,7 @@ function EditableCompetitionHeader({ competition, onSave }) {
           </svg>
         </span>
       </span>
-      <span className="text-sm font-semibold text-white">{competition.name}</span>
+      <span className="truncate text-sm font-semibold text-white">{competition.name}</span>
     </button>
   );
 }
@@ -166,17 +166,32 @@ function CompetitionRow({ competition, session, saveCompetition, removeCompetiti
   return (
     <div className="flex flex-col gap-1.5 rounded-lg bg-white/5 px-3 py-2">
       {confirmDialog}
-      <div className="flex flex-wrap items-center gap-3">
+      {/* Fixed columns instead of a flex-wrap row - a long name (e.g. "UEFA
+          Champions League") used to push the scope dropdown and delete
+          button onto their own wrapped line, which put every row's Delete
+          button at a different height depending on how long its neighbours'
+          names were instead of one consistent row height down the whole
+          list. The name truncates rather than wrapping; scope/delete stay
+          fixed-width so they never do either, on any screen size. */}
+      <div className="grid grid-cols-[1fr_auto_auto] items-center gap-2 sm:gap-3">
         <EditableCompetitionHeader competition={competition} onSave={commit} />
-        <Dropdown variant="sidebar" className="w-32" value={competitionScope(competition)} onChange={(scope) => commit({ scope })} options={SCOPE_OPTIONS} />
-        {session.signedIn && (
+        <Dropdown
+          variant="sidebar"
+          className="w-24 sm:w-32"
+          value={competitionScope(competition)}
+          onChange={(scope) => commit({ scope })}
+          options={SCOPE_OPTIONS}
+        />
+        {session.signedIn ? (
           <button
             onClick={handleDelete}
             disabled={deleting}
-            className="ml-auto w-fit rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold uppercase text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+            className="w-fit justify-self-end rounded-md border border-red-500/30 px-2.5 py-1 text-xs font-semibold uppercase text-red-300 hover:bg-red-500/10 disabled:opacity-50"
           >
             {deleting ? 'Deleting…' : 'Delete'}
           </button>
+        ) : (
+          <span />
         )}
       </div>
       {error && <p className="text-xs text-red-300">{error}</p>}
