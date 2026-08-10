@@ -51,6 +51,19 @@ export default function CupCompetitionsPage() {
       if (!byRound.has(key)) byRound.set(key, []);
       byRound.get(key).push(f);
     }
+    // Rows land in whatever order they were entered in the sheet (row/ID
+    // order), not necessarily kickoff order - sort each round by date/time
+    // so a leg entered late still shows up where it's actually played.
+    // Undated rows (Round TBD fixtures) sort after everything dated.
+    for (const byRound of byCompetition.values()) {
+      for (const roundFixtures of byRound.values()) {
+        roundFixtures.sort((a, b) => {
+          const dateCmp = (a.date || '9999-99-99').localeCompare(b.date || '9999-99-99');
+          if (dateCmp !== 0) return dateCmp;
+          return (a.kickoffTime || '').localeCompare(b.kickoffTime || '');
+        });
+      }
+    }
     return byCompetition;
   }, [fixtures]);
 
