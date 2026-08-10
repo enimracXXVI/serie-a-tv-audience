@@ -108,12 +108,11 @@ export default function MultiSelectDropdown({ values, onChange, options, variant
               visibility: listPos ? 'visible' : 'hidden',
             }}
           >
-            {/* Tile grid, same visual language as TeamPicker's own "Build
-                calendar" team grid - a filled teal tile reads as "selected"
-                at a glance the same way there, rather than a checkbox row
-                that looked like every other single-pick dropdown despite
-                behaving completely differently (staying open, multi-pick). */}
-            <div className="grid grid-cols-2 gap-1.5">
+            {/* Small rounded pill chips (logo + name, wraps freely) - same
+                shape as the removable team-filter chips on
+                BrandedCalendarPage, not TeamPicker's big square tiles. Filled
+                teal reads as "selected" the same way those do. */}
+            <div className="flex flex-wrap gap-1.5">
               {options.map((o) => {
                 const checked = values.includes(o.value);
                 return (
@@ -121,16 +120,20 @@ export default function MultiSelectDropdown({ values, onChange, options, variant
                     type="button"
                     key={o.value}
                     onClick={() => toggleValue(o.value)}
-                    className={`flex flex-col items-center gap-1 rounded-lg border-2 px-2 py-2 text-center transition-all ${
-                      checked ? 'border-[#1fd8c9] bg-[#1fd8c9] shadow-md' : 'border-transparent bg-white/10 hover:border-[#1fd8c9]/40'
+                    className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 transition-all ${
+                      checked ? 'bg-[#1fd8c9]' : 'bg-white/10 hover:bg-white/20'
                     }`}
                   >
                     {o.logoUrl ? (
-                      <img src={o.logoUrl} alt="" className="h-5 max-w-full object-contain" />
+                      <img src={o.logoUrl} alt="" className="h-4 w-4 shrink-0 rounded-full object-contain" />
                     ) : (
-                      <span className={`h-5 text-lg leading-5 ${checked ? 'text-[#0f1e54]' : 'text-white/70'}`}>📺</span>
+                      <span
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] leading-none ${checked ? 'bg-[#0f1e54]/10' : 'bg-white/10'}`}
+                      >
+                        📺
+                      </span>
                     )}
-                    <span className={`truncate text-[11px] font-semibold ${checked ? 'text-[#0f1e54]' : 'text-white'}`}>{o.label}</span>
+                    <span className={`whitespace-nowrap text-xs font-bold ${checked ? 'text-[#0f1e54]' : 'text-white'}`}>{o.label}</span>
                   </button>
                 );
               })}
