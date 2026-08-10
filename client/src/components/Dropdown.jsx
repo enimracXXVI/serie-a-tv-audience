@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 // Typing a letter on a native <select> jumps straight to the first option
 // starting with it - this custom listbox is real buttons in a div, so it
@@ -37,34 +38,49 @@ export default function Dropdown({ value, onChange, options, variant = 'sidebar'
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const listRef = useRef(null);
-  // Centering the list under the trigger (via a CSS transform alone) still
-  // runs it off-screen for a trigger sitting far enough toward either edge -
-  // a long option label needs real width, and no fixed CSS anchor keeps
-  // that width on-screen for every possible trigger position. Measured
-  // and clamped here instead, in a layout effect so it's positioned
-  // correctly before the browser ever paints the open state.
-  const [listLeft, setListLeft] = useState(null);
+  // The open list is portaled to <body> (see the render below) so a fixture
+  // row sitting inside a short `overflow-hidden` round/matchday card can't
+  // clip it off at the card's own bottom edge with no way to scroll the rest
+  // into view - it used to live right there in the DOM and inherited
+  // whatever ancestor happened to clip. Position is computed in viewport
+  // coordinates and kept in sync with `position: fixed`, same idea as the
+  // old in-place `absolute` version just anchored to the viewport instead of
+  // a parent box.
+  const [listPos, setListPos] = useState(null);
 
   useLayoutEffect(() => {
     if (!open || !ref.current || !listRef.current) {
-      setListLeft(null);
+      setListPos(null);
       return;
     }
     const margin = 8;
     const triggerRect = ref.current.getBoundingClientRect();
     const listWidth = listRef.current.offsetWidth;
-    const desired = triggerRect.left + triggerRect.width / 2 - listWidth / 2;
-    const clamped = Math.min(Math.max(desired, margin), window.innerWidth - listWidth - margin);
-    setListLeft(clamped - triggerRect.left);
+    const desiredLeft = triggerRect.left + triggerRect.width / 2 - listWidth / 2;
+    const left = Math.min(Math.max(desiredLeft, margin), window.innerWidth - listWidth - margin);
+    setListPos({ top: triggerRect.bottom + 4, left, minWidth: triggerRect.width });
   }, [open, options]);
 
   useEffect(() => {
     if (!open) return;
     function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (ref.current?.contains(e.target)) return;
+      if (listRef.current?.contains(e.target)) return;
+      setOpen(false);
+    }
+    // The list no longer scrolls along with its trigger (it's fixed-
+    // positioned, outside the trigger's own scroll container) - closing on
+    // any scroll is simpler and safer than trying to keep a portaled popup
+    // glued to a trigger that might be moving under it.
+    function handleScroll() {
+      setOpen(false);
     }
     document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    window.addEventListener('scroll', handleScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
   }, [open]);
 
   const selected = options.find((o) => !o.divider && o.value === value);
@@ -103,49 +119,54 @@ export default function Dropdown({ value, onChange, options, variant = 'sidebar'
           ▾
         </span>
       </button>
-      {open && (
-        // Positioned via listLeft (measured above) instead of a fixed CSS
-        // anchor, and capped to the viewport width with labels allowed to
-        // wrap instead of forcing one long unbroken line - a long option
-        // (e.g. "Away audience (avg/game) - visitor draw power") on a
-        // trigger sitting anywhere but the far left of a phone screen used
-        // to run straight off the right edge of the viewport with no way
-        // to read the rest.
-        <div
-          ref={listRef}
-          className="absolute top-full z-50 mt-1 max-h-[70vh] w-max min-w-full max-w-[min(20rem,90vw)] overflow-y-auto rounded-md bg-[#0f1e54] py-1 shadow-xl ring-1 ring-white/10"
-          style={{ left: listLeft === null ? 0 : `${listLeft}px`, visibility: listLeft === null ? 'hidden' : 'visible' }}
-        >
-          {options.map((o) =>
-            // A non-selectable section heading (e.g. "Serie A" vs "Other
-            // clubs" in a long club picker) - the one thing a native
-            // <select>'s <optgroup> gave for free that this custom listbox
-            // needs to support explicitly.
-            o.divider ? (
-              <div
-                key={`divider-${o.label}`}
-                className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wide text-white/40 first:pt-1"
-              >
-                {o.label}
-              </div>
-            ) : (
-              <button
-                type="button"
-                key={o.value}
-                onClick={() => {
-                  onChange(o.value);
-                  setOpen(false);
-                }}
-                className={`block w-full px-3 py-1.5 text-left text-sm font-semibold hover:bg-white/10 ${
-                  o.value === value ? 'text-[#1fd8c9]' : 'text-white'
-                }`}
-              >
-                {o.label}
-              </button>
-            )
-          )}
-        </div>
-      )}
+      {open &&
+        createPortal(
+          // Capped to the viewport width with labels allowed to wrap instead
+          // of forcing one long unbroken line - a long option (e.g. "Away
+          // audience (avg/game) - visitor draw power") on a trigger sitting
+          // anywhere but the far left of a phone screen used to run straight
+          // off the right edge of the viewport with no way to read the rest.
+          <div
+            ref={listRef}
+            className="fixed z-50 max-h-[70vh] w-max max-w-[min(20rem,90vw)] overflow-y-auto rounded-md bg-[#0f1e54] py-1 shadow-xl ring-1 ring-white/10"
+            style={{
+              top: listPos?.top ?? 0,
+              left: listPos?.left ?? 0,
+              minWidth: listPos ? `${listPos.minWidth}px` : undefined,
+              visibility: listPos ? 'visible' : 'hidden',
+            }}
+          >
+            {options.map((o) =>
+              // A non-selectable section heading (e.g. "Serie A" vs "Other
+              // clubs" in a long club picker) - the one thing a native
+              // <select>'s <optgroup> gave for free that this custom listbox
+              // needs to support explicitly.
+              o.divider ? (
+                <div
+                  key={`divider-${o.label}`}
+                  className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wide text-white/40 first:pt-1"
+                >
+                  {o.label}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  key={o.value}
+                  onClick={() => {
+                    onChange(o.value);
+                    setOpen(false);
+                  }}
+                  className={`block w-full px-3 py-1.5 text-left text-sm font-semibold hover:bg-white/10 ${
+                    o.value === value ? 'text-[#1fd8c9]' : 'text-white'
+                  }`}
+                >
+                  {o.label}
+                </button>
+              )
+            )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

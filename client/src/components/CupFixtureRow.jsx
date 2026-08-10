@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import Crest from './Crest.jsx';
 import ToggleSwitch from './ToggleSwitch.jsx';
-import Dropdown from './Dropdown.jsx';
 import { BroadcasterBadge } from './BroadcastBadges.jsx';
 import { resolveCupFixtureOutcome } from '../lib/cupFixtures.js';
 import { resolveBroadcasterList } from '../lib/broadcasters.js';
@@ -117,14 +116,28 @@ function KickoffFields({ fixture, onUpdate, broadcasters }) {
           onChange={(e) => onUpdate(fixture.id, { kickoffTime: e.target.value || null })}
         />
       </Field>
-      <Field label="Broadcaster">
-        <Dropdown
-          variant="light"
-          className="w-40"
-          value={fixture.otherBroadcaster ?? ''}
-          onChange={(v) => onUpdate(fixture.id, { otherBroadcaster: v || null })}
-          options={[{ value: '', label: 'None' }, ...broadcasters.map((b) => ({ value: b.slug, label: b.name }))]}
+      <Field label="Broadcaster(s)">
+        {/* A cup tie can air on more than one platform at once (see the
+            display side's resolveBroadcasterList) - free text, comma-
+            separated, same as AddCupFixtureForm's own broadcaster field,
+            rather than a single-select dropdown that can only ever hold one
+            and clobbers any others already saved here. */}
+        <input
+          type="text"
+          list={`cup-broadcasters-${fixture.id}`}
+          defaultValue={fixture.otherBroadcaster ?? ''}
+          onBlur={(e) => {
+            const v = e.target.value.trim();
+            if (v !== (fixture.otherBroadcaster ?? '')) onUpdate(fixture.id, { otherBroadcaster: v || null });
+          }}
+          placeholder="Comma-separated"
+          className={`${inputClass} w-40`}
         />
+        <datalist id={`cup-broadcasters-${fixture.id}`}>
+          {broadcasters.map((b) => (
+            <option key={b.slug} value={b.slug} />
+          ))}
+        </datalist>
       </Field>
       <ToggleSwitch
         checked={Boolean(fixture.neutralVenue)}
