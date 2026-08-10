@@ -41,3 +41,15 @@ export function resolveBroadcasterList(raw, broadcasters) {
     .filter(Boolean)
     .map((token) => ({ broadcaster: resolveBroadcaster(token, broadcasters), fallbackName: token }));
 }
+
+// The plain-slug half of resolveBroadcasterList - for feeding the cell's
+// value into a multi-select control (MultiSelectDropdown's `values`) rather
+// than rendering it, so there's one place that knows this cell is a
+// comma-separated list at all.
+export function parseBroadcasterSlugs(raw) {
+  if (!raw) return [];
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}

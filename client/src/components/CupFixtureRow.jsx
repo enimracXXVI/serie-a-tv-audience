@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import Crest from './Crest.jsx';
 import ToggleSwitch from './ToggleSwitch.jsx';
+import MultiSelectDropdown from './MultiSelectDropdown.jsx';
 import { BroadcasterBadge } from './BroadcastBadges.jsx';
 import { resolveCupFixtureOutcome } from '../lib/cupFixtures.js';
-import { resolveBroadcasterList } from '../lib/broadcasters.js';
+import { resolveBroadcasterList, parseBroadcasterSlugs } from '../lib/broadcasters.js';
 import { hasLedDeal, hasLedMinutesConcept } from '../lib/teams.js';
 import { isCoppaItalia } from '../lib/competitions.js';
 import { useConfirm } from '../lib/useConfirm.jsx';
@@ -118,26 +119,17 @@ function KickoffFields({ fixture, onUpdate, broadcasters }) {
       </Field>
       <Field label="Broadcaster(s)">
         {/* A cup tie can air on more than one platform at once (see the
-            display side's resolveBroadcasterList) - free text, comma-
-            separated, same as AddCupFixtureForm's own broadcaster field,
-            rather than a single-select dropdown that can only ever hold one
-            and clobbers any others already saved here. */}
-        <input
-          type="text"
-          list={`cup-broadcasters-${fixture.id}`}
-          defaultValue={fixture.otherBroadcaster ?? ''}
-          onBlur={(e) => {
-            const v = e.target.value.trim();
-            if (v !== (fixture.otherBroadcaster ?? '')) onUpdate(fixture.id, { otherBroadcaster: v || null });
-          }}
-          placeholder="Comma-separated"
-          className={`${inputClass} w-40`}
+            display side's resolveBroadcasterList) - a checkbox per
+            broadcaster that stays open across picks, rather than a
+            single-select dropdown that can only ever hold one and clobbers
+            any others already saved here. */}
+        <MultiSelectDropdown
+          variant="light"
+          className="w-40"
+          values={parseBroadcasterSlugs(fixture.otherBroadcaster)}
+          onChange={(slugs) => onUpdate(fixture.id, { otherBroadcaster: slugs.join(',') || null })}
+          options={broadcasters.map((b) => ({ value: b.slug, label: b.name }))}
         />
-        <datalist id={`cup-broadcasters-${fixture.id}`}>
-          {broadcasters.map((b) => (
-            <option key={b.slug} value={b.slug} />
-          ))}
-        </datalist>
       </Field>
       <ToggleSwitch
         checked={Boolean(fixture.neutralVenue)}

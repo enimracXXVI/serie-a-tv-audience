@@ -70,9 +70,14 @@ export default function Dropdown({ value, onChange, options, variant = 'sidebar'
     }
     // The list no longer scrolls along with its trigger (it's fixed-
     // positioned, outside the trigger's own scroll container) - closing on
-    // any scroll is simpler and safer than trying to keep a portaled popup
-    // glued to a trigger that might be moving under it.
-    function handleScroll() {
+    // any *other* scroll is simpler and safer than trying to keep a
+    // portaled popup glued to a trigger that might be moving under it - but
+    // the list's own internal scroll (once it has more options than fit
+    // its max-h) fires a real capturing 'scroll' event too, seen here
+    // before it ever reaches the list itself, so it has to be excluded or
+    // scrolling the list closes it after the very first wheel tick.
+    function handleScroll(e) {
+      if (listRef.current?.contains(e.target)) return;
       setOpen(false);
     }
     document.addEventListener('mousedown', handleClick);

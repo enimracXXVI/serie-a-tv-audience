@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ToggleSwitch from './ToggleSwitch.jsx';
 import Dropdown from './Dropdown.jsx';
+import MultiSelectDropdown from './MultiSelectDropdown.jsx';
 import { competitionScope } from '../lib/competitions.js';
 import { clubScope, slugify } from '../lib/clubs.js';
 
@@ -58,12 +59,12 @@ export default function AddCupFixtureForm({ clubs, competitions, broadcasters, o
   const [neutralVenue, setNeutralVenue] = useState(false);
   const [date, setDate] = useState('');
   const [kickoffTime, setKickoffTime] = useState('');
-  // Free text, not a dropdown - a cup tie often airs on more than one
-  // platform at once (see CupFixtureRow), so this is typed comma-separated
-  // (e.g. "dazn,Rai Sport") rather than picked one at a time. Set here so a
-  // fixture doesn't start broadcaster-less and need a separate edit-tab trip
-  // just to show anything at all.
-  const [broadcaster, setBroadcaster] = useState('');
+  // A cup tie often airs on more than one platform at once (see
+  // CupFixtureRow) - kept as a list of slugs here and joined into the
+  // sheet's comma-separated cell only at submit time, so a fixture doesn't
+  // start broadcaster-less and need a separate edit-tab trip just to show
+  // anything at all.
+  const [broadcasterSlugs, setBroadcasterSlugs] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -126,7 +127,7 @@ export default function AddCupFixtureForm({ clubs, competitions, broadcasters, o
         neutralVenue,
         date: date || '',
         kickoffTime: kickoffTime || '',
-        otherBroadcaster: broadcaster.trim(),
+        otherBroadcaster: broadcasterSlugs.join(','),
       });
       // Round/competition stay put; everything else resets for the next add.
       setHome('');
@@ -138,7 +139,7 @@ export default function AddCupFixtureForm({ clubs, competitions, broadcasters, o
       setNeutralVenue(false);
       setDate('');
       setKickoffTime('');
-      setBroadcaster('');
+      setBroadcasterSlugs([]);
       onDone?.();
     } catch (err) {
       setError(err.message);
@@ -225,17 +226,12 @@ export default function AddCupFixtureForm({ clubs, competitions, broadcasters, o
           <input type="time" value={kickoffTime} onChange={(e) => setKickoffTime(e.target.value)} className={inputClass} />
         </Field>
         <Field label="Broadcaster(s)" className="w-56">
-          <input
-            type="text"
-            list="cup-broadcasters"
-            value={broadcaster}
-            onChange={(e) => setBroadcaster(e.target.value)}
-            placeholder="Comma-separated"
-            className={inputClass}
+          <MultiSelectDropdown
+            variant="light"
+            values={broadcasterSlugs}
+            onChange={setBroadcasterSlugs}
+            options={(broadcasters ?? []).map((b) => ({ value: b.slug, label: b.name }))}
           />
-          <datalist id="cup-broadcasters">
-            {broadcasters?.map((b) => <option key={b.slug} value={b.slug} />)}
-          </datalist>
         </Field>
         <div className="flex items-end pb-1.5">
           <ToggleSwitch checked={neutralVenue} onChange={setNeutralVenue} label="Neutral venue" labelClassName="text-gray-400" />
