@@ -183,7 +183,7 @@ function LineChart({ chartHeight, cutoff, maxMatchday, series, gridLines, yScale
   );
 }
 
-function RankedList({ ranked, cutoff, valueKey, hoveredSlug, setHoveredSlug }) {
+function RankedList({ ranked, cutoff, hoveredSlug, setHoveredSlug }) {
   return (
     <div className="lg:w-56">
       <h4 className="mb-2 text-xs font-bold text-gray-400">Order at matchday {cutoff}</h4>
@@ -202,7 +202,11 @@ function RankedList({ ranked, cutoff, valueKey, hoveredSlug, setHoveredSlug }) {
             <span className={`flex-1 truncate ${row.team.sponsored ? 'font-bold text-[#0f1e54]' : 'text-gray-600'}`}>
               {row.team.name}
             </span>
-            <span className="font-bold text-[#0f1e54]">{valueKey === 'points' ? row.points : i + 1}</span>
+            {/* Always points, even in the "position" chart's own list - the
+                row's rank is already shown by the index on the left and the
+                list's own order, so repeating it here just duplicated that
+                instead of adding anything. */}
+            <span className="font-bold text-[#0f1e54]">{row.points}</span>
           </li>
         ))}
       </ol>
@@ -290,7 +294,7 @@ function StandingSection({ title, metric, fixtures, teams, teamCount, maxMatchda
             </div>
           </div>
         </div>
-        <RankedList ranked={ranked} cutoff={cutoff} valueKey={metric} hoveredSlug={hoveredSlug} setHoveredSlug={setHoveredSlug} />
+        <RankedList ranked={ranked} cutoff={cutoff} hoveredSlug={hoveredSlug} setHoveredSlug={setHoveredSlug} />
       </div>
     </Card>
   );
