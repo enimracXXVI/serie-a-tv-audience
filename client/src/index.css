@@ -27,8 +27,19 @@ body {
   border-radius: 999px;
 }
 
-.score-input {
+/* Native spinner buttons on <input type="number"> render wildly
+   inconsistently across browsers/OS - blocky, mismatched, nothing like the
+   calendar icon on a date field or any other field's own chrome. Hidden
+   globally (every number field in the app is a plain viewers/minutes/score
+   box with no real use for stepping by 1) so it reads as the same clean box
+   as everything else next to it. */
+input[type='number'] {
   -moz-appearance: textfield;
+}
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 /* Swiping between matchday cards (see CalendarView.jsx) triggers a View
