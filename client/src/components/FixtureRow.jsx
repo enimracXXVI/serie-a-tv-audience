@@ -268,7 +268,11 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
 
   // Only a real <button> when there's actually an edit box to expand/
   // collapse - otherwise this stays the plain, non-interactive row it
-  // always was (no chevron, nothing to click).
+  // always was (no chevron, nothing to click). Kept separate from the
+  // Delete button below rather than wrapping the whole row in one button -
+  // Delete needs to sit on this same row too (top right), and a <button>
+  // nested inside another <button> is invalid HTML that browsers silently
+  // mangle (the outer one swallows clicks meant for the inner one).
   const SummaryWrapper = showEdit ? 'button' : 'div';
 
   return (
@@ -276,10 +280,11 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
       {confirmDialog}
       <div className="w-1.5 shrink-0" style={{ background: tagStyle.bar }} />
       <div className="min-w-0 flex-1 px-2 py-1.5 sm:px-3 sm:py-2">
+      <div className="flex w-full items-center gap-1 sm:gap-2">
       <SummaryWrapper
         type={showEdit ? 'button' : undefined}
         onClick={showEdit ? () => setExpanded((e) => !e) : undefined}
-        className="flex w-full items-center gap-1 text-left sm:gap-2"
+        className="flex min-w-0 flex-1 items-center gap-1 text-left sm:gap-2"
       >
         {/* Fixed width AND height so a derby/big-match label never changes
             row height - every row is the same size whether it has 0, 1 or 2
@@ -372,6 +377,15 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
           </span>
         )}
       </SummaryWrapper>
+      {showEdit && onDelete && (
+        <button
+          onClick={handleDelete}
+          className="ml-1 w-fit shrink-0 rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-bold text-red-500 shadow-sm transition-colors hover:bg-red-50 sm:ml-2"
+        >
+          DELETE
+        </button>
+      )}
+      </div>
 
       {/* The inline badges above are hidden below sm (no room next to the
           team name), but matchday-sponsor/player-mascot/walkabout activity is
@@ -409,16 +423,6 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
 
       {showEdit && expanded && (
         <div className="mt-2 flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 shadow-inner">
-          {onDelete && (
-            <div className="flex justify-end">
-              <button
-                onClick={handleDelete}
-                className="w-fit rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-bold text-red-500 shadow-sm transition-colors hover:bg-red-50"
-              >
-                DELETE
-              </button>
-            </div>
-          )}
           {editMode === 'kickoff' && (
             <KickoffFields fixture={fixture} onUpdate={onUpdate} otherBroadcasterOptions={otherBroadcasterOptions} />
           )}
