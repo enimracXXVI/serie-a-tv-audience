@@ -140,11 +140,16 @@ export default function Dropdown({ value, onChange, options, variant = 'sidebar'
 
   return (
     <div ref={ref} className={`relative inline-block min-w-0 ${className}`}>
+      {/* Fixed h-9 (not padding-derived) so this sits at the exact same
+          height as a text/number/date input next to it in the same field
+          row - relying on py-* alone drifted a few px off a native date/
+          time input's own browser-controlled height, throwing every label
+          above it out of alignment. */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         onKeyDown={handleKeyDown}
-        className={`flex w-full items-center justify-between gap-1.5 border px-3 py-1 text-sm font-bold ${CLOSED_VARIANTS[variant]}`}
+        className={`flex h-9 w-full items-center justify-between gap-1.5 border px-3 text-sm font-bold ${CLOSED_VARIANTS[variant]}`}
       >
         <span className="flex min-w-0 items-center gap-1.5 truncate">
           {selected?.icon}

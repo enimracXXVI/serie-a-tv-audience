@@ -7,7 +7,7 @@ import { competitionScope } from '../lib/competitions.js';
 import { clubScope, slugify } from '../lib/clubs.js';
 
 const inputClass =
-  'w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-sm text-[#0f1e54] shadow-sm outline-none transition-colors focus:border-[#1fd8c9] focus:bg-white focus:ring-2 focus:ring-[#1fd8c9]/20';
+  'h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-sm text-[#0f1e54] shadow-sm outline-none transition-colors focus:border-[#1fd8c9] focus:bg-white focus:ring-2 focus:ring-[#1fd8c9]/20';
 
 const NEW_CLUB = '__new__';
 

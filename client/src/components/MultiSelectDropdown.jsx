@@ -86,10 +86,12 @@ export default function MultiSelectDropdown({ values, onChange, options, variant
 
   return (
     <div ref={ref} className={`relative inline-block min-w-0 ${className}`}>
+      {/* Fixed h-9, same reasoning as Dropdown.jsx's own trigger - lines up
+          with a text/number/date input sitting in the same field row. */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`flex w-full items-center justify-between gap-1.5 border px-3 py-1 text-sm font-bold ${CLOSED_VARIANTS[variant]}`}
+        className={`flex h-9 w-full items-center justify-between gap-1.5 border px-3 text-sm font-bold ${CLOSED_VARIANTS[variant]}`}
       >
         <span className={`truncate ${label ? '' : 'opacity-50'}`}>{label || placeholder}</span>
         <span aria-hidden="true" className="shrink-0 text-xs">

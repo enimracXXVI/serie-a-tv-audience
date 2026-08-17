@@ -10,7 +10,7 @@ import { isCoppaItalia } from '../lib/competitions.js';
 import { useConfirm } from '../lib/useConfirm.jsx';
 
 const inputClass =
-  'w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-sm text-[#0f1e54] shadow-sm outline-none transition-colors focus:border-[#1fd8c9] focus:bg-white focus:ring-2 focus:ring-[#1fd8c9]/20';
+  'h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-sm text-[#0f1e54] shadow-sm outline-none transition-colors focus:border-[#1fd8c9] focus:bg-white focus:ring-2 focus:ring-[#1fd8c9]/20';
 
 function formatDateShort(dateStr) {
   if (!dateStr) return null;
@@ -56,6 +56,21 @@ function Field({ label, children }) {
       <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{label}</span>
       {children}
     </label>
+  );
+}
+
+// Only used inside the "All" edit tab (see the editMode === 'all' branch
+// below) - a single-tab view (Kickoff, Result, ...) already makes it obvious
+// what's being edited via the round header's own active tab, but "All"
+// stacks every group in one box with nothing to tell them apart at a
+// glance. first:-prefixed classes drop the divider/gap above the very first
+// section, which would otherwise double up with the box's own top edge.
+function Section({ label, children }) {
+  return (
+    <div className="flex flex-col gap-2 border-t border-gray-200 pt-3 first:border-t-0 first:pt-0">
+      <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</h4>
+      {children}
+    </div>
   );
 }
 
@@ -143,33 +158,40 @@ function KickoffFields({ fixture, onUpdate, broadcasters }) {
 
 function ResultFields({ fixture, onUpdate }) {
   return (
-    <div className="flex flex-wrap items-end gap-2">
-      <NumberField label="Home score" value={fixture.homeScore} onCommit={(v) => onUpdate(fixture.id, { homeScore: v })} />
-      <NumberField label="Away score" value={fixture.awayScore} onCommit={(v) => onUpdate(fixture.id, { awayScore: v })} />
-      <NumberField
-        label="ET score (home)"
-        value={fixture.etHomeScore}
-        placeholder="if extra time"
-        onCommit={(v) => onUpdate(fixture.id, { etHomeScore: v })}
-      />
-      <NumberField
-        label="ET score (away)"
-        value={fixture.etAwayScore}
-        placeholder="if extra time"
-        onCommit={(v) => onUpdate(fixture.id, { etAwayScore: v })}
-      />
-      <NumberField
-        label="Pens (home)"
-        value={fixture.penHomeScore}
-        placeholder="if shootout"
-        onCommit={(v) => onUpdate(fixture.id, { penHomeScore: v })}
-      />
-      <NumberField
-        label="Pens (away)"
-        value={fixture.penAwayScore}
-        placeholder="if shootout"
-        onCommit={(v) => onUpdate(fixture.id, { penAwayScore: v })}
-      />
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-end gap-2">
+        <NumberField label="Home score" value={fixture.homeScore} onCommit={(v) => onUpdate(fixture.id, { homeScore: v })} />
+        <NumberField label="Away score" value={fixture.awayScore} onCommit={(v) => onUpdate(fixture.id, { awayScore: v })} />
+      </div>
+      {/* ET and pens on their own row, below the regulation score - grouped
+          together since a shootout only ever follows extra time, rather than
+          extra time sharing a row with the regulation score it extends. */}
+      <div className="flex flex-wrap items-end gap-2">
+        <NumberField
+          label="ET score (home)"
+          value={fixture.etHomeScore}
+          placeholder="if extra time"
+          onCommit={(v) => onUpdate(fixture.id, { etHomeScore: v })}
+        />
+        <NumberField
+          label="ET score (away)"
+          value={fixture.etAwayScore}
+          placeholder="if extra time"
+          onCommit={(v) => onUpdate(fixture.id, { etAwayScore: v })}
+        />
+        <NumberField
+          label="Pens (home)"
+          value={fixture.penHomeScore}
+          placeholder="if shootout"
+          onCommit={(v) => onUpdate(fixture.id, { penHomeScore: v })}
+        />
+        <NumberField
+          label="Pens (away)"
+          value={fixture.penAwayScore}
+          placeholder="if shootout"
+          onCommit={(v) => onUpdate(fixture.id, { penAwayScore: v })}
+        />
+      </div>
     </div>
   );
 }
@@ -257,6 +279,14 @@ export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, ed
       : null;
   const winnerSlug = isFinalRound(fixture.round) ? finalWinnerSlug(fixture, outcome) : null;
   const [confirm, confirmDialog] = useConfirm();
+  // Every fixture in a round shares the same active edit tab (see
+  // CupRoundGroup), so with a round of any size, opening "Kickoff" opens
+  // every single fixture's Kickoff box at once - this lets one be tucked
+  // away again individually without switching tabs. Only matters once
+  // there's actually an edit box to hide, so it's ignored (and no chevron
+  // shown) otherwise.
+  const [expanded, setExpanded] = useState(true);
+  const showEdit = canEdit && editMode;
 
   async function handleDelete() {
     if (
@@ -267,11 +297,20 @@ export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, ed
     onDelete(fixture.id);
   }
 
+  // Only a real <button> when there's actually an edit box to expand/
+  // collapse - otherwise this stays the plain, non-interactive row it
+  // always was (no chevron, nothing to click).
+  const SummaryWrapper = showEdit ? 'button' : 'div';
+
   return (
     <div className="flex items-stretch bg-white">
       {confirmDialog}
       <div className="min-w-0 flex-1 px-2 py-1.5 sm:px-3 sm:py-2">
-        <div className="flex items-center gap-1 sm:gap-2">
+        <SummaryWrapper
+          type={showEdit ? 'button' : undefined}
+          onClick={showEdit ? () => setExpanded((e) => !e) : undefined}
+          className="flex w-full items-center gap-1 text-left sm:gap-2"
+        >
           <div className="flex h-11 w-14 shrink-0 flex-col items-center justify-center text-center text-[9px] leading-tight text-gray-400">
             {dateShort && <div>{dateShort}</div>}
             {(fixture.day || fixture.kickoffTime) && (
@@ -323,10 +362,25 @@ export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, ed
               />
             ))}
           </div>
-        </div>
+          {showEdit && (
+            <span className="shrink-0 text-gray-300" aria-hidden="true">
+              {expanded ? '▾' : '▸'}
+            </span>
+          )}
+        </SummaryWrapper>
 
-        {canEdit && editMode && (
+        {showEdit && expanded && (
           <div className="mt-2 flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 shadow-inner">
+            {onDelete && (
+              <div className="flex justify-end">
+                <button
+                  onClick={handleDelete}
+                  className="w-fit rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-bold text-red-500 shadow-sm transition-colors hover:bg-red-50"
+                >
+                  DELETE
+                </button>
+              </div>
+            )}
             {editMode === 'kickoff' && <KickoffFields fixture={fixture} onUpdate={onUpdate} broadcasters={broadcasters} />}
             {editMode === 'result' && <ResultFields fixture={fixture} onUpdate={onUpdate} />}
             {editMode === 'addedTime' && <AddedTimeFields fixture={fixture} onUpdate={onUpdate} />}
@@ -337,20 +391,24 @@ export default function CupFixtureRow({ fixture, onUpdate, onDelete, canEdit, ed
             )}
             {editMode === 'all' && (
               <>
-                <KickoffFields fixture={fixture} onUpdate={onUpdate} broadcasters={broadcasters} />
-                <ResultFields fixture={fixture} onUpdate={onUpdate} />
-                <AddedTimeFields fixture={fixture} onUpdate={onUpdate} />
-                <AudienceFields fixture={fixture} onUpdate={onUpdate} />
-                {cupFixtureHasLed(fixture) && <LedFields fixture={fixture} onUpdate={onUpdate} />}
+                <Section label="Kickoff">
+                  <KickoffFields fixture={fixture} onUpdate={onUpdate} broadcasters={broadcasters} />
+                </Section>
+                <Section label="Result">
+                  <ResultFields fixture={fixture} onUpdate={onUpdate} />
+                </Section>
+                <Section label="Added time">
+                  <AddedTimeFields fixture={fixture} onUpdate={onUpdate} />
+                </Section>
+                <Section label="Audience">
+                  <AudienceFields fixture={fixture} onUpdate={onUpdate} />
+                </Section>
+                {cupFixtureHasLed(fixture) && (
+                  <Section label="LED">
+                    <LedFields fixture={fixture} onUpdate={onUpdate} />
+                  </Section>
+                )}
               </>
-            )}
-            {onDelete && (
-              <button
-                onClick={handleDelete}
-                className="w-fit rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-bold text-red-500 shadow-sm transition-colors hover:bg-red-50"
-              >
-                DELETE
-              </button>
             )}
           </div>
         )}

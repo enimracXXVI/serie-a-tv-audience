@@ -12,7 +12,7 @@ import ToggleSwitch from './ToggleSwitch.jsx';
 import { useConfirm } from '../lib/useConfirm.jsx';
 
 const inputClass =
-  'w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-sm text-[#0f1e54] shadow-sm outline-none transition-colors focus:border-[#1fd8c9] focus:bg-white focus:ring-2 focus:ring-[#1fd8c9]/20';
+  'h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-sm text-[#0f1e54] shadow-sm outline-none transition-colors focus:border-[#1fd8c9] focus:bg-white focus:ring-2 focus:ring-[#1fd8c9]/20';
 
 function formatDateShort(dateStr) {
   if (!dateStr) return null;
@@ -37,6 +37,21 @@ function Field({ label, children }) {
       <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{label}</span>
       {children}
     </label>
+  );
+}
+
+// Only used inside the "All" edit tab (see the editMode === 'all' branch
+// below) - a single-tab view (Kickoff, Result, ...) already makes it obvious
+// what's being edited via the matchday header's own active tab, but "All"
+// stacks every group in one box with nothing to tell them apart at a
+// glance. first:-prefixed classes drop the divider/gap above the very first
+// section, which would otherwise double up with the box's own top edge.
+function Section({ label, children }) {
+  return (
+    <div className="flex flex-col gap-2 border-t border-gray-200 pt-3 first:border-t-0 first:pt-0">
+      <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</h4>
+      {children}
+    </div>
   );
 }
 
@@ -236,6 +251,13 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
   const otherBroadcasterOptions = broadcasters.filter((b) => !b.isMain);
   const otherBroadcasterRow = resolveBroadcaster(fixture.otherBroadcaster, broadcasters);
   const [confirm, confirmDialog] = useConfirm();
+  // Every fixture in a matchday shares the same active edit tab (see
+  // MatchdayGroup), so opening "Kickoff" opens every fixture's Kickoff box
+  // at once - this lets one be tucked away again individually without
+  // switching tabs. Only matters once there's actually an edit box to hide,
+  // so it's ignored (and no chevron shown) otherwise.
+  const [expanded, setExpanded] = useState(true);
+  const showEdit = canEdit && editMode;
 
   async function handleDelete() {
     if (!(await confirm(`Delete this fixture (${home.name} vs ${away.name})? This can't be undone from here.`))) {
@@ -244,12 +266,21 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
     onDelete(fixture.id);
   }
 
+  // Only a real <button> when there's actually an edit box to expand/
+  // collapse - otherwise this stays the plain, non-interactive row it
+  // always was (no chevron, nothing to click).
+  const SummaryWrapper = showEdit ? 'button' : 'div';
+
   return (
     <div className="flex items-stretch" style={{ background: tagStyle.background }}>
       {confirmDialog}
       <div className="w-1.5 shrink-0" style={{ background: tagStyle.bar }} />
       <div className="min-w-0 flex-1 px-2 py-1.5 sm:px-3 sm:py-2">
-      <div className="flex items-center gap-1 sm:gap-2">
+      <SummaryWrapper
+        type={showEdit ? 'button' : undefined}
+        onClick={showEdit ? () => setExpanded((e) => !e) : undefined}
+        className="flex w-full items-center gap-1 text-left sm:gap-2"
+      >
         {/* Fixed width AND height so a derby/big-match label never changes
             row height - every row is the same size whether it has 0, 1 or 2
             extra labels. */}
@@ -335,7 +366,12 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
             />
           )}
         </div>
-      </div>
+        {showEdit && (
+          <span className="shrink-0 text-gray-300" aria-hidden="true">
+            {expanded ? '▾' : '▸'}
+          </span>
+        )}
+      </SummaryWrapper>
 
       {/* The inline badges above are hidden below sm (no room next to the
           team name), but matchday-sponsor/player-mascot/walkabout activity is
@@ -371,8 +407,18 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
         </div>
       )}
 
-      {canEdit && editMode && (
+      {showEdit && expanded && (
         <div className="mt-2 flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 shadow-inner">
+          {onDelete && (
+            <div className="flex justify-end">
+              <button
+                onClick={handleDelete}
+                className="w-fit rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-bold text-red-500 shadow-sm transition-colors hover:bg-red-50"
+              >
+                DELETE
+              </button>
+            </div>
+          )}
           {editMode === 'kickoff' && (
             <KickoffFields fixture={fixture} onUpdate={onUpdate} otherBroadcasterOptions={otherBroadcasterOptions} />
           )}
@@ -387,21 +433,25 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
           {editMode === 'led' && <LedFields fixture={fixture} onUpdate={onUpdate} />}
           {editMode === 'all' && (
             <>
-              <KickoffFields fixture={fixture} onUpdate={onUpdate} otherBroadcasterOptions={otherBroadcasterOptions} />
-              <ResultFields fixture={fixture} onUpdate={onUpdate} />
-              <AddedTimeFields fixture={fixture} onUpdate={onUpdate} />
-              <AudienceFields fixture={fixture} onUpdate={onUpdate} mainBroadcasterName={mainBroadcasterName} />
-              <SponsorshipFields fixture={fixture} onUpdate={onUpdate} sponsorCounts={sponsorCounts} />
-              <LedFields fixture={fixture} onUpdate={onUpdate} />
+              <Section label="Kickoff">
+                <KickoffFields fixture={fixture} onUpdate={onUpdate} otherBroadcasterOptions={otherBroadcasterOptions} />
+              </Section>
+              <Section label="Result">
+                <ResultFields fixture={fixture} onUpdate={onUpdate} />
+              </Section>
+              <Section label="Added time">
+                <AddedTimeFields fixture={fixture} onUpdate={onUpdate} />
+              </Section>
+              <Section label="Audience">
+                <AudienceFields fixture={fixture} onUpdate={onUpdate} mainBroadcasterName={mainBroadcasterName} />
+              </Section>
+              <Section label="Sponsors">
+                <SponsorshipFields fixture={fixture} onUpdate={onUpdate} sponsorCounts={sponsorCounts} />
+              </Section>
+              <Section label="LED">
+                <LedFields fixture={fixture} onUpdate={onUpdate} />
+              </Section>
             </>
-          )}
-          {onDelete && (
-            <button
-              onClick={handleDelete}
-              className="w-fit rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-bold text-red-500 shadow-sm transition-colors hover:bg-red-50"
-            >
-              DELETE
-            </button>
           )}
         </div>
       )}
