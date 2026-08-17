@@ -68,7 +68,12 @@ function Field({ label, children }) {
 function Section({ label, children }) {
   return (
     <div className="flex flex-col gap-2 border-t border-gray-200 pt-3 first:border-t-0 first:pt-0">
-      <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</h4>
+      {/* Navy + a size/weight step up from a field's own gray-400 label -
+          same color the rest of this card already uses for anything that
+          isn't a field (team names, the score) - so a section title reads
+          as a heading over the fields below it instead of blending into
+          them as just another (oddly-placed) label. */}
+      <h4 className="text-xs font-black uppercase tracking-widest text-[#0f1e54]">{label}</h4>
       {children}
     </div>
   );
