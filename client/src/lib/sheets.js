@@ -14,8 +14,9 @@ const NUMERIC_FIELDS = new Set([
   'addedTime2H',
   'simulcastAudience',
   // Cup-only fields - blank on every Serie A row (see isSerieARow in
-  // competitions.js for how a row is told apart).
-  'audience',
+  // competitions.js for how a row is told apart). A cup fixture's own
+  // audience figure reuses `mainAudience` above rather than a column of its
+  // own - there's no cup-only `audience` column.
   'etHomeScore',
   'etAwayScore',
   'penHomeScore',
@@ -61,12 +62,11 @@ const EDITABLE_FIELDS = [
   'isDerby',
   // Cup-only, edited post-creation from a cup fixture's own edit tabs -
   // competition/round/home/away aren't here, same as matchday/home/away
-  // above: set once at creation, never edited afterwards. Broadcaster(s)
-  // reuse otherBroadcaster (above) rather than a separate column - see
-  // resolveBroadcasterList for the comma-separated-list parsing that field's
-  // cup rows get.
+  // above: set once at creation, never edited afterwards. Broadcaster(s) and
+  // audience both reuse otherBroadcaster/mainAudience (above) rather than a
+  // separate column of their own - see resolveBroadcasterList for the
+  // comma-separated-list parsing that field's cup rows get.
   'neutralVenue',
-  'audience',
   'etHomeScore',
   'etAwayScore',
   'penHomeScore',

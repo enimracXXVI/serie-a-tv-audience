@@ -645,9 +645,10 @@ separate `cupFixtures` tab anymore; a cup fixture is just another row on
 that season's `fixtures_XX_YY` tab (the exact same tab documented up in
 "Rolling over a new season"/"seasons"), using the extra columns after `Z`
 (`extraLedMinutes`/`penaltyTaken`) that a Serie A row leaves blank: `competition`,
-`round`, `neutralVenue`, `audience`, `etHomeScore`,
-`etAwayScore`, `penHomeScore`, `penAwayScore` (broadcaster(s) reuse the
-shared `otherBroadcaster` column, not a cup-only one - see below).
+`round`, `neutralVenue`, `etHomeScore`,
+`etAwayScore`, `penHomeScore`, `penAwayScore` (broadcaster(s) and audience
+both reuse the shared `otherBroadcaster`/`mainAudience` columns, not a
+cup-only column of their own - see below).
 `competition` is what tells a
 row apart from a Serie A one (see "This same tab now also holds cup
 fixtures" above) - it holds the stable `value` key from the `competitions`

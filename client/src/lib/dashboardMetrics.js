@@ -58,14 +58,14 @@ export function addedTimeMinutes(fixture) {
   return (Number(fixture.addedTime1H) || 0) + (Number(fixture.addedTime2H) || 0);
 }
 
-// A cup fixture row (see cupFixtures.js) reports its audience as a single
-// `audience` column - there's no main/other-broadcaster split or simulcast
-// concept for cup games the way there is for Serie A rows, so
-// includeSimulcast/includeOther simply don't apply to it. `competition` is
-// blank/null on every Serie A row and set on every cup row (see
-// isSerieARow in competitions.js), so it's a reliable discriminator here.
+// A cup fixture row (see cupFixtures.js) reports its audience through the
+// same `mainAudience` column a Serie A row uses - there's no main/other-
+// broadcaster split or simulcast concept for cup games the way there is for
+// Serie A rows, so includeSimulcast/includeOther simply don't apply to it.
+// `competition` is blank/null on every Serie A row and set on every cup row
+// (see isSerieARow in competitions.js), so it's a reliable discriminator here.
 function resolveAudience(fixture, simulcastInfo, includeSimulcast, includeOther) {
-  if (fixture.competition) return Number(fixture.audience) || 0;
+  if (fixture.competition) return Number(fixture.mainAudience) || 0;
   return effectiveAudience(fixture, simulcastInfo, includeSimulcast, includeOther);
 }
 

@@ -15,7 +15,8 @@ const NUMERIC_FIELDS = new Set([
   'addedTime1H',
   'addedTime2H',
   'simulcastAudience',
-  'audience',
+  // A cup fixture's audience reuses mainAudience above, not a column of its
+  // own - see sheets.js's NUMERIC_FIELDS for the full explanation.
   'etHomeScore',
   'etAwayScore',
   'penHomeScore',

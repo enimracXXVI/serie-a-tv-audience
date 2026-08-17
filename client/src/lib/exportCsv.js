@@ -21,10 +21,11 @@ const COLUMNS = [
   { key: 'penHomeScore', label: 'Pen home score' },
   { key: 'penAwayScore', label: 'Pen away score' },
   { key: 'neutralVenue', label: 'Neutral venue' },
+  // A cup fixture's audience is in `mainAudience` too, same column a Serie A
+  // row uses - there's no separate cup-only audience column.
   { key: 'mainAudience', label: 'Main audience' },
   { key: 'otherAudience', label: 'Other audience' },
   { key: 'simulcastAudience', label: 'Simulcast audience' },
-  { key: 'audience', label: 'Cup audience' },
   { key: 'otherBroadcaster', label: 'Other broadcaster' },
   { key: 'addedTime1H', label: 'Added time 1H' },
   { key: 'addedTime2H', label: 'Added time 2H' },
@@ -108,7 +109,6 @@ export async function exportFixturesCsv({ season, kind }) {
     mainAudience: f.mainAudience ?? '',
     otherAudience: f.otherAudience ?? '',
     simulcastAudience: f.simulcastAudience ?? '',
-    audience: f.audience ?? '',
     otherBroadcaster: resolveBroadcasterDisplay(f.otherBroadcaster, broadcasters),
     addedTime1H: f.addedTime1H ?? '',
     addedTime2H: f.addedTime2H ?? '',

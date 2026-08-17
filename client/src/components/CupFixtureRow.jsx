@@ -196,7 +196,15 @@ function AddedTimeFields({ fixture, onUpdate }) {
 function AudienceFields({ fixture, onUpdate }) {
   return (
     <div className="flex flex-wrap items-end gap-2">
-      <NumberField label="Audience" value={fixture.audience} placeholder="viewers" onCommit={(v) => onUpdate(fixture.id, { audience: v })} />
+      {/* Reuses mainAudience, the same column a Serie A row's audience
+          lives in - not a cup-only "audience" column (that header doesn't
+          exist in the sheet). */}
+      <NumberField
+        label="Audience"
+        value={fixture.mainAudience}
+        placeholder="viewers"
+        onCommit={(v) => onUpdate(fixture.id, { mainAudience: v })}
+      />
     </div>
   );
 }

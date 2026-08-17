@@ -71,7 +71,6 @@ export function enrichFixture(raw, clubsBySlug, clubsByName) {
     competition: raw.competition || null,
     round: raw.round || null,
     neutralVenue: raw.neutralVenue,
-    audience: raw.audience,
     etHomeScore: raw.etHomeScore,
     etAwayScore: raw.etAwayScore,
     penHomeScore: raw.penHomeScore,
