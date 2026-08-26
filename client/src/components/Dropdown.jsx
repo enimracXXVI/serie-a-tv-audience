@@ -58,9 +58,25 @@ export default function Dropdown({ value, onChange, options, variant = 'sidebar'
     }
     const margin = 8;
     const triggerRect = ref.current.getBoundingClientRect();
-    const listWidth = listRef.current.offsetWidth;
+    const listEl = listRef.current;
+    const listWidth = listEl.offsetWidth;
     const left = Math.min(Math.max(triggerRect.left, margin), window.innerWidth - listWidth - margin);
-    setListPos({ top: triggerRect.bottom + 4, left, minWidth: triggerRect.width });
+
+    const spaceBelow = window.innerHeight - triggerRect.bottom - margin;
+    const spaceAbove = triggerRect.top - margin;
+    // Flip upward when the list doesn't fit in the space below the trigger
+    // but there's more room above it - otherwise a trigger near the bottom
+    // of a long page/form opens a list that runs off the bottom of the
+    // viewport with no way to reach the rest of it (it's position: fixed,
+    // so the page's own scroll can't bring it into view).
+    const openUpward = spaceBelow < listEl.scrollHeight && spaceAbove > spaceBelow;
+    setListPos({
+      top: openUpward ? triggerRect.top - 4 : triggerRect.bottom + 4,
+      left,
+      minWidth: triggerRect.width,
+      maxHeight: Math.max(120, openUpward ? spaceAbove : spaceBelow),
+      openUpward,
+    });
   }, [open, options]);
 
   useEffect(() => {
@@ -168,11 +184,17 @@ export default function Dropdown({ value, onChange, options, variant = 'sidebar'
           // off the right edge of the viewport with no way to read the rest.
           <div
             ref={listRef}
-            className="fixed z-50 max-h-[70vh] w-max max-w-[min(20rem,90vw)] overflow-y-auto overscroll-contain rounded-md bg-[#0f1e54] py-1 shadow-xl ring-1 ring-white/10"
+            className="fixed z-50 w-max max-w-[min(20rem,90vw)] overflow-y-auto overscroll-contain rounded-md bg-[#0f1e54] py-1 shadow-xl ring-1 ring-white/10"
             style={{
               top: listPos?.top ?? 0,
               left: listPos?.left ?? 0,
               minWidth: listPos ? `${listPos.minWidth}px` : undefined,
+              maxHeight: listPos ? `${listPos.maxHeight}px` : '70vh',
+              // Rendered above the trigger by shifting the list up by its
+              // own height rather than computing that height up front - the
+              // list's content (and thus its real height) isn't known until
+              // after this same layout pass measures it.
+              transform: listPos?.openUpward ? 'translateY(-100%)' : undefined,
               visibility: listPos ? 'visible' : 'hidden',
             }}
           >

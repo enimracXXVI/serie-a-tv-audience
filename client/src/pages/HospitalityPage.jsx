@@ -56,7 +56,12 @@ function FixtureExpandRow({ fixture, expanded, onToggle, guestCount }) {
       onClick={onToggle}
       aria-expanded={expanded}
       className={`flex w-full items-center gap-3 rounded-lg border-2 px-3 py-2 text-left transition-colors ${
-        expanded ? 'border-[#1fd8c9] bg-[#1fd8c9]/10' : 'border-gray-100 bg-white hover:border-[#1fd8c9]/40'
+        // An opaque tint, not a semi-transparent one - this row sits
+        // directly on the page's own navy (#0f1e54) body background, the
+        // same colour as the team-name text below, so a see-through
+        // background here let that navy show straight through and made the
+        // text unreadable once expanded.
+        expanded ? 'border-[#1fd8c9] bg-teal-50' : 'border-gray-100 bg-white hover:border-[#1fd8c9]/40'
       }`}
     >
       <span
@@ -124,7 +129,17 @@ function GuestRow({ guest, onEdit, onDelete }) {
 // One card per selected match - a guest list is per-match, not shared
 // across every match selected from the matchday/round above (see
 // HospitalityPage's own top-level note on this).
-function MatchGuestSection({ fixture, competitionValue, competitions, guests, session, addGuest, updateGuest, removeGuest }) {
+function MatchGuestSection({
+  fixture,
+  competitionValue,
+  competitions,
+  guests,
+  allGuests,
+  session,
+  addGuest,
+  updateGuest,
+  removeGuest,
+}) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [editingGuest, setEditingGuest] = useState(null);
@@ -188,7 +203,7 @@ function MatchGuestSection({ fixture, competitionValue, competitions, guests, se
 
   function handleExport() {
     const safeName = `${fixture.home.slug}-vs-${fixture.away.slug}-${fixture.date || 'tbd'}`;
-    exportHospitalityGuestsCsv(guests, `hospitality-${safeName}.csv`, competitions);
+    exportHospitalityGuestsCsv(guests, `${safeName}.csv`, competitions);
   }
 
   return (
@@ -238,7 +253,7 @@ function MatchGuestSection({ fixture, competitionValue, competitions, guests, se
         )}
         {error && <p className="text-xs font-semibold text-red-500">{error}</p>}
         <GuestForm
-          existingGuests={guests}
+          existingGuests={allGuests}
           onAdd={handleAdd}
           saving={saving}
           editingGuest={editingGuest}
@@ -313,7 +328,7 @@ export default function HospitalityPage() {
 
   function handleExportGroup() {
     const safeGroup = String(groupLabel || 'group').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    exportHospitalityGuestsCsv(guestsForGroup, `hospitality-${competitionValue}-${safeGroup}.csv`, competitions);
+    exportHospitalityGuestsCsv(guestsForGroup, `${competitionValue}-${safeGroup}.csv`, competitions);
   }
 
   if (!session.signedIn) {
@@ -418,6 +433,7 @@ export default function HospitalityPage() {
                       competitionValue={competitionValue}
                       competitions={competitions}
                       guests={fixtureGuests}
+                      allGuests={guests}
                       session={session}
                       addGuest={addGuest}
                       updateGuest={updateGuest}

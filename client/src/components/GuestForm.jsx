@@ -68,6 +68,53 @@ function uniqueGuests(existingGuests) {
   return [...seen.values()].sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`));
 }
 
+// A plain search box + in-flow result list rather than a Dropdown - this
+// form can sit inside a Card (see HospitalityPage), and Card's own
+// `overflow-hidden` would clip an absolutely-positioned popup at the
+// card's edge. Results only show once there's a query to narrow a guest
+// list that can now span every match of the season, not just this one.
+function ReuseGuestPicker({ guests, onPick }) {
+  const [query, setQuery] = useState('');
+  const q = query.trim().toLowerCase();
+  const matches = q ? guests.filter((g) => `${g.firstName} ${g.lastName}`.toLowerCase().includes(q)) : [];
+
+  return (
+    <div className="flex flex-col gap-1">
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search a previous guest by name…"
+        className={inputClass}
+      />
+      {q && (
+        matches.length > 0 ? (
+          <div className="max-h-40 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+            {matches.map((g, i) => (
+              <button
+                key={`${g.firstName}|${g.lastName}|${g.dateOfBirth}|${i}`}
+                type="button"
+                onClick={() => {
+                  onPick(g);
+                  setQuery('');
+                }}
+                className="flex w-full items-center justify-between gap-2 border-b border-gray-50 px-2.5 py-1.5 text-left text-sm last:border-0 hover:bg-gray-50"
+              >
+                <span className="font-semibold text-[#0f1e54]">
+                  {g.lastName} {g.firstName}
+                </span>
+                <span className="text-xs text-gray-400">{g.dateOfBirth || 'no DOB'}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="px-1 text-xs text-gray-400">No previous guest matches “{query.trim()}”.</p>
+        )
+      )}
+    </div>
+  );
+}
+
 // Shared by both the reuse-autocomplete and edit mode - pulls just the
 // editable personal-info fields off a guest row (which also carries match
 // fields like fixtureId/homeTeam that never belong in this form).
@@ -91,20 +138,14 @@ function fieldsFromGuest(g) {
 export default function GuestForm({ existingGuests, onAdd, saving, editingGuest = null, onSaveEdit, onCancelEdit }) {
   const isEditing = Boolean(editingGuest);
   const [fields, setFields] = useState(() => (editingGuest ? fieldsFromGuest(editingGuest) : BLANK));
-  const [reuseKey, setReuseKey] = useState('');
   const [error, setError] = useState(null);
 
   useEffect(() => {
     setFields(editingGuest ? fieldsFromGuest(editingGuest) : BLANK);
-    setReuseKey('');
     setError(null);
   }, [editingGuest]);
 
   const reusable = useMemo(() => uniqueGuests(existingGuests), [existingGuests]);
-  const reuseOptions = [
-    { value: '', label: 'None - new guest' },
-    ...reusable.map((g, i) => ({ value: String(i), label: `${g.lastName} ${g.firstName} (${g.dateOfBirth || 'no DOB'})` })),
-  ];
 
   function set(key, value) {
     setFields((f) => ({ ...f, [key]: value }));
@@ -114,11 +155,7 @@ export default function GuestForm({ existingGuests, onAdd, saving, editingGuest 
   // anything by itself - still requires "Add guest" below, same as typing
   // it all by hand, so this match's own row only gets created once you
   // actually mean it to.
-  function handleReuse(key) {
-    setReuseKey(key);
-    if (key === '') return;
-    const g = reusable[Number(key)];
-    if (!g) return;
+  function handleReuse(g) {
     setFields(fieldsFromGuest(g));
   }
 
@@ -162,14 +199,13 @@ export default function GuestForm({ existingGuests, onAdd, saving, editingGuest 
     }
     onAdd(payload);
     setFields(BLANK);
-    setReuseKey('');
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 shadow-inner">
       {!isEditing && reusable.length > 0 && (
         <Field label="Reuse a previous guest">
-          <Dropdown variant="light" value={reuseKey} onChange={handleReuse} options={reuseOptions} />
+          <ReuseGuestPicker guests={reusable} onPick={handleReuse} />
         </Field>
       )}
 
@@ -191,7 +227,7 @@ export default function GuestForm({ existingGuests, onAdd, saving, editingGuest 
         </Field>
         {fields.nationOfBirth === ITALY && (
           <>
-            <Field label="Province of birth" className="w-40">
+            <Field label="Province of birth" className="w-52">
               <Dropdown
                 variant="light"
                 value={fields.provinceOfBirth}
@@ -202,7 +238,7 @@ export default function GuestForm({ existingGuests, onAdd, saving, editingGuest 
                 options={PROVINCE_OPTIONS}
               />
             </Field>
-            <Field label="City of birth" className="w-40">
+            <Field label="City of birth" className="w-52">
               <Dropdown
                 variant="light"
                 value={fields.cityOfBirth}
@@ -225,7 +261,7 @@ export default function GuestForm({ existingGuests, onAdd, saving, editingGuest 
         </Field>
         {fields.nationOfResidence === ITALY && (
           <>
-            <Field label="Province of residence" className="w-40">
+            <Field label="Province of residence" className="w-52">
               <Dropdown
                 variant="light"
                 value={fields.provinceOfResidence}
@@ -236,7 +272,7 @@ export default function GuestForm({ existingGuests, onAdd, saving, editingGuest 
                 options={PROVINCE_OPTIONS}
               />
             </Field>
-            <Field label="City of residence" className="w-40">
+            <Field label="City of residence" className="w-52">
               <Dropdown
                 variant="light"
                 value={fields.cityOfResidence}
