@@ -24,47 +24,67 @@ function formatDateShort(dateStr) {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+// Blank dates/times sort first either way - good enough for TBD fixtures,
+// which is exactly how every other date column in this app already treats
+// them (see FixtureRow).
+function compareFixtureTime(a, b) {
+  const ad = a.date || '';
+  const bd = b.date || '';
+  if (ad !== bd) return ad.localeCompare(bd);
+  return (a.kickoffTime || '').localeCompare(b.kickoffTime || '');
+}
+
+function ticketBadgeText(guestCount, ticketsCount) {
+  if (ticketsCount === null || ticketsCount === undefined) return `${guestCount} guest${guestCount === 1 ? '' : 's'}`;
+  return `${guestCount}/${ticketsCount}`;
+}
+
+function isFullyBooked(guestCount, ticketsCount) {
+  return ticketsCount !== null && ticketsCount !== undefined && guestCount >= ticketsCount;
+}
+
 // One row in the "pick which of this matchday/round's matches to work on"
-// list - a plain checkbox-style toggle rather than a dropdown, since seeing
-// every candidate (and its own ticket count) at once is the point here, not
-// hiding them behind a closed trigger like MultiSelectDropdown's broadcaster
-// picker.
-function FixtureToggleRow({ fixture, checked, onToggle, ticketsRemaining }) {
+// list - clicking it expands its own guest-list section directly below,
+// rather than toggling a checkbox that fans out to a separate list further
+// down the page.
+function FixtureExpandRow({ fixture, expanded, onToggle, guestCount }) {
+  const ticketsCount = fixture.home.ticketsCount ?? null;
+  const full = isFullyBooked(guestCount, ticketsCount);
   return (
     <button
       type="button"
       onClick={onToggle}
+      aria-expanded={expanded}
       className={`flex w-full items-center gap-3 rounded-lg border-2 px-3 py-2 text-left transition-colors ${
-        checked ? 'border-[#1fd8c9] bg-[#1fd8c9]/10' : 'border-gray-100 bg-white hover:border-[#1fd8c9]/40'
+        expanded ? 'border-[#1fd8c9] bg-[#1fd8c9]/10' : 'border-gray-100 bg-white hover:border-[#1fd8c9]/40'
       }`}
     >
       <span
         aria-hidden="true"
-        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] leading-none ${
-          checked ? 'border-[#1fd8c9] bg-[#1fd8c9] text-white' : 'border-gray-300'
-        }`}
+        className={`shrink-0 text-[10px] text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
       >
-        {checked && '✓'}
+        ▶
       </span>
       <Crest team={fixture.home} size={18} />
       <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[#0f1e54]">
         {fixture.home.name} vs {fixture.away.name}
       </span>
-      <span className="shrink-0 text-xs text-gray-400">{formatDateShort(fixture.date)}</span>
+      <span className="shrink-0 text-xs text-gray-400">
+        {formatDateShort(fixture.date)}
+        {fixture.kickoffTime ? ` · ${fixture.kickoffTime}` : ''}
+      </span>
       <span
         className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-          ticketsRemaining !== null && ticketsRemaining <= 0
-            ? 'bg-red-100 text-red-600'
-            : 'bg-emerald-100 text-emerald-700'
+          full ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'
         }`}
       >
-        {ticketsRemaining === null ? 'No cap set' : `${ticketsRemaining} left`}
+        {ticketBadgeText(guestCount, ticketsCount)}
       </span>
     </button>
   );
 }
 
-function GuestRow({ guest, onDelete }) {
+function GuestRow({ guest, onEdit, onDelete }) {
   return (
     <tr className="border-b border-gray-50 last:border-0">
       <td className="px-2 py-1.5 text-sm font-semibold text-[#0f1e54]">
@@ -80,13 +100,22 @@ function GuestRow({ guest, onDelete }) {
         {guest.cityOfResidence ? ` · ${guest.cityOfResidence} (${guest.provinceOfResidence})` : ''}
       </td>
       <td className="px-2 py-1.5 text-right">
-        <button
-          type="button"
-          onClick={onDelete}
-          className="rounded-md border border-red-200 bg-white px-2 py-1 text-[10px] font-bold uppercase text-red-500 hover:bg-red-50"
-        >
-          Remove
-        </button>
+        <div className="flex justify-end gap-1.5">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="rounded-md border border-gray-200 bg-white px-2 py-1 text-[10px] font-bold uppercase text-[#0f1e54] hover:bg-gray-50"
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="rounded-md border border-red-200 bg-white px-2 py-1 text-[10px] font-bold uppercase text-red-500 hover:bg-red-50"
+          >
+            Remove
+          </button>
+        </div>
       </td>
     </tr>
   );
@@ -95,15 +124,13 @@ function GuestRow({ guest, onDelete }) {
 // One card per selected match - a guest list is per-match, not shared
 // across every match selected from the matchday/round above (see
 // HospitalityPage's own top-level note on this).
-function MatchGuestSection({ fixture, competitionLabel, guests, session, addGuest, removeGuest }) {
+function MatchGuestSection({ fixture, competitionValue, competitions, guests, session, addGuest, updateGuest, removeGuest }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [editingGuest, setEditingGuest] = useState(null);
   const [confirm, confirmDialog] = useConfirm();
 
-  const ticketsRemaining =
-    fixture.home.ticketsCount === null || fixture.home.ticketsCount === undefined
-      ? null
-      : fixture.home.ticketsCount - guests.length;
+  const ticketsCount = fixture.home.ticketsCount ?? null;
 
   async function handleAdd(guestFields) {
     setSaving(true);
@@ -111,7 +138,11 @@ function MatchGuestSection({ fixture, competitionLabel, guests, session, addGues
     try {
       const fields = {
         season: fixture.season,
-        competition: competitionLabel,
+        // The slug (e.g. 'serie-a', a cup's own slug), not its display name
+        // - matches how cup fixtures already store `competition` (see
+        // isSerieARow) so this column stays a stable key. The CSV export
+        // resolves it back to a human name at download time.
+        competition: competitionValue,
         matchday: fixture.matchday || '',
         round: fixture.round || '',
         fixtureId: fixture.id,
@@ -131,11 +162,25 @@ function MatchGuestSection({ fixture, competitionLabel, guests, session, addGues
     }
   }
 
+  async function handleSaveEdit(guestFields) {
+    setSaving(true);
+    setError(null);
+    try {
+      await callWithReauth(session, (token) => updateGuest(editingGuest.id, guestFields, token));
+      setEditingGuest(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleDelete(guest) {
     if (!(await confirm(`Remove ${guest.firstName} ${guest.lastName} from this match's guest list?`))) return;
     setError(null);
     try {
       await callWithReauth(session, (token) => removeGuest(guest.id, token));
+      if (editingGuest?.id === guest.id) setEditingGuest(null);
     } catch (err) {
       setError(err.message);
     }
@@ -143,7 +188,7 @@ function MatchGuestSection({ fixture, competitionLabel, guests, session, addGues
 
   function handleExport() {
     const safeName = `${fixture.home.slug}-vs-${fixture.away.slug}-${fixture.date || 'tbd'}`;
-    exportHospitalityGuestsCsv(guests, `hospitality-${safeName}.csv`);
+    exportHospitalityGuestsCsv(guests, `hospitality-${safeName}.csv`, competitions);
   }
 
   return (
@@ -153,10 +198,10 @@ function MatchGuestSection({ fixture, competitionLabel, guests, session, addGues
         <>
           <span
             className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${
-              ticketsRemaining !== null && ticketsRemaining <= 0 ? 'bg-red-500/20 text-red-600' : 'bg-white/40 text-[#0f1e54]'
+              isFullyBooked(guests.length, ticketsCount) ? 'bg-red-500/20 text-red-600' : 'bg-white/40 text-[#0f1e54]'
             }`}
           >
-            {ticketsRemaining === null ? 'No cap set' : `${ticketsRemaining} of ${fixture.home.ticketsCount} left`}
+            {ticketBadgeText(guests.length, ticketsCount)}
           </span>
           <button
             type="button"
@@ -185,14 +230,21 @@ function MatchGuestSection({ fixture, competitionLabel, guests, session, addGues
               </thead>
               <tbody>
                 {guests.map((g) => (
-                  <GuestRow key={g.id} guest={g} onDelete={() => handleDelete(g)} />
+                  <GuestRow key={g.id} guest={g} onEdit={() => setEditingGuest(g)} onDelete={() => handleDelete(g)} />
                 ))}
               </tbody>
             </table>
           </div>
         )}
         {error && <p className="text-xs font-semibold text-red-500">{error}</p>}
-        <GuestForm existingGuests={guests} onAdd={handleAdd} saving={saving} />
+        <GuestForm
+          existingGuests={guests}
+          onAdd={handleAdd}
+          saving={saving}
+          editingGuest={editingGuest}
+          onSaveEdit={handleSaveEdit}
+          onCancelEdit={() => setEditingGuest(null)}
+        />
       </div>
     </Card>
   );
@@ -205,16 +257,15 @@ export default function HospitalityPage() {
   const { competitions } = useCupData();
   const { fixtures: serieAFixtures, loading: serieALoading } = useFixtures([], teams);
   const { fixtures: cupFixturesAll, loading: cupLoading } = useCupFixtures(currentSeason);
-  const { guests, loading: guestsLoading, error: guestsError, addGuest, removeGuest } = useHospitalityGuests();
+  const { guests, loading: guestsLoading, error: guestsError, addGuest, updateGuest, removeGuest } = useHospitalityGuests();
 
   const [competitionValue, setCompetitionValue] = useState(SERIE_A_VALUE);
   const [group, setGroup] = useState('');
-  const [selectedFixtureIds, setSelectedFixtureIds] = useState([]);
+  const [expandedFixtureIds, setExpandedFixtureIds] = useState([]);
 
   const isSerieA = competitionValue === SERIE_A_VALUE;
   const cupCompetitions = competitions.filter((c) => c.slug !== SERIE_A_VALUE);
   const competitionOptions = [SERIE_A_OPTION, ...cupCompetitions.map((c) => ({ value: c.slug, label: c.name }))];
-  const competitionLabel = isSerieA ? 'Serie A' : cupCompetitions.find((c) => c.slug === competitionValue)?.name ?? competitionValue;
 
   const poolFixtures = useMemo(() => {
     const withSeason = (f) => ({ ...f, season: currentSeason.label });
@@ -240,21 +291,30 @@ export default function HospitalityPage() {
     return options;
   }, [isSerieA, poolFixtures]);
 
-  const groupFixtures = poolFixtures.filter((f) => (isSerieA ? String(f.matchday) === group : f.round === group));
+  const groupFixtures = poolFixtures
+    .filter((f) => (isSerieA ? String(f.matchday) === group : f.round === group))
+    .sort(compareFixtureTime);
   // Only home clubs with hospitality tickets turned on for this season show
   // up at all - see the Tickets toggle in Settings > Sponsorship/big match/
   // derby, right next to LED (TeamSeasonsPanel).
   const ticketFixtures = groupFixtures.filter((f) => f.home.ticketsAvailable);
+  const groupLabel = groupOptions.find((o) => o.value === group)?.label ?? group;
 
   function guestsForFixture(fixtureId) {
     return guests.filter((g) => g.fixtureId === fixtureId && g.season === currentSeason.label);
   }
 
-  function toggleFixture(id) {
-    setSelectedFixtureIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  function toggleExpanded(id) {
+    setExpandedFixtureIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
-  const selectedFixtures = ticketFixtures.filter((f) => selectedFixtureIds.includes(f.id));
+  const groupFixtureIds = useMemo(() => new Set(groupFixtures.map((f) => f.id)), [groupFixtures]);
+  const guestsForGroup = guests.filter((g) => g.season === currentSeason.label && groupFixtureIds.has(g.fixtureId));
+
+  function handleExportGroup() {
+    const safeGroup = String(groupLabel || 'group').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    exportHospitalityGuestsCsv(guestsForGroup, `hospitality-${competitionValue}-${safeGroup}.csv`, competitions);
+  }
 
   if (!session.signedIn) {
     return (
@@ -295,7 +355,7 @@ export default function HospitalityPage() {
               onChange={(v) => {
                 setCompetitionValue(v);
                 setGroup('');
-                setSelectedFixtureIds([]);
+                setExpandedFixtureIds([]);
               }}
               options={competitionOptions}
             />
@@ -308,7 +368,7 @@ export default function HospitalityPage() {
               value={group}
               onChange={(v) => {
                 setGroup(v);
-                setSelectedFixtureIds([]);
+                setExpandedFixtureIds([]);
               }}
               options={groupOptions.length > 0 ? groupOptions : [{ value: '', label: 'None yet' }]}
             />
@@ -330,34 +390,45 @@ export default function HospitalityPage() {
           </p>
         ) : (
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-white/40">Pick one or more matches</span>
-            {ticketFixtures.map((f) => (
-              <FixtureToggleRow
-                key={f.id}
-                fixture={f}
-                checked={selectedFixtureIds.includes(f.id)}
-                onToggle={() => toggleFixture(f.id)}
-                ticketsRemaining={
-                  f.home.ticketsCount === null || f.home.ticketsCount === undefined
-                    ? null
-                    : f.home.ticketsCount - guestsForFixture(f.id).length
-                }
-              />
-            ))}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wide text-white/40">Pick a match to expand</span>
+              <button
+                type="button"
+                onClick={handleExportGroup}
+                disabled={guestsForGroup.length === 0}
+                className="rounded-full bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase text-white hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Download CSV for {groupLabel}
+              </button>
+            </div>
+            {ticketFixtures.map((f) => {
+              const expanded = expandedFixtureIds.includes(f.id);
+              const fixtureGuests = guestsForFixture(f.id);
+              return (
+                <div key={f.id} className="flex flex-col gap-2">
+                  <FixtureExpandRow
+                    fixture={f}
+                    expanded={expanded}
+                    onToggle={() => toggleExpanded(f.id)}
+                    guestCount={fixtureGuests.length}
+                  />
+                  {expanded && (
+                    <MatchGuestSection
+                      fixture={f}
+                      competitionValue={competitionValue}
+                      competitions={competitions}
+                      guests={fixtureGuests}
+                      session={session}
+                      addGuest={addGuest}
+                      updateGuest={updateGuest}
+                      removeGuest={removeGuest}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
-
-        {selectedFixtures.map((f) => (
-          <MatchGuestSection
-            key={f.id}
-            fixture={f}
-            competitionLabel={competitionLabel}
-            guests={guestsForFixture(f.id)}
-            session={session}
-            addGuest={addGuest}
-            removeGuest={removeGuest}
-          />
-        ))}
       </main>
     </div>
   );

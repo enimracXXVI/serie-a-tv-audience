@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { fetchHospitalityGuests, appendHospitalityGuest, deleteHospitalityGuest } from './hospitalityGuests.js';
+import {
+  fetchHospitalityGuests,
+  appendHospitalityGuest,
+  updateHospitalityGuest,
+  deleteHospitalityGuest,
+} from './hospitalityGuests.js';
 
 // Local to HospitalityPage (not a shared Context like ClubsProvider/
 // TeamSeasonsProvider) - guest data isn't needed anywhere else in the app,
@@ -36,6 +41,16 @@ export function useHospitalityGuests() {
     return item;
   }, []);
 
+  // Only the guest's own personal-info fields are ever passed in here (see
+  // GuestForm's edit mode) - the match fields a row was created with
+  // (fixtureId, homeTeam, matchDate, ...) never change on an edit, so a
+  // plain client-side merge is accurate without refetching the row.
+  const updateGuest = useCallback(async (id, fields, accessToken) => {
+    if (!accessToken) throw new Error('UNAUTHENTICATED');
+    await updateHospitalityGuest(id, fields, accessToken);
+    setGuests((prev) => prev.map((g) => (g.id === id ? { ...g, ...fields } : g)));
+  }, []);
+
   const removeGuest = useCallback(async (id, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
     // Deleting actually shifts every row below it up by one - the response
@@ -45,5 +60,5 @@ export function useHospitalityGuests() {
     setGuests(rows);
   }, []);
 
-  return { guests, loading, error, addGuest, removeGuest };
+  return { guests, loading, error, addGuest, updateGuest, removeGuest };
 }

@@ -68,10 +68,37 @@ function uniqueGuests(existingGuests) {
   return [...seen.values()].sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`));
 }
 
-export default function GuestForm({ existingGuests, onAdd, saving }) {
-  const [fields, setFields] = useState(BLANK);
+// Shared by both the reuse-autocomplete and edit mode - pulls just the
+// editable personal-info fields off a guest row (which also carries match
+// fields like fixtureId/homeTeam that never belong in this form).
+function fieldsFromGuest(g) {
+  return {
+    firstName: g.firstName ?? '',
+    lastName: g.lastName ?? '',
+    dateOfBirth: g.dateOfBirth ?? '',
+    nationOfBirth: g.nationOfBirth || ITALY,
+    provinceOfBirth: g.provinceOfBirth ?? '',
+    cityOfBirth: g.cityOfBirth ?? '',
+    nationOfResidence: g.nationOfResidence || ITALY,
+    provinceOfResidence: g.provinceOfResidence ?? '',
+    cityOfResidence: g.cityOfResidence ?? '',
+  };
+}
+
+// `editingGuest` set (non-null) switches the form into edit mode: fields
+// prefill from that guest, the reuse picker (meaningless mid-edit) hides,
+// and submitting calls onSaveEdit instead of onAdd/resetting to blank.
+export default function GuestForm({ existingGuests, onAdd, saving, editingGuest = null, onSaveEdit, onCancelEdit }) {
+  const isEditing = Boolean(editingGuest);
+  const [fields, setFields] = useState(() => (editingGuest ? fieldsFromGuest(editingGuest) : BLANK));
   const [reuseKey, setReuseKey] = useState('');
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setFields(editingGuest ? fieldsFromGuest(editingGuest) : BLANK);
+    setReuseKey('');
+    setError(null);
+  }, [editingGuest]);
 
   const reusable = useMemo(() => uniqueGuests(existingGuests), [existingGuests]);
   const reuseOptions = [
@@ -92,17 +119,7 @@ export default function GuestForm({ existingGuests, onAdd, saving }) {
     if (key === '') return;
     const g = reusable[Number(key)];
     if (!g) return;
-    setFields({
-      firstName: g.firstName ?? '',
-      lastName: g.lastName ?? '',
-      dateOfBirth: g.dateOfBirth ?? '',
-      nationOfBirth: g.nationOfBirth || ITALY,
-      provinceOfBirth: g.provinceOfBirth ?? '',
-      cityOfBirth: g.cityOfBirth ?? '',
-      nationOfResidence: g.nationOfResidence || ITALY,
-      provinceOfResidence: g.provinceOfResidence ?? '',
-      cityOfResidence: g.cityOfResidence ?? '',
-    });
+    setFields(fieldsFromGuest(g));
   }
 
   const birthComuniOptions = useComuniOptions(fields.nationOfBirth === ITALY ? fields.provinceOfBirth : null);
@@ -127,7 +144,7 @@ export default function GuestForm({ existingGuests, onAdd, saving }) {
       setError('Pick a province and city of residence.');
       return;
     }
-    onAdd({
+    const payload = {
       ...fields,
       firstName: fields.firstName.trim(),
       lastName: fields.lastName.trim(),
@@ -138,14 +155,19 @@ export default function GuestForm({ existingGuests, onAdd, saving }) {
       cityOfBirth: fields.nationOfBirth === ITALY ? fields.cityOfBirth : '',
       provinceOfResidence: fields.nationOfResidence === ITALY ? fields.provinceOfResidence : '',
       cityOfResidence: fields.nationOfResidence === ITALY ? fields.cityOfResidence : '',
-    });
+    };
+    if (isEditing) {
+      onSaveEdit(payload);
+      return;
+    }
+    onAdd(payload);
     setFields(BLANK);
     setReuseKey('');
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 shadow-inner">
-      {reusable.length > 0 && (
+      {!isEditing && reusable.length > 0 && (
         <Field label="Reuse a previous guest">
           <Dropdown variant="light" value={reuseKey} onChange={handleReuse} options={reuseOptions} />
         </Field>
@@ -228,13 +250,24 @@ export default function GuestForm({ existingGuests, onAdd, saving }) {
 
       {error && <p className="text-xs font-semibold text-red-500">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="w-fit rounded-full bg-[#1fd8c9] px-4 py-2 text-xs font-bold uppercase tracking-wide text-[#0f1e54] shadow-md transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {saving ? 'Adding…' : 'Add guest'}
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="submit"
+          disabled={saving}
+          className="w-fit rounded-full bg-[#1fd8c9] px-4 py-2 text-xs font-bold uppercase tracking-wide text-[#0f1e54] shadow-md transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {saving ? (isEditing ? 'Saving…' : 'Adding…') : isEditing ? 'Save changes' : 'Add guest'}
+        </button>
+        {isEditing && (
+          <button
+            type="button"
+            onClick={onCancelEdit}
+            className="w-fit rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-bold uppercase tracking-wide text-[#0f1e54] hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
   );
 }

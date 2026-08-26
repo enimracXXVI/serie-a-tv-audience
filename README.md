@@ -557,6 +557,11 @@ yourself) with header row: `id`, `season`, `competition`, `matchday`,
   line per person per match), and it means a guest list is scoped to
   exactly the match it says it's for, never shared across a batch of
   matches picked together.
+- `competition` stores the competition's **slug** (`serie-a`, or a cup's own
+  slug), the same value cup fixtures store in their own `competition` column
+  (see `isSerieARow`) - not its display name. The CSV export resolves the
+  slug back to a human name (via the `competitions` tab) at download time,
+  so the sheet stays a stable key while the CSV stays readable.
 - `matchday`/`round` mirror the same split the fixtures tab itself uses - a
   Serie A row gets `matchday`, a cup row gets `round`, never both.
 - `homeTeam`, `awayTeam`, `matchDate`, `kickoffTime` are copied in from the
@@ -573,13 +578,26 @@ yourself) with header row: `id`, `season`, `competition`, `matchday`,
 
 Only fixtures whose **home** club has `ticketsAvailable` turned on for the
 current season (see the `teamSeasons` tab above) show up as pickable at all,
-and each shows "X of Y left" (`Y` = that club's `ticketsCount`, `X` = `Y`
-minus however many guests are already on that match's own list) - going over
-`Y` is allowed (better to let you over-allocate than hard-block you), just
-flagged in red rather than green. World nations and Italian provinces are
-small, static lists bundled directly into the app; Italian comuni
-(~7,900 of them) are a much larger dataset loaded on demand only once this
-page is opened, grouped by province.
+listed in kickoff order (date, then time) rather than sheet row order.
+Clicking a fixture expands its own guest-list section directly below it
+(an accordion, not a checkbox-then-separate-list). Each one shows "X/Y"
+(`X` = guests already added to that match, `Y` = that club's
+`ticketsCount`) - going over `Y` is allowed (better to let you over-allocate
+than hard-block you), just flagged in red rather than green. A guest already
+added can be edited in place (their personal-info fields only - the match
+fields a row was created with never change) via the same form used to add
+one, or removed entirely. World nations and Italian provinces are small,
+static lists bundled directly into the app; Italian comuni (~7,900 of them)
+are a much larger dataset loaded on demand only once this page is opened,
+grouped by province.
+
+Every match's own card can download a CSV of just its own guest list; the
+matchday/round header has a second "Download CSV for ..." button covering
+every guest across every match in that matchday/round in one file. Both
+produce the same column layout: competition (name, not slug), matchday-or-
+round, date, kickoff, match (`home v away`), name, date of birth, then
+nation/city/province of birth and of residence - flattened and joined-free
+so the file is ready to forward by email as-is.
 
 ### Rolling over to a new season (promotion/relegation)
 

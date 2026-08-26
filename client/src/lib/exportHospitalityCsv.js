@@ -1,27 +1,52 @@
 import { toCSV, downloadCSV } from './csv.js';
+import { SERIE_A_VALUE } from './competitions.js';
 
 const COLUMNS = [
+  { key: 'competition', label: 'Competition' },
+  { key: 'matchdayOrRound', label: 'Matchday/Round' },
+  { key: 'date', label: 'Date' },
+  { key: 'kickoff', label: 'Kickoff' },
+  { key: 'match', label: 'Match' },
   { key: 'firstName', label: 'First name' },
   { key: 'lastName', label: 'Last name' },
-  { key: 'dateOfBirth', label: 'Date of birth' },
+  { key: 'dob', label: 'Date of birth' },
   { key: 'nationOfBirth', label: 'Nation of birth' },
-  { key: 'provinceOfBirth', label: 'Province of birth' },
   { key: 'cityOfBirth', label: 'City of birth' },
+  { key: 'provinceOfBirth', label: 'Province of birth' },
   { key: 'nationOfResidence', label: 'Nation of residence' },
-  { key: 'provinceOfResidence', label: 'Province of residence' },
   { key: 'cityOfResidence', label: 'City of residence' },
-  { key: 'competition', label: 'Competition' },
-  { key: 'matchday', label: 'Matchday' },
-  { key: 'round', label: 'Round' },
-  { key: 'homeTeam', label: 'Home team' },
-  { key: 'awayTeam', label: 'Away team' },
-  { key: 'matchDate', label: 'Date' },
-  { key: 'kickoffTime', label: 'Kickoff' },
-  { key: 'addedBy', label: 'Added by' },
+  { key: 'provinceOfResidence', label: 'Province of residence' },
 ];
 
-// One row per guest-per-match already (see hospitalityGuests.js) - the CSV
-// is just those rows as-is, ready to forward by email without any joins.
-export function exportHospitalityGuestsCsv(guests, filename) {
-  downloadCSV(toCSV(COLUMNS, guests), filename);
+// Guest rows store the competition as its slug, same as cup fixtures (see
+// HospitalityPage) - the CSV is meant to be forwarded outside the app, so it
+// needs the human name instead.
+export function competitionNameForSlug(slug, competitions) {
+  if (slug === SERIE_A_VALUE) return 'Serie A';
+  return competitions.find((c) => c.slug === slug)?.name ?? slug;
+}
+
+function toRow(guest, competitions) {
+  return {
+    competition: competitionNameForSlug(guest.competition, competitions),
+    matchdayOrRound: guest.matchday || guest.round || '',
+    date: guest.matchDate,
+    kickoff: guest.kickoffTime,
+    match: `${guest.homeTeam} v ${guest.awayTeam}`,
+    firstName: guest.firstName,
+    lastName: guest.lastName,
+    dob: guest.dateOfBirth,
+    nationOfBirth: guest.nationOfBirth,
+    cityOfBirth: guest.cityOfBirth,
+    provinceOfBirth: guest.provinceOfBirth,
+    nationOfResidence: guest.nationOfResidence,
+    cityOfResidence: guest.cityOfResidence,
+    provinceOfResidence: guest.provinceOfResidence,
+  };
+}
+
+// One row per guest-per-match already (see hospitalityGuests.js) - only a
+// per-row slug-to-name resolution is needed before handing off to toCSV.
+export function exportHospitalityGuestsCsv(guests, filename, competitions) {
+  downloadCSV(toCSV(COLUMNS, guests.map((g) => toRow(g, competitions))), filename);
 }
