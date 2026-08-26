@@ -3,6 +3,7 @@ import { fetchClubs } from './clubs.js';
 import { fetchCompetitions, isSerieARow } from './competitions.js';
 import { fetchBroadcasters, resolveBroadcaster, resolveBroadcasterList } from './broadcasters.js';
 import { resolveClub } from './teams.js';
+import { toCSV, downloadCSV } from './csv.js';
 
 const COLUMNS = [
   { key: 'id', label: 'ID' },
@@ -34,28 +35,6 @@ const COLUMNS = [
   { key: 'isDerby', label: 'Derby' },
   { key: 'updatedAt', label: 'Updated at' },
 ];
-
-function csvEscape(value) {
-  if (value === null || value === undefined) return '';
-  const str = String(value);
-  return /[",\r\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
-}
-
-function toCSV(rows) {
-  const header = COLUMNS.map((c) => csvEscape(c.label)).join(',');
-  const lines = rows.map((row) => COLUMNS.map((c) => csvEscape(row[c.key])).join(','));
-  return [header, ...lines].join('\r\n');
-}
-
-function downloadCSV(csv, filename) {
-  const blob = new Blob(['﻿', csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 // A cup fixture's `otherBroadcaster` cell can hold a comma-separated list
 // (see resolveBroadcasterList) while a Serie A row only ever holds one -
@@ -119,5 +98,5 @@ export async function exportFixturesCsv({ season, kind }) {
   }));
 
   const kindLabel = kind === 'serie-a' ? 'serie-a-fixtures' : kind === 'cup' ? 'cup-fixtures' : 'all-fixtures';
-  downloadCSV(toCSV(rows), `${kindLabel}-${season.label.replace('/', '-')}.csv`);
+  downloadCSV(toCSV(COLUMNS, rows), `${kindLabel}-${season.label.replace('/', '-')}.csv`);
 }

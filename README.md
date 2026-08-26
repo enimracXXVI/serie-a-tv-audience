@@ -318,8 +318,9 @@ Add a `teamSeasons` tab (doesn't exist in the seeded sheet - add it
 yourself) with header row: `slug`, `team`, `season`, `sponsored`, `bigClub`,
 `derbyRival`, `matchdaySponsors`, `playerMascots`, `walkabouts`, `ledMinutes`,
 `addedTimeLed`, `penaltyLed`, `ledStartMatchday`, `addedTimeLedStartMatchday`,
-`penaltyLedStartMatchday`, `goalCarpet`, `goalCarpetStartMatchday` (an `id`
-column is also fine to keep, same auto-fill deal as the other tabs above).
+`penaltyLedStartMatchday`, `goalCarpet`, `goalCarpetStartMatchday`,
+`ticketsAvailable`, `ticketsCount` (an `id` column is also fine to keep, same
+auto-fill deal as the other tabs above).
 
 - `slug` here is this **row's own key** - always `season::teamSlug` (e.g.
   `26/27::roma`) - the app fills this in for you when you save from
@@ -342,6 +343,12 @@ column is also fine to keep, same auto-fill deal as the other tabs above).
   carpet) deal for that season, if any - see "LED perimeter-board tracking"
   below. Independent of `sponsored` - a club can have an LED deal without
   being a matchday-sponsor/mascot/walkabout club, or vice versa.
+- `ticketsAvailable`, `ticketsCount` - this club's hospitality ticket
+  allocation for its home games that season (see "Hospitality guest lists"
+  below) - `ticketsCount` is a flat per-home-game figure (same "season-level
+  rate" shape as `ledMinutes`), not a running season total that depletes
+  across games. Leave `ticketsAvailable` blank/FALSE for a club with no
+  hospitality tickets to track that season.
 
 A club with **no row** for a given season shows as not sponsored, not a big
 club, no derby rival, no caps, no LED deal for that season - there's no
@@ -528,6 +535,51 @@ count towards that season's totals and show up everywhere on the page -
 each archive season computes its own club list from whoever actually
 appears in its fixtures, rather than assuming the current roster played
 it too.
+
+### Hospitality guest lists
+
+A signed-in-only page (hamburger menu → **Hospitality**, next to Settings)
+for building ticket/hospitality guest lists for specific matches - separate
+from everything else in this app since it holds real personal data (name,
+date of birth, nationality, place of birth/residence), not sponsorship or
+audience figures.
+
+Add a `hospitalityGuests` tab (doesn't exist in the seeded sheet - add it
+yourself) with header row: `id`, `season`, `competition`, `matchday`,
+`round`, `fixtureId`, `homeTeam`, `awayTeam`, `matchDate`, `kickoffTime`,
+`firstName`, `lastName`, `dateOfBirth`, `nationOfBirth`, `provinceOfBirth`,
+`cityOfBirth`, `nationOfResidence`, `provinceOfResidence`, `cityOfResidence`,
+`addedBy`, `createdAt`.
+
+- One row per guest **per match** - a guest added to three matches in the
+  same session gets three separate rows, each with its own `fixtureId`. This
+  is deliberate: it's what makes the CSV download directly forwardable (one
+  line per person per match), and it means a guest list is scoped to
+  exactly the match it says it's for, never shared across a batch of
+  matches picked together.
+- `matchday`/`round` mirror the same split the fixtures tab itself uses - a
+  Serie A row gets `matchday`, a cup row gets `round`, never both.
+- `homeTeam`, `awayTeam`, `matchDate`, `kickoffTime` are copied in from the
+  fixture at the moment the guest is added, not looked up live - so the row
+  (and the CSV built from it) stays accurate even if that fixture's own date
+  or kickoff time is edited afterwards.
+- `provinceOfBirth`/`cityOfBirth` and `provinceOfResidence`/`cityOfResidence`
+  are only ever filled in when the corresponding nation is Italy - blank
+  otherwise, since a comune/province pair only exists for a genuinely
+  Italian place.
+- `addedBy` is the signed-in Google account email of whoever entered that
+  guest - an audit trail, since this is the one tab in the whole app holding
+  real personal data.
+
+Only fixtures whose **home** club has `ticketsAvailable` turned on for the
+current season (see the `teamSeasons` tab above) show up as pickable at all,
+and each shows "X of Y left" (`Y` = that club's `ticketsCount`, `X` = `Y`
+minus however many guests are already on that match's own list) - going over
+`Y` is allowed (better to let you over-allocate than hard-block you), just
+flagged in red rather than green. World nations and Italian provinces are
+small, static lists bundled directly into the app; Italian comuni
+(~7,900 of them) are a much larger dataset loaded on demand only once this
+page is opened, grouped by province.
 
 ### Rolling over to a new season (promotion/relegation)
 

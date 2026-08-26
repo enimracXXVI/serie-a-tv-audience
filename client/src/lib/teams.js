@@ -156,6 +156,12 @@ export function overrideTeamAttributes(roster, seasonLabel, attributeRows) {
           // dates - it isn't tied to ledStartMatchday at all.
           goalCarpet: Boolean(row?.goalCarpet),
           goalCarpetStartMatchday: row?.goalCarpetStartMatchday ?? null,
+          // Hospitality ticket allocation, this club's home games only that
+          // season (see HospitalityPage) - a flat per-fixture count, same
+          // "season-level rate" shape as ledMinutes rather than a running
+          // season total that depletes across games.
+          ticketsAvailable: Boolean(row?.ticketsAvailable),
+          ticketsCount: row?.ticketsCount ?? null,
         },
       ];
     })

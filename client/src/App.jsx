@@ -4,6 +4,7 @@ import BrandedCalendarPage from './pages/BrandedCalendarPage.jsx';
 import StandingsPage from './pages/StandingsPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import CupCompetitionsPage from './pages/CupCompetitionsPage.jsx';
+import HospitalityPage from './pages/HospitalityPage.jsx';
 import HamburgerMenu from './components/HamburgerMenu.jsx';
 import { ClubsProvider } from './lib/useClubs.jsx';
 import { CupDataProvider } from './lib/useCupData.jsx';
@@ -25,6 +26,7 @@ export default function App() {
                 <Route path="/standings" element={<StandingsPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/cup" element={<CupCompetitionsPage />} />
+                <Route path="/hospitality" element={<HospitalityPage />} />
               </Routes>
             </CupDataProvider>
           </TeamSeasonsProvider>

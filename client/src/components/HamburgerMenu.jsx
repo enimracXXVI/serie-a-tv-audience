@@ -120,6 +120,12 @@ export default function HamburgerMenu() {
     navigate('/cup');
   }
 
+  function viewHospitality() {
+    pushedLevels.current = 0;
+    setView('closed');
+    navigate('/hospitality');
+  }
+
   const open = view !== 'closed';
 
   return (
@@ -220,6 +226,14 @@ export default function HamburgerMenu() {
                     >
                       Export <span aria-hidden="true">›</span>
                     </button>
+                    {session.signedIn && (
+                      <button
+                        onClick={viewHospitality}
+                        className="flex items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-bold text-white hover:bg-white/10"
+                      >
+                        Hospitality <span aria-hidden="true">›</span>
+                      </button>
+                    )}
                     {session.signedIn && (
                       <button
                         onClick={() => pushView('settings')}

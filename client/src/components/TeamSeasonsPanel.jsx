@@ -49,6 +49,8 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
   const [penaltyLedStartMatchday, setPenaltyLedStartMatchday] = useState(row?.penaltyLedStartMatchday ?? '');
   const [goalCarpet, setGoalCarpet] = useState(Boolean(row?.goalCarpet));
   const [goalCarpetStartMatchday, setGoalCarpetStartMatchday] = useState(row?.goalCarpetStartMatchday ?? '');
+  const [ticketsAvailable, setTicketsAvailable] = useState(Boolean(row?.ticketsAvailable));
+  const [ticketsCount, setTicketsCount] = useState(row?.ticketsCount ?? '');
   const [saveError, setSaveError] = useState(null);
   // ledMinutes here is the raw <input> string ('' when never set, '0' is a
   // real value) - hasLedDeal expects a number|null, so normalize before
@@ -106,6 +108,11 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
           {ledDeal && (
             <span className="rounded-full bg-sky-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-sky-400">
               LED
+            </span>
+          )}
+          {ticketsAvailable && (
+            <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-400">
+              Tickets
             </span>
           )}
         </div>
@@ -297,6 +304,32 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
                   </Field>
                 )}
               </div>
+
+              {/* Row 6: hospitality tickets - a flat per-home-game allocation
+                  (see HospitalityPage), same "season-level rate" shape as
+                  LED minutes rather than a running season total. */}
+              <div className="flex flex-wrap items-center gap-4 border-t border-white/10 pt-3">
+                <ToggleSwitch
+                  checked={ticketsAvailable}
+                  onChange={(v) => {
+                    setTicketsAvailable(v);
+                    commit({ ticketsAvailable: v });
+                  }}
+                  label="Tickets"
+                />
+                {ticketsAvailable && (
+                  <Field label="Per home game">
+                    <input
+                      type="number"
+                      min="0"
+                      value={ticketsCount}
+                      onChange={(e) => setTicketsCount(e.target.value)}
+                      onBlur={() => commit({ ticketsCount: ticketsCount === '' ? null : Number(ticketsCount) })}
+                      className={`${inputClass} w-20`}
+                    />
+                  </Field>
+                )}
+              </div>
               {saveError && (
                 <p className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-xs text-red-300">
                   {saveError}
@@ -324,6 +357,7 @@ function TeamSeasonRow({ season, team, roster, row, session, saveTeamSeason }) {
               {addedTimeLed && addedTimeLedStartMatchday && <span>Starts matchday {addedTimeLedStartMatchday}</span>}
               <span>Goal carpet: {goalCarpet ? 'Yes' : 'No'}</span>
               {goalCarpet && goalCarpetStartMatchday && <span>Starts matchday {goalCarpetStartMatchday}</span>}
+              <span>Hospitality tickets: {ticketsAvailable ? `${ticketsCount || 0} per home game` : 'No'}</span>
             </div>
           )}
         </div>

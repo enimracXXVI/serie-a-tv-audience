@@ -20,7 +20,7 @@ const client = createSheetTabClient({
   idField: 'slug',
   autoIncrementId: false,
   bookkeepingIdField: 'id',
-  booleanFields: ['sponsored', 'bigClub', 'addedTimeLed', 'penaltyLed', 'goalCarpet'],
+  booleanFields: ['sponsored', 'bigClub', 'addedTimeLed', 'penaltyLed', 'goalCarpet', 'ticketsAvailable'],
   numericFields: [
     'matchdaySponsors',
     'playerMascots',
@@ -30,6 +30,7 @@ const client = createSheetTabClient({
     'addedTimeLedStartMatchday',
     'penaltyLedStartMatchday',
     'goalCarpetStartMatchday',
+    'ticketsCount',
   ],
 });
 
