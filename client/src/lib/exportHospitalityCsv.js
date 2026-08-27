@@ -1,4 +1,4 @@
-import { toCSV, downloadCSV } from './csv.js';
+import { toCSV, downloadCSV, csvText } from './csv.js';
 import { SERIE_A_VALUE } from './competitions.js';
 
 const COLUMNS = [
@@ -30,12 +30,17 @@ function toRow(guest, competitions) {
   return {
     competition: competitionNameForSlug(guest.competition, competitions),
     matchdayOrRound: guest.matchday || guest.round || '',
-    date: guest.matchDate,
-    kickoff: guest.kickoffTime,
+    // Excel (and Sheets) auto-detect a bare "18:30"/"2026-08-24" CSV field
+    // as a date/time on import and reformat the cell to its own serial
+    // number - sometimes landing on "General" format afterwards, which then
+    // displays as a raw decimal instead of a readable date/time. csvText
+    // forces these three columns to import as literal text instead.
+    date: csvText(guest.matchDate),
+    kickoff: csvText(guest.kickoffTime),
     match: `${guest.homeTeam} v ${guest.awayTeam}`,
     firstName: guest.firstName,
     lastName: guest.lastName,
-    dob: guest.dateOfBirth,
+    dob: csvText(guest.dateOfBirth),
     nationOfBirth: guest.nationOfBirth,
     cityOfBirth: guest.cityOfBirth,
     provinceOfBirth: guest.provinceOfBirth,

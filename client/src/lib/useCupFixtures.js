@@ -6,7 +6,6 @@ import { isSerieARow } from './competitions.js';
 import { useClubs } from './useClubs.jsx';
 import { useTeamSeasons } from './useTeamSeasons.jsx';
 import { useSeasons } from './useSeasons.jsx';
-import { computeDayOfWeek } from './matchdays.js';
 
 // Cup fixtures for a season now live in that season's own fixtures tab,
 // alongside its Serie A rows (see sheets.js/competitions.js's isSerieARow) -
@@ -60,35 +59,31 @@ export function useCupFixtures(season) {
     return applySeasonTeamAttributes(enriched, season.label, teamSeasonRows);
   }, [rawFixtures, clubsBySlug, clubsByName, season.label, teamSeasonRows]);
 
-  // `updateFixtureRow` always rewrites every editable-field cell in the row
-  // (not a true partial patch - see sheets.js), so the caller must merge the
-  // patch onto the FULL current fixture first, exactly like useFixtures.js
-  // does for Serie A - otherwise fields the patch doesn't mention (e.g.
-  // `competition`/`round`) would get blanked out on every save.
+  // `updateFixtureRow` writes only the fields actually passed in (a true
+  // partial patch - see sheets.js), so this never touches `competition`/
+  // `round`/etc. it wasn't asked to change.
   const updateFixture = useCallback(
     async (id, fields, accessToken) => {
       if (!accessToken) throw new Error('UNAUTHENTICATED');
-      const current = fixtures.find((f) => f.id === id);
-      if (!current) return;
-      const merged = { ...current, ...fields };
-      // Recomputed on every save (not just when `date` is the field being
-      // touched) so `day` can never drift out of sync with `date` - same as
-      // Serie A's own updateFixture, even though the cup UI itself never
-      // shows `day` (kept in sync purely for whoever reads the sheet directly).
-      merged.day = computeDayOfWeek(merged.date);
-      const updated = await updateFixtureRow(merged, accessToken, liveTab);
+      const updated = await updateFixtureRow(id, fields, accessToken, liveTab);
 
       const missingHere = (updated.missingFields ?? []).filter((f) => f in fields);
       const applied = { ...fields };
       for (const f of missingHere) delete applied[f];
 
-      setRawFixtures((prev) => prev.map((r) => (r.id === id ? { ...r, ...applied, updatedAt: updated.updatedAt } : r)));
+      setRawFixtures((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? { ...r, ...applied, ...(updated.day !== undefined ? { day: updated.day } : {}), updatedAt: updated.updatedAt }
+            : r
+        )
+      );
 
       if (missingHere.length > 0) {
         throw new Error(`Saved, but the fixtures sheet has no column header for: ${missingHere.join(', ')}.`);
       }
     },
-    [fixtures, liveTab]
+    [liveTab]
   );
 
   // Always the live season's own tab regardless of which one is currently

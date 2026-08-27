@@ -201,19 +201,36 @@ async function fetchHeaderIndexFor(tabName) {
   return normalizeHeaderIndex(buildHeaderIndex((data.values && data.values[0]) || []), ALL_FIXTURE_FIELDS);
 }
 
-export async function updateFixtureRow(fixture, accessToken, sheetName) {
+// A true partial patch - only the columns actually present in `fields` are
+// written, not every EDITABLE_FIELDS column on every save. It used to
+// rewrite the whole row every time (defaulting anything the caller didn't
+// pass to '' via patch[field] ?? ''), which forced both useFixtures.js and
+// useCupFixtures.js to first merge onto the full current fixture just to
+// avoid blanking out every other column - and made every single-field edit
+// (e.g. one added-time box) into a ~25-range batchUpdate. That made saves
+// slow, and worse, let two edits to *different* fields on the same fixture
+// race: whichever request's full-row snapshot (captured before the other's
+// change had round-tripped back into local state) landed last would
+// silently overwrite the other field back to its pre-edit value. Writing
+// only what actually changed makes concurrent edits to the same row
+// independent instead of racing.
+export async function updateFixtureRow(id, fields, accessToken, sheetName) {
   if (!headerIndexCache) headerIndexCache = await fetchHeaderIndexFor(sheetName);
   const headerIndex = headerIndexCache;
-  if (!rowIndexCache || rowIndexCache[fixture.id] === undefined) {
+  if (!rowIndexCache || rowIndexCache[id] === undefined) {
     throw new Error('Fixtures data has not loaded yet - reload the page and try again.');
   }
-  const rowNumber = rowIndexCache[fixture.id];
+  const rowNumber = rowIndexCache[id];
   const updatedAt = new Date().toISOString();
-  const patch = { ...fixture, updatedAt };
+  const patch = { ...fields, updatedAt };
+  // `day` only ever depends on `date` - recompute it whenever `date` is
+  // part of this save (and only then), so it can't drift out of sync
+  // without needing to touch it on every unrelated field's save too.
+  if ('date' in patch) patch.day = computeDayOfWeek(patch.date);
 
   const data = [];
   const missing = [];
-  for (const field of [...EDITABLE_FIELDS, 'updatedAt']) {
+  for (const field of Object.keys(patch)) {
     const colIdx = headerIndex[field];
     if (colIdx === undefined) {
       missing.push(field);
@@ -249,7 +266,7 @@ export async function updateFixtureRow(fixture, accessToken, sheetName) {
   // write successfully, and the caller (which knows which of these fields
   // it actually just tried to change) decides whether to surface a visible
   // warning instead of leaving it a silent, invisible failure.
-  return { ...fixture, updatedAt, missingFields: missing };
+  return { updatedAt, day: patch.day, missingFields: missing };
 }
 
 // Adds a brand-new fixture row (a matchday, or a cup tie, added one at a

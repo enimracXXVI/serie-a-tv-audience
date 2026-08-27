@@ -40,11 +40,26 @@ export default function CalendarView({
       return (a.kickoffTime ?? '99:99').localeCompare(b.kickoffTime ?? '99:99');
     });
     // Fixtures sharing a date+kickoff slot air as one DAZN simulcast block;
-    // only the first one in the block should collect the shared audience figure.
+    // only the first one in an *actual* multi-game block should collect the
+    // shared audience figure. A fixture with no date/kickoffTime set yet
+    // (still TBD) is never treated as part of a block, matching
+    // computeSimulcastInfo's own skip in dashboardMetrics.js - otherwise
+    // every still-unscheduled fixture in the matchday would share the same
+    // blank key and falsely count as one big block together.
+    const counts = new Map();
+    for (const f of group) {
+      if (!f.date || !f.kickoffTime) continue;
+      const key = `${f.date}|${f.kickoffTime}`;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
     let lastKey = null;
     for (const f of group) {
-      const key = `${f.date ?? ''}|${f.kickoffTime ?? ''}`;
-      f.isFirstInBlock = key !== lastKey;
+      const key = f.date && f.kickoffTime ? `${f.date}|${f.kickoffTime}` : null;
+      // key !== lastKey (rather than always true) is still needed even
+      // though the group is sorted by date/kickoffTime - it's what keeps
+      // only the first fixture of a real block flagged, not every fixture
+      // in it.
+      f.isFirstInBlock = key !== null && key !== lastKey && counts.get(key) > 1;
       lastKey = key;
       Object.assign(f, computeMatchTags(f));
     }

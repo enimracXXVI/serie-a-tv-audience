@@ -5,7 +5,6 @@ import { isSerieARow } from './competitions.js';
 import { useClubs } from './useClubs.jsx';
 import { useTeamSeasons } from './useTeamSeasons.jsx';
 import { useSeasons } from './useSeasons.jsx';
-import { computeDayOfWeek } from './matchdays.js';
 
 export function useFixtures(teamSlugs, teams) {
   const [rawFixtures, setRawFixtures] = useState([]);
@@ -58,13 +57,11 @@ export function useFixtures(teamSlugs, teams) {
   const updateFixture = useCallback(
     async (id, fields, accessToken) => {
       if (!accessToken) throw new Error('UNAUTHENTICATED');
-      const current = fixtures.find((f) => f.id === id);
-      if (!current) return;
-      const merged = { ...current, ...fields };
-      // Recomputed on every save (not just when `date` is the field being
-      // touched) so `day` can never drift out of sync with `date`.
-      merged.day = computeDayOfWeek(merged.date);
-      const updated = await updateFixtureRow(merged, accessToken, liveTab);
+      // Writes only `fields` itself (a true partial patch - see
+      // updateFixtureRow) rather than needing the full current fixture
+      // merged in first, so two edits to different fields on the same
+      // fixture can never race and clobber each other.
+      const updated = await updateFixtureRow(id, fields, accessToken, liveTab);
 
       // Only reflect locally what actually reached the sheet - a field
       // whose column header is missing didn't save, so pretending it did
@@ -75,7 +72,11 @@ export function useFixtures(teamSlugs, teams) {
       for (const f of missingHere) delete appliedFields[f];
 
       setRawFixtures((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, ...appliedFields, day: merged.day, updatedAt: updated.updatedAt } : r))
+        prev.map((r) =>
+          r.id === id
+            ? { ...r, ...appliedFields, ...(updated.day !== undefined ? { day: updated.day } : {}), updatedAt: updated.updatedAt }
+            : r
+        )
       );
 
       if (missingHere.length > 0) {
@@ -84,7 +85,7 @@ export function useFixtures(teamSlugs, teams) {
         );
       }
     },
-    [fixtures, liveTab]
+    [liveTab]
   );
 
   // home/away are stored as the picked club's slug (see clubs.js/teams.js

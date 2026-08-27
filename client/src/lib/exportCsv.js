@@ -3,7 +3,7 @@ import { fetchClubs } from './clubs.js';
 import { fetchCompetitions, isSerieARow } from './competitions.js';
 import { fetchBroadcasters, resolveBroadcaster, resolveBroadcasterList } from './broadcasters.js';
 import { resolveClub } from './teams.js';
-import { toCSV, downloadCSV } from './csv.js';
+import { toCSV, downloadCSV, csvText } from './csv.js';
 
 const COLUMNS = [
   { key: 'id', label: 'ID' },
@@ -73,9 +73,12 @@ export async function exportFixturesCsv({ season, kind }) {
     matchday: f.matchday ?? '',
     round: f.round ?? '',
     competition: isSerieARow(f) ? 'Serie A' : competitionsBySlug.get(f.competition)?.name ?? f.competition,
-    date: f.date ?? '',
+    // See csvText - a bare date/kickoff string otherwise gets auto-detected
+    // and reformatted (sometimes into a raw serial number) by Excel/Sheets
+    // on import.
+    date: csvText(f.date),
     day: f.day ?? '',
-    kickoffTime: f.kickoffTime ?? '',
+    kickoffTime: csvText(f.kickoffTime),
     home: resolveClub(f.home, clubsBySlug, clubsByName).name,
     away: resolveClub(f.away, clubsBySlug, clubsByName).name,
     homeScore: f.homeScore ?? '',
