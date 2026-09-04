@@ -3,6 +3,7 @@ import Dropdown from './Dropdown.jsx';
 import { WORLD_NATIONS, ITALY } from '../lib/worldNations.js';
 import { ITALIAN_PROVINCES } from '../lib/italianProvinces.js';
 import { comuniForProvince } from '../lib/italianComuni.js';
+import { isoToDDMMYYYY } from '../lib/dateFormat.js';
 
 const inputClass =
   'h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-sm text-[#0f1e54] shadow-sm outline-none transition-colors focus:border-[#1fd8c9] focus:bg-white focus:ring-2 focus:ring-[#1fd8c9]/20';
@@ -103,7 +104,7 @@ function ReuseGuestPicker({ guests, onPick }) {
                 <span className="font-semibold text-[#0f1e54]">
                   {g.lastName} {g.firstName}
                 </span>
-                <span className="text-xs text-gray-400">{g.dateOfBirth || 'no DOB'}</span>
+                <span className="text-xs text-gray-400">{g.dateOfBirth ? isoToDDMMYYYY(g.dateOfBirth) : 'no DOB'}</span>
               </button>
             ))}
           </div>

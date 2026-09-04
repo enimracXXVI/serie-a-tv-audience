@@ -9,6 +9,7 @@ import { useHospitalityGuests } from '../lib/useHospitalityGuests.jsx';
 import { SERIE_A_VALUE } from '../lib/competitions.js';
 import { callWithReauth } from '../lib/reauth.js';
 import { exportHospitalityGuestsCsv } from '../lib/exportHospitalityCsv.js';
+import { isoToDDMMYYYY } from '../lib/dateFormat.js';
 import { useConfirm } from '../lib/useConfirm.jsx';
 import Crest from '../components/Crest.jsx';
 import Dropdown from '../components/Dropdown.jsx';
@@ -95,7 +96,7 @@ function GuestRow({ guest, onEdit, onDelete }) {
       <td className="px-2 py-1.5 text-sm font-semibold text-[#0f1e54]">
         {guest.lastName} {guest.firstName}
       </td>
-      <td className="px-2 py-1.5 text-xs text-gray-500">{guest.dateOfBirth}</td>
+      <td className="px-2 py-1.5 text-xs text-gray-500">{isoToDDMMYYYY(guest.dateOfBirth)}</td>
       <td className="px-2 py-1.5 text-xs text-gray-500">
         {guest.nationOfBirth}
         {guest.cityOfBirth ? ` · ${guest.cityOfBirth} (${guest.provinceOfBirth})` : ''}

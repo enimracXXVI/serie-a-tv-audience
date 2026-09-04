@@ -1,5 +1,6 @@
 import { toCSV, downloadCSV, csvText } from './csv.js';
 import { SERIE_A_VALUE } from './competitions.js';
+import { isoToDDMMYYYY } from './dateFormat.js';
 
 const COLUMNS = [
   { key: 'competition', label: 'Competition' },
@@ -30,17 +31,18 @@ function toRow(guest, competitions) {
   return {
     competition: competitionNameForSlug(guest.competition, competitions),
     matchdayOrRound: guest.matchday || guest.round || '',
-    // Excel (and Sheets) auto-detect a bare "18:30"/"2026-08-24" CSV field
-    // as a date/time on import and reformat the cell to its own serial
-    // number - sometimes landing on "General" format afterwards, which then
-    // displays as a raw decimal instead of a readable date/time. csvText
-    // forces these three columns to import as literal text instead.
-    date: csvText(guest.matchDate),
+    // Day-first (DD/MM/YYYY), not the ISO order the sheet stores - matches
+    // every day-first site this data gets copy-pasted into. Also wrapped in
+    // csvText: Excel/Sheets still auto-detect a bare date/time-shaped CSV
+    // field on import and reformat the cell to its own serial number -
+    // sometimes landing on "General" format afterwards, which then displays
+    // as a raw decimal instead of a readable date/time.
+    date: csvText(isoToDDMMYYYY(guest.matchDate)),
     kickoff: csvText(guest.kickoffTime),
     match: `${guest.homeTeam} v ${guest.awayTeam}`,
     firstName: guest.firstName,
     lastName: guest.lastName,
-    dob: csvText(guest.dateOfBirth),
+    dob: csvText(isoToDDMMYYYY(guest.dateOfBirth)),
     nationOfBirth: guest.nationOfBirth,
     cityOfBirth: guest.cityOfBirth,
     provinceOfBirth: guest.provinceOfBirth,
