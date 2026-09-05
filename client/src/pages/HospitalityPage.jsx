@@ -90,13 +90,50 @@ function FixtureExpandRow({ fixture, expanded, onToggle, guestCount }) {
   );
 }
 
+// A guest's own name/DOB are typically typed straight into some other
+// system (a stadium turnstile list, a hospitality provider's own form) once
+// they're saved here - one click/tap copies just that one field's text to
+// the clipboard, rather than requiring a manual double-click-and-drag
+// select across a compact table cell.
+function CopyableField({ value }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch {
+      // Clipboard API can be unavailable (insecure context, denied
+      // permission, older browser) - a copy shortcut failing silently is
+      // fine, the value is still right there to select by hand.
+    }
+  }
+
+  if (!value) return <span className="text-gray-300">—</span>;
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      title="Click to copy"
+      className={`-mx-1 rounded px-1 text-left transition-colors hover:bg-[#1fd8c9]/15 ${copied ? 'bg-[#1fd8c9]/25' : ''}`}
+    >
+      {copied ? 'Copied!' : value}
+    </button>
+  );
+}
+
 function GuestRow({ guest, onEdit, onDelete }) {
   return (
     <tr className="border-b border-gray-50 last:border-0">
       <td className="px-2 py-1.5 text-sm font-semibold text-[#0f1e54]">
-        {guest.lastName} {guest.firstName}
+        <CopyableField value={guest.lastName} /> <CopyableField value={guest.firstName} />
       </td>
-      <td className="px-2 py-1.5 text-xs text-gray-500">{isoToDDMMYYYY(guest.dateOfBirth)}</td>
+      <td className="px-2 py-1.5 text-xs text-gray-500">
+        <CopyableField value={isoToDDMMYYYY(guest.dateOfBirth)} />
+      </td>
       <td className="px-2 py-1.5 text-xs text-gray-500">
         {guest.nationOfBirth}
         {guest.cityOfBirth ? ` · ${guest.cityOfBirth} (${guest.provinceOfBirth})` : ''}
