@@ -7,7 +7,7 @@ import { useCupFixtures } from '../lib/useCupFixtures.js';
 import { useCupData } from '../lib/useCupData.jsx';
 import { useGuestSources } from '../lib/useGuestSources.jsx';
 import { useHospitalityGuests } from '../lib/useHospitalityGuests.jsx';
-import { SERIE_A_VALUE } from '../lib/competitions.js';
+import { SERIE_A_VALUE, competitionScope } from '../lib/competitions.js';
 import { callWithReauth } from '../lib/reauth.js';
 import { exportHospitalityGuestsCsv } from '../lib/exportHospitalityCsv.js';
 import { isoToDDMMYYYY } from '../lib/dateFormat.js';
@@ -352,6 +352,11 @@ export default function HospitalityPage() {
   const isSerieA = competitionValue === SERIE_A_VALUE;
   const cupCompetitions = competitions.filter((c) => c.slug !== SERIE_A_VALUE);
   const competitionOptions = [SERIE_A_OPTION, ...cupCompetitions.map((c) => ({ value: c.slug, label: c.name }))];
+  // European competitions (Champions/Europa/Conference League) always carry
+  // hospitality, unlike a domestic fixture - so unlike Serie A/Coppa Italia,
+  // a European away side doesn't need its own `ticketsAvailable` toggle set
+  // for its games to show up here at all (see ticketFixtures below).
+  const isEuropeanCup = competitionScope(cupCompetitions.find((c) => c.slug === competitionValue)) === 'european';
 
   const poolFixtures = useMemo(() => {
     const withSeason = (f) => ({ ...f, season: currentSeason.label });
@@ -382,8 +387,12 @@ export default function HospitalityPage() {
     .sort(compareFixtureTime);
   // Only home clubs with hospitality tickets turned on for this season show
   // up at all - see the Tickets toggle in Settings > Sponsorship/big match/
-  // derby, right next to LED (TeamSeasonsPanel).
-  const ticketFixtures = groupFixtures.filter((f) => f.home.ticketsAvailable);
+  // derby, right next to LED (TeamSeasonsPanel). European competitions
+  // (Champions/Europa/Conference League) skip that check entirely: every
+  // fixture added under one of them is assumed to carry hospitality, so a
+  // European away leg's foreign host (never set up in teamSeasons at all)
+  // doesn't block it from showing up here.
+  const ticketFixtures = isEuropeanCup ? groupFixtures : groupFixtures.filter((f) => f.home.ticketsAvailable);
   const groupLabel = groupOptions.find((o) => o.value === group)?.label ?? group;
 
   function guestsForFixture(fixtureId) {
@@ -471,8 +480,9 @@ export default function HospitalityPage() {
           <p className="text-sm text-white/40">Pick a {isSerieA ? 'matchday' : 'round'} to see its matches.</p>
         ) : ticketFixtures.length === 0 ? (
           <p className="text-sm text-white/40">
-            No match in this {isSerieA ? 'matchday' : 'round'} has a home club with hospitality tickets turned on for{' '}
-            {currentSeason.label}.
+            {isEuropeanCup
+              ? `No fixture added for this round yet.`
+              : `No match in this ${isSerieA ? 'matchday' : 'round'} has a home club with hospitality tickets turned on for ${currentSeason.label}.`}
           </p>
         ) : (
           <div className="flex flex-col gap-2">
