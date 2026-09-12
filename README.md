@@ -600,9 +600,8 @@ rows to start:
   `instagram.com/...` prefix - normalized on save regardless of how it was
   typed or pasted). Blank otherwise, and blanked out again if the source is
   changed away from one that requires it. Rendered as a clickable link to
-  the real Instagram profile on-screen; the CSV export gets a plain
-  `@handle` instead (no hyperlink - CSV files get opened in too many
-  different programs for that to reliably do anything useful).
+  the real Instagram profile on-screen (see the CSV export note below for
+  why it isn't in the download).
 - `email` is a plain optional field - no validation beyond the browser's own
   `type="email"` input hint.
 - `addedBy` is the signed-in Google account email of whoever entered that
@@ -629,9 +628,10 @@ matchday/round header has a second "Download CSV for ..." button covering
 every guest across every match in that matchday/round in one file. Both
 produce the same column layout: competition (name, not slug), matchday-or-
 round, date, kickoff, match (`home v away`), name, date of birth, then
-nation/city/province of birth and of residence, then source (name, not
-slug), Instagram handle (plain `@handle`), and email - flattened and
-joined-free so the file is ready to forward by email as-is.
+nation/city/province of birth and of residence - flattened and joined-free
+so the file is ready to forward by email as-is. Source, Instagram handle,
+and email are tracked and shown on-screen (see above) but deliberately left
+out of this download.
 
 ### Rolling over to a new season (promotion/relegation)
 

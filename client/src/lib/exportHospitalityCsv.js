@@ -17,9 +17,6 @@ const COLUMNS = [
   { key: 'nationOfResidence', label: 'Nation of residence' },
   { key: 'cityOfResidence', label: 'City of residence' },
   { key: 'provinceOfResidence', label: 'Province of residence' },
-  { key: 'source', label: 'Source' },
-  { key: 'instagramHandle', label: 'Instagram handle' },
-  { key: 'email', label: 'Email' },
 ];
 
 // Guest rows store the competition as its slug, same as cup fixtures (see
@@ -30,15 +27,7 @@ export function competitionNameForSlug(slug, competitions) {
   return competitions.find((c) => c.slug === slug)?.name ?? slug;
 }
 
-// Same slug-to-name resolution, for the `source` column (see
-// GuestSourcesPanel/guestSources.js) - blank rather than the raw slug if the
-// category was since renamed or deleted.
-function sourceNameForSlug(slug, guestSources) {
-  if (!slug) return '';
-  return guestSources.find((s) => s.slug === slug)?.name ?? slug;
-}
-
-function toRow(guest, competitions, guestSources) {
+function toRow(guest, competitions) {
   return {
     competition: competitionNameForSlug(guest.competition, competitions),
     matchdayOrRound: guest.matchday || guest.round || '',
@@ -60,17 +49,13 @@ function toRow(guest, competitions, guestSources) {
     nationOfResidence: guest.nationOfResidence,
     cityOfResidence: guest.cityOfResidence,
     provinceOfResidence: guest.provinceOfResidence,
-    source: sourceNameForSlug(guest.source, guestSources),
-    // Plain "handle" text, not a link - the CSV is opened in all sorts of
-    // programs, and clicking through to Instagram only matters on-screen in
-    // the app itself (see GuestRow).
-    instagramHandle: guest.instagramHandle ? `@${guest.instagramHandle}` : '',
-    email: guest.email,
   };
 }
 
 // One row per guest-per-match already (see hospitalityGuests.js) - only a
 // per-row slug-to-name resolution is needed before handing off to toCSV.
-export function exportHospitalityGuestsCsv(guests, filename, competitions, guestSources) {
-  downloadCSV(toCSV(COLUMNS, guests.map((g) => toRow(g, competitions, guestSources))), filename);
+// Source/Instagram handle/email are tracked in the app and shown on-screen
+// (see GuestRow) but deliberately left out of this download.
+export function exportHospitalityGuestsCsv(guests, filename, competitions) {
+  downloadCSV(toCSV(COLUMNS, guests.map((g) => toRow(g, competitions))), filename);
 }

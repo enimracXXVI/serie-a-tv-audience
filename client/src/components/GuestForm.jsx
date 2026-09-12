@@ -322,6 +322,17 @@ export default function GuestForm({ existingGuests, guestSources, onAdd, saving,
           <input type="email" value={fields.email} onChange={(e) => set('email', e.target.value)} className={inputClass} />
         </Field>
       </div>
+      {/* Whether this field shows at all is driven entirely by the picked
+          source's own "Needs IG" flag (Settings > Hospitality guest sources)
+          - surfaced here so "I picked a source and no Instagram field
+          showed up" is self-diagnosable in the form itself instead of a
+          silent, unexplained absence. */}
+      {fields.source && !needsInstagram && (
+        <p className="-mt-1 text-[11px] text-gray-400">
+          “{selectedSource?.name}” isn’t marked as needing an Instagram handle - turn on “Needs IG” for it in Settings →
+          Hospitality guest sources if that’s wrong.
+        </p>
+      )}
 
       {error && <p className="text-xs font-semibold text-red-500">{error}</p>}
 

@@ -264,7 +264,7 @@ function MatchGuestSection({
 
   function handleExport() {
     const safeName = `${fixture.home.slug}-vs-${fixture.away.slug}-${fixture.date || 'tbd'}`;
-    exportHospitalityGuestsCsv(guests, `${safeName}.csv`, competitions, guestSources);
+    exportHospitalityGuestsCsv(guests, `${safeName}.csv`, competitions);
   }
 
   return (
@@ -408,7 +408,7 @@ export default function HospitalityPage() {
 
   function handleExportGroup() {
     const safeGroup = String(groupLabel || 'group').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    exportHospitalityGuestsCsv(guestsForGroup, `${competitionValue}-${safeGroup}.csv`, competitions, guestSources);
+    exportHospitalityGuestsCsv(guestsForGroup, `${competitionValue}-${safeGroup}.csv`, competitions);
   }
 
   if (!session.signedIn) {
