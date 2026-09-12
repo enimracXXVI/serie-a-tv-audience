@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import TeamsPanel from './TeamsPanel.jsx';
 import TeamSeasonsPanel from './TeamSeasonsPanel.jsx';
 import BroadcastersPanel from './BroadcastersPanel.jsx';
+import GuestSourcesPanel from './GuestSourcesPanel.jsx';
 import CompetitionsPanel from './CompetitionsPanel.jsx';
 import SeasonsPanel from './SeasonsPanel.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
@@ -266,6 +267,11 @@ export default function HamburgerMenu() {
                   <div className="border-t border-white/10 pt-6">
                     <CollapsibleSection title="Broadcasters">
                       <BroadcastersPanel session={session} />
+                    </CollapsibleSection>
+                  </div>
+                  <div className="border-t border-white/10 pt-6">
+                    <CollapsibleSection title="Hospitality guest sources">
+                      <GuestSourcesPanel session={session} />
                     </CollapsibleSection>
                   </div>
                   <div className="border-t border-white/10 pt-6">

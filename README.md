@@ -549,7 +549,27 @@ yourself) with header row: `id`, `season`, `competition`, `matchday`,
 `round`, `fixtureId`, `homeTeam`, `awayTeam`, `matchDate`, `kickoffTime`,
 `firstName`, `lastName`, `dateOfBirth`, `nationOfBirth`, `provinceOfBirth`,
 `cityOfBirth`, `nationOfResidence`, `provinceOfResidence`, `cityOfResidence`,
-`addedBy`, `createdAt`.
+`source`, `instagramHandle`, `email`, `addedBy`, `createdAt`.
+
+Also add a `guestSources` tab (also new - not in the seeded sheet) with
+header row: `id`, `slug`, `name`, `requiresInstagram`. Seed it with three
+rows to start:
+
+| id | slug             | name             | requiresInstagram |
+|----|------------------|------------------|--------------------|
+| 1  | content-creator  | Content creator  | TRUE               |
+| 2  | partner          | Partner          | FALSE              |
+| 3  | club-internal    | Club / internal  | FALSE              |
+
+- This tab is what powers the Source field's search-as-you-type list in
+  Hospitality (and the matching Settings panel, "Hospitality guest
+  sources", next to Broadcasters) - add, rename, or delete rows there
+  (or the `requiresInstagram` toggle) any time, no code change needed.
+- `requiresInstagram` drives whether GuestForm also asks for an Instagram
+  handle when that source is picked - a flag on the category itself
+  rather than a hardcoded check against "Content creator" by name, so a
+  future category (or a rename) can opt into the same behavior from
+  Settings alone.
 
 - One row per guest **per match** - a guest added to three matches in the
   same session gets three separate rows, each with its own `fixtureId`. This
@@ -572,6 +592,19 @@ yourself) with header row: `id`, `season`, `competition`, `matchday`,
   are only ever filled in when the corresponding nation is Italy - blank
   otherwise, since a comune/province pair only exists for a genuinely
   Italian place.
+- `source` stores the picked category's **slug** (see the `guestSources`
+  tab above), same slug-not-name convention as `competition`. Optional -
+  blank if no source was picked.
+- `instagramHandle` is only ever filled in when the picked source's
+  `requiresInstagram` is true, and only the bare handle (no `@`, no
+  `instagram.com/...` prefix - normalized on save regardless of how it was
+  typed or pasted). Blank otherwise, and blanked out again if the source is
+  changed away from one that requires it. Rendered as a clickable link to
+  the real Instagram profile on-screen; the CSV export gets a plain
+  `@handle` instead (no hyperlink - CSV files get opened in too many
+  different programs for that to reliably do anything useful).
+- `email` is a plain optional field - no validation beyond the browser's own
+  `type="email"` input hint.
 - `addedBy` is the signed-in Google account email of whoever entered that
   guest - an audit trail, since this is the one tab in the whole app holding
   real personal data.
@@ -596,8 +629,9 @@ matchday/round header has a second "Download CSV for ..." button covering
 every guest across every match in that matchday/round in one file. Both
 produce the same column layout: competition (name, not slug), matchday-or-
 round, date, kickoff, match (`home v away`), name, date of birth, then
-nation/city/province of birth and of residence - flattened and joined-free
-so the file is ready to forward by email as-is.
+nation/city/province of birth and of residence, then source (name, not
+slug), Instagram handle (plain `@handle`), and email - flattened and
+joined-free so the file is ready to forward by email as-is.
 
 ### Rolling over to a new season (promotion/relegation)
 

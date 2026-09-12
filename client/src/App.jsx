@@ -8,6 +8,7 @@ import HospitalityPage from './pages/HospitalityPage.jsx';
 import HamburgerMenu from './components/HamburgerMenu.jsx';
 import { ClubsProvider } from './lib/useClubs.jsx';
 import { CupDataProvider } from './lib/useCupData.jsx';
+import { GuestSourcesProvider } from './lib/useGuestSources.jsx';
 import { SeasonsProvider } from './lib/useSeasons.jsx';
 import { TeamSeasonsProvider } from './lib/useTeamSeasons.jsx';
 import { SessionProvider } from './lib/useSession.jsx';
@@ -19,15 +20,17 @@ export default function App() {
         <ClubsProvider>
           <TeamSeasonsProvider>
             <CupDataProvider>
-              <HamburgerMenu />
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/calendar/:teams" element={<BrandedCalendarPage />} />
-                <Route path="/standings" element={<StandingsPage />} />
-                <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/cup" element={<CupCompetitionsPage />} />
-                <Route path="/hospitality" element={<HospitalityPage />} />
-              </Routes>
+              <GuestSourcesProvider>
+                <HamburgerMenu />
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/calendar/:teams" element={<BrandedCalendarPage />} />
+                  <Route path="/standings" element={<StandingsPage />} />
+                  <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/cup" element={<CupCompetitionsPage />} />
+                  <Route path="/hospitality" element={<HospitalityPage />} />
+                </Routes>
+              </GuestSourcesProvider>
             </CupDataProvider>
           </TeamSeasonsProvider>
         </ClubsProvider>

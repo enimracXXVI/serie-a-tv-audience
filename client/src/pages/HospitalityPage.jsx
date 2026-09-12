@@ -5,11 +5,13 @@ import { useTeams } from '../lib/useTeams.jsx';
 import { useFixtures } from '../lib/useFixtures.js';
 import { useCupFixtures } from '../lib/useCupFixtures.js';
 import { useCupData } from '../lib/useCupData.jsx';
+import { useGuestSources } from '../lib/useGuestSources.jsx';
 import { useHospitalityGuests } from '../lib/useHospitalityGuests.jsx';
 import { SERIE_A_VALUE } from '../lib/competitions.js';
 import { callWithReauth } from '../lib/reauth.js';
 import { exportHospitalityGuestsCsv } from '../lib/exportHospitalityCsv.js';
 import { isoToDDMMYYYY } from '../lib/dateFormat.js';
+import { instagramUrl } from '../lib/instagram.js';
 import { useConfirm } from '../lib/useConfirm.jsx';
 import Crest from '../components/Crest.jsx';
 import Dropdown from '../components/Dropdown.jsx';
@@ -125,7 +127,8 @@ function CopyableField({ value }) {
   );
 }
 
-function GuestRow({ guest, onEdit, onDelete }) {
+function GuestRow({ guest, guestSources, onEdit, onDelete }) {
+  const sourceName = guestSources.find((s) => s.slug === guest.source)?.name;
   return (
     <tr className="border-b border-gray-50 last:border-0">
       <td className="px-2 py-1.5 text-sm font-semibold text-[#0f1e54]">
@@ -141,6 +144,25 @@ function GuestRow({ guest, onEdit, onDelete }) {
       <td className="px-2 py-1.5 text-xs text-gray-500">
         {guest.nationOfResidence}
         {guest.cityOfResidence ? ` · ${guest.cityOfResidence} (${guest.provinceOfResidence})` : ''}
+      </td>
+      <td className="px-2 py-1.5 text-xs text-gray-500">
+        {sourceName ?? '—'}
+        {guest.instagramHandle && (
+          <>
+            {' · '}
+            <a
+              href={instagramUrl(guest.instagramHandle)}
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold text-[#1fd8c9] hover:underline"
+            >
+              @{guest.instagramHandle}
+            </a>
+          </>
+        )}
+      </td>
+      <td className="px-2 py-1.5 text-xs text-gray-500">
+        <CopyableField value={guest.email} />
       </td>
       <td className="px-2 py-1.5 text-right">
         <div className="flex justify-end gap-1.5">
@@ -171,6 +193,7 @@ function MatchGuestSection({
   fixture,
   competitionValue,
   competitions,
+  guestSources,
   guests,
   allGuests,
   session,
@@ -241,7 +264,7 @@ function MatchGuestSection({
 
   function handleExport() {
     const safeName = `${fixture.home.slug}-vs-${fixture.away.slug}-${fixture.date || 'tbd'}`;
-    exportHospitalityGuestsCsv(guests, `${safeName}.csv`, competitions);
+    exportHospitalityGuestsCsv(guests, `${safeName}.csv`, competitions, guestSources);
   }
 
   return (
@@ -271,19 +294,27 @@ function MatchGuestSection({
       <div className="flex flex-col gap-3">
         {guests.length > 0 && (
           <div className="overflow-x-auto rounded-lg border border-gray-100">
-            <table className="w-full min-w-[560px] border-collapse">
+            <table className="w-full min-w-[820px] border-collapse">
               <thead>
                 <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wide text-gray-400">
                   <th className="px-2 py-1.5 text-left">Guest</th>
                   <th className="px-2 py-1.5 text-left">DOB</th>
                   <th className="px-2 py-1.5 text-left">Birth</th>
                   <th className="px-2 py-1.5 text-left">Residence</th>
+                  <th className="px-2 py-1.5 text-left">Source</th>
+                  <th className="px-2 py-1.5 text-left">Email</th>
                   <th className="px-2 py-1.5" />
                 </tr>
               </thead>
               <tbody>
                 {guests.map((g) => (
-                  <GuestRow key={g.id} guest={g} onEdit={() => setEditingGuest(g)} onDelete={() => handleDelete(g)} />
+                  <GuestRow
+                    key={g.id}
+                    guest={g}
+                    guestSources={guestSources}
+                    onEdit={() => setEditingGuest(g)}
+                    onDelete={() => handleDelete(g)}
+                  />
                 ))}
               </tbody>
             </table>
@@ -292,6 +323,7 @@ function MatchGuestSection({
         {error && <p className="text-xs font-semibold text-red-500">{error}</p>}
         <GuestForm
           existingGuests={allGuests}
+          guestSources={guestSources}
           onAdd={handleAdd}
           saving={saving}
           editingGuest={editingGuest}
@@ -308,6 +340,7 @@ export default function HospitalityPage() {
   const { currentSeason } = useSeasons();
   const { teams } = useTeams();
   const { competitions } = useCupData();
+  const { guestSources } = useGuestSources();
   const { fixtures: serieAFixtures, loading: serieALoading } = useFixtures([], teams);
   const { fixtures: cupFixturesAll, loading: cupLoading } = useCupFixtures(currentSeason);
   const { guests, loading: guestsLoading, error: guestsError, addGuest, updateGuest, removeGuest } = useHospitalityGuests();
@@ -366,7 +399,7 @@ export default function HospitalityPage() {
 
   function handleExportGroup() {
     const safeGroup = String(groupLabel || 'group').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    exportHospitalityGuestsCsv(guestsForGroup, `${competitionValue}-${safeGroup}.csv`, competitions);
+    exportHospitalityGuestsCsv(guestsForGroup, `${competitionValue}-${safeGroup}.csv`, competitions, guestSources);
   }
 
   if (!session.signedIn) {
@@ -470,6 +503,7 @@ export default function HospitalityPage() {
                       fixture={f}
                       competitionValue={competitionValue}
                       competitions={competitions}
+                      guestSources={guestSources}
                       guests={fixtureGuests}
                       allGuests={guests}
                       session={session}

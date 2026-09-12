@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import Dropdown from './Dropdown.jsx';
+import SearchSelect from './SearchSelect.jsx';
 import { WORLD_NATIONS, ITALY } from '../lib/worldNations.js';
 import { ITALIAN_PROVINCES } from '../lib/italianProvinces.js';
 import { comuniForProvince } from '../lib/italianComuni.js';
 import { isoToDDMMYYYY } from '../lib/dateFormat.js';
+import { normalizeInstagramHandle } from '../lib/instagram.js';
 
 const inputClass =
   'h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-sm text-[#0f1e54] shadow-sm outline-none transition-colors focus:border-[#1fd8c9] focus:bg-white focus:ring-2 focus:ring-[#1fd8c9]/20';
@@ -30,6 +32,9 @@ const BLANK = {
   nationOfResidence: ITALY,
   provinceOfResidence: '',
   cityOfResidence: '',
+  source: '',
+  instagramHandle: '',
+  email: '',
 };
 
 // Province -> comune is a genuinely large dataset (~7,900 comuni - see
@@ -130,16 +135,23 @@ function fieldsFromGuest(g) {
     nationOfResidence: g.nationOfResidence || ITALY,
     provinceOfResidence: g.provinceOfResidence ?? '',
     cityOfResidence: g.cityOfResidence ?? '',
+    source: g.source ?? '',
+    instagramHandle: g.instagramHandle ?? '',
+    email: g.email ?? '',
   };
 }
 
 // `editingGuest` set (non-null) switches the form into edit mode: fields
 // prefill from that guest, the reuse picker (meaningless mid-edit) hides,
 // and submitting calls onSaveEdit instead of onAdd/resetting to blank.
-export default function GuestForm({ existingGuests, onAdd, saving, editingGuest = null, onSaveEdit, onCancelEdit }) {
+export default function GuestForm({ existingGuests, guestSources, onAdd, saving, editingGuest = null, onSaveEdit, onCancelEdit }) {
   const isEditing = Boolean(editingGuest);
   const [fields, setFields] = useState(() => (editingGuest ? fieldsFromGuest(editingGuest) : BLANK));
   const [error, setError] = useState(null);
+
+  const sourceOptions = useMemo(() => guestSources.map((s) => ({ value: s.slug, label: s.name })), [guestSources]);
+  const selectedSource = guestSources.find((s) => s.slug === fields.source);
+  const needsInstagram = Boolean(selectedSource?.requiresInstagram);
 
   useEffect(() => {
     setFields(editingGuest ? fieldsFromGuest(editingGuest) : BLANK);
@@ -186,6 +198,7 @@ export default function GuestForm({ existingGuests, onAdd, saving, editingGuest 
       ...fields,
       firstName: fields.firstName.trim(),
       lastName: fields.lastName.trim(),
+      email: fields.email.trim(),
       // Blank rather than carrying over a stale province/city from before a
       // nation switch away from Italy - resolveClub-style "only meaningful
       // for the applicable rows" convention used everywhere else in this app.
@@ -193,6 +206,11 @@ export default function GuestForm({ existingGuests, onAdd, saving, editingGuest 
       cityOfBirth: fields.nationOfBirth === ITALY ? fields.cityOfBirth : '',
       provinceOfResidence: fields.nationOfResidence === ITALY ? fields.provinceOfResidence : '',
       cityOfResidence: fields.nationOfResidence === ITALY ? fields.cityOfResidence : '',
+      // Same "only meaningful when applicable" rule - blank unless the
+      // currently-picked source is one that actually asks for a handle
+      // (see GuestSourcesPanel's "Needs IG" toggle), and normalized so it's
+      // never stored as a pasted URL or "@handle".
+      instagramHandle: needsInstagram ? normalizeInstagramHandle(fields.instagramHandle) : '',
     };
     if (isEditing) {
       onSaveEdit(payload);
@@ -283,6 +301,26 @@ export default function GuestForm({ existingGuests, onAdd, saving, editingGuest 
             </Field>
           </>
         )}
+      </div>
+
+      <div className="flex flex-wrap items-end gap-2">
+        <Field label="Source (optional)" className="w-52">
+          <SearchSelect value={fields.source} onChange={(v) => set('source', v)} options={sourceOptions} placeholder="Type to search…" />
+        </Field>
+        {needsInstagram && (
+          <Field label="Instagram handle" className="w-52">
+            <input
+              type="text"
+              value={fields.instagramHandle}
+              onChange={(e) => set('instagramHandle', e.target.value)}
+              placeholder="@handle or profile link"
+              className={inputClass}
+            />
+          </Field>
+        )}
+        <Field label="Email (optional)" className="w-52">
+          <input type="email" value={fields.email} onChange={(e) => set('email', e.target.value)} className={inputClass} />
+        </Field>
       </div>
 
       {error && <p className="text-xs font-semibold text-red-500">{error}</p>}
