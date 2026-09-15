@@ -766,7 +766,17 @@ same way for either side - this is what lets two of your own sponsored
 clubs meet each other correctly, and lets any club's crest/colours show up
 as long as it has a `teams` row. `round` is free text (`Round of 16`, `Group A`, whatever your
 competition calls it - there's no fixed round list, a group stage and a
-knockout draw both just work); `neutralVenue` is TRUE/FALSE, for the rare
+knockout draw both just work - and the "Add a fixture" form suggests
+previously-used round names for whichever competition is selected, so you
+don't have to retype "League Phase" for every single fixture in it).
+`matchday` reuses the same column Serie A rows use - blank for a normal
+cup round, optionally set (via the "Add a fixture" form, or a fixture's own
+"Kickoff" edit tab afterwards to backfill one already added) for a European
+competition's League Phase, which plays many numbered rounds under that one
+round name. Any round with at least one fixture carrying a matchday number
+gets sub-divided by it ("Matchday 1", "Matchday 2", ...) while staying one
+single round card - a round with none set (every other round in the app)
+renders exactly as it always has. `neutralVenue` is TRUE/FALSE, for the rare
 match (typically a final) at neither club's own ground - see "LED
 perimeter-board tracking" above for why this column also decides whether a
 Coppa Italia fixture gets LED tracking. There's no sponsor-activation

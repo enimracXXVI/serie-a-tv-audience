@@ -131,6 +131,7 @@ export default function CupCompetitionsPage() {
             clubs={clubs}
             competitions={competitions}
             broadcasters={broadcasters}
+            fixtures={fixtures}
             onCreate={handleCreate}
             onCreateOpponent={handleCreateOpponent}
           />

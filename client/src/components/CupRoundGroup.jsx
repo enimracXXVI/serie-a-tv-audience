@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import CupFixtureRow from './CupFixtureRow.jsx';
 import CupTieGroup from './CupTieGroup.jsx';
-import { groupIntoTies, tieKeyFor } from '../lib/cupFixtures.js';
+import { groupIntoTies, tieKeyFor, groupByMatchday } from '../lib/cupFixtures.js';
 
 const TABS = [
   { key: 'kickoff', label: 'Kickoff' },
@@ -24,8 +24,27 @@ const ACCENT = '#b91c1c';
 // legs of a tie) in it at once - same position and split as Serie A's
 // MatchdayGroup, rather than each row managing its own separate open/closed
 // tab like before.
+function TieList({ fixtures, onUpdate, onDelete, canEdit, activeTab, broadcasters }) {
+  return groupIntoTies(fixtures).map((legs, i) => (
+    <div key={legs.length === 2 ? tieKeyFor(legs[0]) : legs[0].id} style={i > 0 ? { borderTop: `1px solid ${ACCENT}33` } : undefined}>
+      {legs.length === 2 ? (
+        <CupTieGroup legs={legs} onUpdate={onUpdate} onDelete={onDelete} canEdit={canEdit} editMode={activeTab} broadcasters={broadcasters} />
+      ) : (
+        legs.map((f) => (
+          <CupFixtureRow key={f.id} fixture={f} onUpdate={onUpdate} onDelete={onDelete} canEdit={canEdit} editMode={activeTab} broadcasters={broadcasters} />
+        ))
+      )}
+    </div>
+  ));
+}
+
 export default function CupRoundGroup({ round, fixtures, onUpdate, onDelete, canEdit, broadcasters }) {
   const [activeTab, setActiveTab] = useState(null);
+  // Only non-null once a European competition's League Phase-style round
+  // actually has fixtures with a matchday number set (see cupFixtures.js) -
+  // every other round (a normal single knockout tie) stays exactly as it
+  // rendered before this existed.
+  const matchdayGroups = groupByMatchday(fixtures);
 
   return (
     <section className="scroll-mt-4 overflow-hidden rounded-2xl bg-white shadow-lg shadow-black/20">
@@ -58,32 +77,16 @@ export default function CupRoundGroup({ round, fixtures, onUpdate, onDelete, can
         )}
       </header>
       <div className="flex flex-col">
-        {groupIntoTies(fixtures).map((legs, i) => (
-          <div key={legs.length === 2 ? tieKeyFor(legs[0]) : legs[0].id} style={i > 0 ? { borderTop: `1px solid ${ACCENT}33` } : undefined}>
-            {legs.length === 2 ? (
-              <CupTieGroup
-                legs={legs}
-                onUpdate={onUpdate}
-                onDelete={onDelete}
-                canEdit={canEdit}
-                editMode={activeTab}
-                broadcasters={broadcasters}
-              />
-            ) : (
-              legs.map((f) => (
-                <CupFixtureRow
-                  key={f.id}
-                  fixture={f}
-                  onUpdate={onUpdate}
-                  onDelete={onDelete}
-                  canEdit={canEdit}
-                  editMode={activeTab}
-                  broadcasters={broadcasters}
-                />
-              ))
-            )}
-          </div>
-        ))}
+        {matchdayGroups
+          ? matchdayGroups.map(([matchday, mdFixtures], gi) => (
+              <div key={matchday ?? 'unknown'} style={gi > 0 ? { borderTop: `1px solid ${ACCENT}33` } : undefined}>
+                <div className="px-4 py-1 text-[10px] font-bold uppercase tracking-wide" style={{ background: `${ACCENT}14`, color: ACCENT }}>
+                  {matchday !== null ? `Matchday ${matchday}` : 'Matchday unknown'}
+                </div>
+                <TieList fixtures={mdFixtures} onUpdate={onUpdate} onDelete={onDelete} canEdit={canEdit} activeTab={activeTab} broadcasters={broadcasters} />
+              </div>
+            ))
+          : <TieList fixtures={fixtures} onUpdate={onUpdate} onDelete={onDelete} canEdit={canEdit} activeTab={activeTab} broadcasters={broadcasters} />}
       </div>
     </section>
   );

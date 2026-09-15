@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import Dropdown from './Dropdown.jsx';
 import SearchSelect from './SearchSelect.jsx';
+import SuggestInput from './SuggestInput.jsx';
 import { WORLD_NATIONS, ITALY } from '../lib/worldNations.js';
 import { ITALIAN_PROVINCES } from '../lib/italianProvinces.js';
 import { comuniForProvince } from '../lib/italianComuni.js';
@@ -153,6 +153,16 @@ export default function GuestForm({ existingGuests, guestSources, onAdd, saving,
   const selectedSource = guestSources.find((s) => s.slug === fields.source);
   const needsInstagram = Boolean(selectedSource?.requiresInstagram);
 
+  // `existingGuests` is every guest already on file (see HospitalityPage),
+  // so these double as "what's been typed before, across every match" -
+  // same recall idea as "Reuse a previous guest" above, just per field
+  // rather than the whole person.
+  const knownInstagramHandles = useMemo(
+    () => [...new Set(existingGuests.map((g) => g.instagramHandle).filter(Boolean))],
+    [existingGuests]
+  );
+  const knownEmails = useMemo(() => [...new Set(existingGuests.map((g) => g.email).filter(Boolean))], [existingGuests]);
+
   useEffect(() => {
     setFields(editingGuest ? fieldsFromGuest(editingGuest) : BLANK);
     setError(null);
@@ -178,20 +188,11 @@ export default function GuestForm({ existingGuests, guestSources, onAdd, saving,
   function handleSubmit(e) {
     e.preventDefault();
     setError(null);
+    // First and last name are the only required fields - everything else
+    // (DOB, nationality, province/city, source, Instagram, email) is
+    // optional.
     if (!fields.firstName.trim() || !fields.lastName.trim()) {
       setError('Enter the guest’s first and last name.');
-      return;
-    }
-    if (!fields.dateOfBirth) {
-      setError('Enter the guest’s date of birth.');
-      return;
-    }
-    if (fields.nationOfBirth === ITALY && (!fields.provinceOfBirth || !fields.cityOfBirth)) {
-      setError('Pick a province and city of birth.');
-      return;
-    }
-    if (fields.nationOfResidence === ITALY && (!fields.provinceOfResidence || !fields.cityOfResidence)) {
-      setError('Pick a province and city of residence.');
       return;
     }
     const payload = {
@@ -241,14 +242,13 @@ export default function GuestForm({ existingGuests, guestSources, onAdd, saving,
       </div>
 
       <div className="flex flex-wrap items-end gap-2">
-        <Field label="Nation of birth" className="w-40">
-          <Dropdown variant="light" value={fields.nationOfBirth} onChange={(v) => set('nationOfBirth', v)} options={NATION_OPTIONS} />
+        <Field label="Nation of birth" className="w-52">
+          <SearchSelect value={fields.nationOfBirth} onChange={(v) => set('nationOfBirth', v)} options={NATION_OPTIONS} />
         </Field>
         {fields.nationOfBirth === ITALY && (
           <>
             <Field label="Province of birth" className="w-52">
-              <Dropdown
-                variant="light"
+              <SearchSelect
                 value={fields.provinceOfBirth}
                 onChange={(v) => {
                   set('provinceOfBirth', v);
@@ -258,11 +258,11 @@ export default function GuestForm({ existingGuests, guestSources, onAdd, saving,
               />
             </Field>
             <Field label="City of birth" className="w-52">
-              <Dropdown
-                variant="light"
+              <SearchSelect
                 value={fields.cityOfBirth}
                 onChange={(v) => set('cityOfBirth', v)}
-                options={birthComuniOptions.length > 0 ? birthComuniOptions : [{ value: '', label: 'Pick a province first' }]}
+                options={birthComuniOptions}
+                placeholder={birthComuniOptions.length > 0 ? 'Type to search…' : 'Pick a province first'}
               />
             </Field>
           </>
@@ -270,19 +270,13 @@ export default function GuestForm({ existingGuests, guestSources, onAdd, saving,
       </div>
 
       <div className="flex flex-wrap items-end gap-2">
-        <Field label="Nation of residence" className="w-40">
-          <Dropdown
-            variant="light"
-            value={fields.nationOfResidence}
-            onChange={(v) => set('nationOfResidence', v)}
-            options={NATION_OPTIONS}
-          />
+        <Field label="Nation of residence" className="w-52">
+          <SearchSelect value={fields.nationOfResidence} onChange={(v) => set('nationOfResidence', v)} options={NATION_OPTIONS} />
         </Field>
         {fields.nationOfResidence === ITALY && (
           <>
             <Field label="Province of residence" className="w-52">
-              <Dropdown
-                variant="light"
+              <SearchSelect
                 value={fields.provinceOfResidence}
                 onChange={(v) => {
                   set('provinceOfResidence', v);
@@ -292,11 +286,11 @@ export default function GuestForm({ existingGuests, guestSources, onAdd, saving,
               />
             </Field>
             <Field label="City of residence" className="w-52">
-              <Dropdown
-                variant="light"
+              <SearchSelect
                 value={fields.cityOfResidence}
                 onChange={(v) => set('cityOfResidence', v)}
-                options={residenceComuniOptions.length > 0 ? residenceComuniOptions : [{ value: '', label: 'Pick a province first' }]}
+                options={residenceComuniOptions}
+                placeholder={residenceComuniOptions.length > 0 ? 'Type to search…' : 'Pick a province first'}
               />
             </Field>
           </>
@@ -309,17 +303,16 @@ export default function GuestForm({ existingGuests, guestSources, onAdd, saving,
         </Field>
         {needsInstagram && (
           <Field label="Instagram handle" className="w-52">
-            <input
-              type="text"
+            <SuggestInput
               value={fields.instagramHandle}
-              onChange={(e) => set('instagramHandle', e.target.value)}
+              onChange={(v) => set('instagramHandle', v)}
+              suggestions={knownInstagramHandles}
               placeholder="@handle or profile link"
-              className={inputClass}
             />
           </Field>
         )}
         <Field label="Email (optional)" className="w-52">
-          <input type="email" value={fields.email} onChange={(e) => set('email', e.target.value)} className={inputClass} />
+          <SuggestInput type="email" value={fields.email} onChange={(v) => set('email', v)} suggestions={knownEmails} />
         </Field>
       </div>
       {/* Whether this field shows at all is driven entirely by the picked

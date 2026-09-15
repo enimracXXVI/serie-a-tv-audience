@@ -58,7 +58,7 @@ function FixtureExpandRow({ fixture, expanded, onToggle, guestCount }) {
       type="button"
       onClick={onToggle}
       aria-expanded={expanded}
-      className={`flex w-full items-center gap-3 rounded-lg border-2 px-3 py-2 text-left transition-colors ${
+      className={`flex w-full items-start gap-3 rounded-lg border-2 px-3 py-2 text-left transition-colors ${
         // An opaque tint, not a semi-transparent one - this row sits
         // directly on the page's own navy (#0f1e54) body background, the
         // same colour as the team-name text below, so a see-through
@@ -69,25 +69,38 @@ function FixtureExpandRow({ fixture, expanded, onToggle, guestCount }) {
     >
       <span
         aria-hidden="true"
-        className={`shrink-0 text-[10px] text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
+        className={`mt-1 shrink-0 text-[10px] text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
       >
         ▶
       </span>
-      <Crest team={fixture.home} size={18} />
-      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[#0f1e54]">
-        {fixture.home.name} vs {fixture.away.name}
-      </span>
-      <span className="shrink-0 text-xs text-gray-400">
-        {formatDateShort(fixture.date)}
-        {fixture.kickoffTime ? ` · ${fixture.kickoffTime}` : ''}
-      </span>
-      <span
-        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-          full ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'
-        }`}
-      >
-        {ticketBadgeText(guestCount, ticketsCount)}
-      </span>
+      {/* Home and away each get their own full-width line instead of both
+          names sharing one truncating span next to the crest/date/badge -
+          on a narrow phone that shared span used to have so little room
+          left that only the home team's name (cut short) ever showed, with
+          the away team invisible entirely. */}
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <Crest team={fixture.home} size={16} />
+          <span className="min-w-0 truncate text-sm font-semibold text-[#0f1e54]">{fixture.home.name}</span>
+        </div>
+        <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
+          <Crest team={fixture.away} size={16} />
+          <span className="min-w-0 truncate text-sm font-semibold text-[#0f1e54]">{fixture.away.name}</span>
+        </div>
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <span className="text-xs text-gray-400">
+          {formatDateShort(fixture.date)}
+          {fixture.kickoffTime ? ` · ${fixture.kickoffTime}` : ''}
+        </span>
+        <span
+          className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+            full ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'
+          }`}
+        >
+          {ticketBadgeText(guestCount, ticketsCount)}
+        </span>
+      </div>
     </button>
   );
 }

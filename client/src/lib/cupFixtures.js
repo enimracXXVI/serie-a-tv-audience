@@ -60,6 +60,30 @@ export function groupIntoTies(fixtures) {
   return [...byKey.values()];
 }
 
+// A European competition's "League Phase" plays many rounds under one round
+// name instead of the old group stage - `matchday` (optional, set per
+// fixture - see CupFixtureRow/AddCupFixtureForm) is what tells those rounds
+// apart within it. Returns null (render flat, no sub-grouping) unless at
+// least one fixture in this round actually has it set, so every other round
+// (a normal single knockout tie) renders exactly as it always has. Fixtures
+// with no matchday set land in their own trailing "unknown" bucket rather
+// than being dropped or mixed into matchday 1, since a blank value doesn't
+// mean matchday 1 - it means nobody's filled it in yet.
+export function groupByMatchday(fixtures) {
+  if (!fixtures.some((f) => f.matchday !== null && f.matchday !== undefined)) return null;
+  const byMatchday = new Map();
+  for (const f of fixtures) {
+    const key = f.matchday === null || f.matchday === undefined ? null : f.matchday;
+    if (!byMatchday.has(key)) byMatchday.set(key, []);
+    byMatchday.get(key).push(f);
+  }
+  return [...byMatchday.entries()].sort(([a], [b]) => {
+    if (a === null) return 1;
+    if (b === null) return -1;
+    return a - b;
+  });
+}
+
 // Only meaningful once both legs exist and have been played - null
 // otherwise (a first leg alone, or a leg still to be played, has no
 // aggregate to show yet). Uses each leg's resolved (post-ET) outcome, since

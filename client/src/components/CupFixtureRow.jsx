@@ -137,6 +137,20 @@ function KickoffFields({ fixture, onUpdate, broadcasters }) {
           onChange={(e) => onUpdate(fixture.id, { kickoffTime: e.target.value || null })}
         />
       </Field>
+      {/* Only meaningful for a round-robin phase (a European competition's
+          League Phase) that spans several numbered rounds under one round
+          name - see CupRoundGroup, which sub-groups a round's fixtures by
+          this once any of them have it set. Left blank for a normal
+          single-round knockout tie. */}
+      <Field label="Matchday">
+        <input
+          type="number"
+          min="1"
+          value={fixture.matchday ?? ''}
+          className={`${inputClass} w-20`}
+          onChange={(e) => onUpdate(fixture.id, { matchday: e.target.value === '' ? null : Number(e.target.value) })}
+        />
+      </Field>
       <Field label="Broadcaster(s)">
         {/* A cup tie can air on more than one platform at once (see the
             display side's resolveBroadcasterList) - a tile per broadcaster

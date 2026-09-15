@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import ToggleSwitch from './ToggleSwitch.jsx';
 import Dropdown from './Dropdown.jsx';
 import MultiSelectDropdown from './MultiSelectDropdown.jsx';
+import SuggestInput from './SuggestInput.jsx';
 import Crest from './Crest.jsx';
 import { competitionScope } from '../lib/competitions.js';
 import { clubScope, slugify } from '../lib/clubs.js';
@@ -52,9 +53,10 @@ function clubSelectOptions(currentRoster, opponents) {
 // sponsored clubs can meet each other just as easily as either meeting a
 // club you've never heard of. Both sides write the picked club's SLUG (not
 // name text) into the fixture - see clubs.js/teams.js for why.
-export default function AddCupFixtureForm({ clubs, competitions, broadcasters, onCreate, onCreateOpponent, onDone }) {
+export default function AddCupFixtureForm({ clubs, competitions, broadcasters, fixtures, onCreate, onCreateOpponent, onDone }) {
   const [competition, setCompetition] = useState(competitions[0].slug);
   const [round, setRound] = useState('');
+  const [matchday, setMatchday] = useState('');
   const [home, setHome] = useState('');
   const [away, setAway] = useState('');
   const [newHomeClubName, setNewHomeClubName] = useState('');
@@ -77,6 +79,14 @@ export default function AddCupFixtureForm({ clubs, competitions, broadcasters, o
   const currentRoster = clubs.filter((c) => clubScope(c) === 'current');
   const opponents = clubs.filter((c) => clubScope(c) === scope);
   const clubOptions = clubSelectOptions(currentRoster, opponents);
+
+  // Previously-used round names for whichever competition is currently
+  // selected - typing "League Phase" (or "Round of 16", ...) fresh every
+  // single fixture gets old fast once a round has several fixtures.
+  const roundSuggestions = useMemo(
+    () => [...new Set((fixtures ?? []).filter((f) => f.competition === competition && f.round).map((f) => f.round))],
+    [fixtures, competition]
+  );
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -127,6 +137,7 @@ export default function AddCupFixtureForm({ clubs, competitions, broadcasters, o
       await onCreate({
         competition,
         round: round.trim(),
+        matchday: matchday === '' ? '' : Number(matchday),
         home: homeSlug,
         away: awaySlug,
         neutralVenue,
@@ -134,7 +145,10 @@ export default function AddCupFixtureForm({ clubs, competitions, broadcasters, o
         kickoffTime: kickoffTime || '',
         otherBroadcaster: broadcasterSlugs.join(','),
       });
-      // Round/competition stay put; everything else resets for the next add.
+      // Round/competition/matchday stay put - adding a whole round's worth
+      // of fixtures (a League Phase matchday's games, a two-legged round)
+      // means several in a row share the same three; everything else
+      // resets for the next add.
       setHome('');
       setAway('');
       setNewHomeClubName('');
@@ -166,11 +180,15 @@ export default function AddCupFixtureForm({ clubs, competitions, broadcasters, o
           />
         </Field>
         <Field label="Round" className="w-48">
+          <SuggestInput value={round} onChange={setRound} suggestions={roundSuggestions} placeholder="e.g. Round of 16" />
+        </Field>
+        <Field label="Matchday (optional)" className="w-32">
           <input
-            type="text"
-            value={round}
-            onChange={(e) => setRound(e.target.value)}
-            placeholder="e.g. Round of 16"
+            type="number"
+            min="1"
+            value={matchday}
+            onChange={(e) => setMatchday(e.target.value)}
+            placeholder="e.g. 1"
             className={inputClass}
           />
         </Field>
