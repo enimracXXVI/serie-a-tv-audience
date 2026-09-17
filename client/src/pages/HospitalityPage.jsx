@@ -15,6 +15,7 @@ import { instagramUrl } from '../lib/instagram.js';
 import { useConfirm } from '../lib/useConfirm.jsx';
 import Crest from '../components/Crest.jsx';
 import Dropdown from '../components/Dropdown.jsx';
+import SearchSelect from '../components/SearchSelect.jsx';
 import Card from '../components/Card.jsx';
 import GuestForm from '../components/GuestForm.jsx';
 
@@ -213,13 +214,34 @@ function MatchGuestSection({
   addGuest,
   updateGuest,
   removeGuest,
+  isOverrideOnly,
+  onRemoveOverride,
 }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [editingGuest, setEditingGuest] = useState(null);
+  const [removingOverride, setRemovingOverride] = useState(false);
   const [confirm, confirmDialog] = useConfirm();
 
   const ticketsCount = fixture.home.ticketsCount ?? null;
+
+  async function handleRemoveOverride() {
+    if (
+      !(await confirm(
+        `Remove hospitality access for ${fixture.home.name} vs ${fixture.away.name}? It'll disappear from this list - any guests already added stay on file, just no longer editable from here unless you re-enable it.`
+      ))
+    ) {
+      return;
+    }
+    setRemovingOverride(true);
+    setError(null);
+    try {
+      await onRemoveOverride();
+    } catch (err) {
+      setError(err.message);
+      setRemovingOverride(false);
+    }
+  }
 
   async function handleAdd(guestFields) {
     setSaving(true);
@@ -300,6 +322,17 @@ function MatchGuestSection({
           >
             Download CSV
           </button>
+          {isOverrideOnly && (
+            <button
+              type="button"
+              onClick={handleRemoveOverride}
+              disabled={removingOverride}
+              title="This match only shows up here because of a one-off hospitality override, not a standing ticket deal"
+              className="rounded-full bg-white/40 px-3 py-1 text-[10px] font-bold uppercase text-red-600 hover:bg-white/60 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {removingOverride ? 'Removing…' : 'Remove access'}
+            </button>
+          )}
         </>
       }
     >
@@ -348,14 +381,75 @@ function MatchGuestSection({
   );
 }
 
+// A single collapsed link rather than listing every non-ticketed fixture
+// alongside the normal (ticketed) list - most matchdays/rounds never need
+// this at all, so it stays out of the way until you actually have ad-hoc
+// access to a specific game whose home club has no standing ticket
+// allocation (see `hospitalityOverride` on the fixture itself). Picking one
+// here just turns that flag on for that one fixture, which then shows up
+// in the normal list above like any other.
+function EnableMatchPicker({ fixtures, onEnable }) {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const options = fixtures.map((f) => ({
+    value: String(f.id),
+    label: `${f.home.name} vs ${f.away.name}${f.date ? ` · ${formatDateShort(f.date)}` : ''}`,
+  }));
+
+  async function handlePick(idStr) {
+    const fixture = fixtures.find((f) => String(f.id) === idStr);
+    if (!fixture) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await onEnable(fixture);
+      setOpen(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="w-fit text-xs font-semibold text-white/50 hover:text-white">
+        + Enable a match without tickets
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2 rounded-xl bg-white/10 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">
+          Got ad-hoc ticket access to one of these? Pick it below.
+        </span>
+        <button type="button" onClick={() => setOpen(false)} className="shrink-0 text-xs font-semibold text-white/40 hover:text-white">
+          Cancel
+        </button>
+      </div>
+      <SearchSelect value="" onChange={handlePick} options={options} placeholder="Type to search…" />
+      {saving && <p className="text-xs text-white/40">Saving…</p>}
+      {error && <p className="text-xs text-red-300">{error}</p>}
+    </div>
+  );
+}
+
 export default function HospitalityPage() {
   const session = useSession();
   const { currentSeason } = useSeasons();
   const { teams } = useTeams();
   const { competitions } = useCupData();
   const { guestSources } = useGuestSources();
-  const { fixtures: serieAFixtures, loading: serieALoading } = useFixtures([], teams);
-  const { fixtures: cupFixturesAll, loading: cupLoading } = useCupFixtures(currentSeason);
+  const { fixtures: serieAFixtures, loading: serieALoading, updateFixture: updateSerieAFixture } = useFixtures([], teams);
+  const {
+    fixtures: cupFixturesAll,
+    loading: cupLoading,
+    updateFixture: updateCupFixture,
+  } = useCupFixtures(currentSeason);
   const { guests, loading: guestsLoading, error: guestsError, addGuest, updateGuest, removeGuest } = useHospitalityGuests();
 
   const [competitionValue, setCompetitionValue] = useState(SERIE_A_VALUE);
@@ -400,12 +494,21 @@ export default function HospitalityPage() {
     .sort(compareFixtureTime);
   // Only home clubs with hospitality tickets turned on for this season show
   // up at all - see the Tickets toggle in Settings > Sponsorship/big match/
-  // derby, right next to LED (TeamSeasonsPanel). European competitions
-  // (Champions/Europa/Conference League) skip that check entirely: every
-  // fixture added under one of them is assumed to carry hospitality, so a
-  // European away leg's foreign host (never set up in teamSeasons at all)
-  // doesn't block it from showing up here.
-  const ticketFixtures = isEuropeanCup ? groupFixtures : groupFixtures.filter((f) => f.home.ticketsAvailable);
+  // derby, right next to LED (TeamSeasonsPanel) - or a one-off
+  // `hospitalityOverride` on the fixture itself (see EnableMatchPicker
+  // below), for ad-hoc ticket access to a specific game whose home club has
+  // no standing allocation deal. European competitions (Champions/Europa/
+  // Conference League) skip both checks entirely: every fixture added
+  // under one of them is assumed to carry hospitality, so a European away
+  // leg's foreign host (never set up in teamSeasons at all) doesn't block
+  // it from showing up here.
+  const ticketFixtures = isEuropeanCup
+    ? groupFixtures
+    : groupFixtures.filter((f) => f.home.ticketsAvailable || f.hospitalityOverride);
+  // Candidates for EnableMatchPicker - everything else in this group. Always
+  // empty for a European competition, since nothing is filtered out there
+  // to begin with.
+  const nonTicketFixtures = groupFixtures.filter((f) => !ticketFixtures.includes(f));
   const groupLabel = groupOptions.find((o) => o.value === group)?.label ?? group;
 
   function guestsForFixture(fixtureId) {
@@ -414,6 +517,16 @@ export default function HospitalityPage() {
 
   function toggleExpanded(id) {
     setExpandedFixtureIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  async function handleEnableOverride(fixture) {
+    const updateFn = isSerieA ? updateSerieAFixture : updateCupFixture;
+    await callWithReauth(session, (token) => updateFn(fixture.id, { hospitalityOverride: true }, token));
+  }
+
+  async function handleDisableOverride(fixture) {
+    const updateFn = isSerieA ? updateSerieAFixture : updateCupFixture;
+    await callWithReauth(session, (token) => updateFn(fixture.id, { hospitalityOverride: false }, token));
   }
 
   const groupFixtureIds = useMemo(() => new Set(groupFixtures.map((f) => f.id)), [groupFixtures]);
@@ -491,54 +604,66 @@ export default function HospitalityPage() {
           <p className="text-sm text-white/40">Loading…</p>
         ) : !group ? (
           <p className="text-sm text-white/40">Pick a {isSerieA ? 'matchday' : 'round'} to see its matches.</p>
-        ) : ticketFixtures.length === 0 ? (
-          <p className="text-sm text-white/40">
-            {isEuropeanCup
-              ? `No fixture added for this round yet.`
-              : `No match in this ${isSerieA ? 'matchday' : 'round'} has a home club with hospitality tickets turned on for ${currentSeason.label}.`}
-          </p>
         ) : (
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wide text-white/40">Pick a match to expand</span>
-              <button
-                type="button"
-                onClick={handleExportGroup}
-                disabled={guestsForGroup.length === 0}
-                className="rounded-full bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase text-white hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Download CSV for {groupLabel}
-              </button>
-            </div>
-            {ticketFixtures.map((f) => {
-              const expanded = expandedFixtureIds.includes(f.id);
-              const fixtureGuests = guestsForFixture(f.id);
-              return (
-                <div key={f.id} className="flex flex-col gap-2">
-                  <FixtureExpandRow
-                    fixture={f}
-                    expanded={expanded}
-                    onToggle={() => toggleExpanded(f.id)}
-                    guestCount={fixtureGuests.length}
-                  />
-                  {expanded && (
-                    <MatchGuestSection
-                      fixture={f}
-                      competitionValue={competitionValue}
-                      competitions={competitions}
-                      guestSources={guestSources}
-                      guests={fixtureGuests}
-                      allGuests={guests}
-                      session={session}
-                      addGuest={addGuest}
-                      updateGuest={updateGuest}
-                      removeGuest={removeGuest}
-                    />
-                  )}
+          <>
+            {ticketFixtures.length === 0 ? (
+              <p className="text-sm text-white/40">
+                {isEuropeanCup
+                  ? `No fixture added for this round yet.`
+                  : `No match in this ${isSerieA ? 'matchday' : 'round'} has a home club with hospitality tickets turned on for ${currentSeason.label}.`}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-white/40">Pick a match to expand</span>
+                  <button
+                    type="button"
+                    onClick={handleExportGroup}
+                    disabled={guestsForGroup.length === 0}
+                    className="rounded-full bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase text-white hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Download CSV for {groupLabel}
+                  </button>
                 </div>
-              );
-            })}
-          </div>
+                {ticketFixtures.map((f) => {
+                  const expanded = expandedFixtureIds.includes(f.id);
+                  const fixtureGuests = guestsForFixture(f.id);
+                  return (
+                    <div key={f.id} className="flex flex-col gap-2">
+                      <FixtureExpandRow
+                        fixture={f}
+                        expanded={expanded}
+                        onToggle={() => toggleExpanded(f.id)}
+                        guestCount={fixtureGuests.length}
+                      />
+                      {expanded && (
+                        <MatchGuestSection
+                          fixture={f}
+                          competitionValue={competitionValue}
+                          competitions={competitions}
+                          guestSources={guestSources}
+                          guests={fixtureGuests}
+                          allGuests={guests}
+                          session={session}
+                          addGuest={addGuest}
+                          updateGuest={updateGuest}
+                          removeGuest={removeGuest}
+                          // Only a match let in purely via the one-off
+                          // override (not a real team-level ticket deal)
+                          // gets an undo control - see EnableMatchPicker.
+                          isOverrideOnly={!f.home.ticketsAvailable && Boolean(f.hospitalityOverride)}
+                          onRemoveOverride={() => handleDisableOverride(f)}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {nonTicketFixtures.length > 0 && (
+              <EnableMatchPicker fixtures={nonTicketFixtures} onEnable={handleEnableOverride} />
+            )}
+          </>
         )}
       </main>
     </div>

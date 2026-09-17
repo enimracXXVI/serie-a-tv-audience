@@ -39,6 +39,12 @@ const BOOLEAN_FIELDS = new Set([
   'isDerby',
   'neutralVenue',
   'penaltyTaken',
+  // A one-off "hospitality tickets for this match specifically" flag - see
+  // HospitalityPage's ticketFixtures filter. Independent of the home club's
+  // own season-scoped `ticketsAvailable` (teamSeasons) - this covers ad-hoc
+  // access to a single game for a club with no standing allocation deal,
+  // without needing to fake one on for that whole season.
+  'hospitalityOverride',
 ]);
 const EDITABLE_FIELDS = [
   'date',

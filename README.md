@@ -87,6 +87,7 @@ open the sheet directly, add these labels to row 1 if you want them:
 | X | isDerby | TRUE/FALSE — the two clubs in this fixture are each other's `derbyRival` |
 | Y | extraLedMinutes | Extra LED perimeter-board minutes purchased for this specific home game, on top of whatever's contracted for the season (see `teamSeasons`' LED columns below) |
 | Z | penaltyTaken | TRUE/FALSE — a penalty was taken during the 90 minutes of this match (only meaningful, and only shown in the app, for a home club with a penalty-LED deal that season) |
+| AA | hospitalityOverride | TRUE/FALSE — one-off hospitality ticket access for this specific match, independent of the home club's own season-scoped `ticketsAvailable` (see "Hospitality guest lists" below) - toggled from the Hospitality page itself, not this fixture's own edit box |
 
 These TRUE/FALSE columns accept a real checkbox cell or plain text - "TRUE",
 "true", or "True" (with or without stray whitespace) all count as checked;
@@ -609,9 +610,19 @@ rows to start:
   real personal data.
 
 Only fixtures whose **home** club has `ticketsAvailable` turned on for the
-current season (see the `teamSeasons` tab above) show up as pickable at all,
-listed in kickoff order (date, then time) rather than sheet row order.
-Clicking a fixture expands its own guest-list section directly below it
+current season (see the `teamSeasons` tab above) show up as pickable at all -
+or whose own `hospitalityOverride` cell (on the fixtures tab itself, TRUE/
+FALSE, same as `isBigMatch`/`isDerby`) is TRUE, for one-off ticket access to
+a specific game whose home club has no standing allocation deal. The
+Hospitality page has its own small "+ Enable a match without tickets" link
+for turning that flag on (and a "Remove access" button on a match only
+shown because of it, to turn it back off) - there's no need to touch the
+fixture's own edit box for this. European competitions (Champions/Europa/
+Conference League) skip both checks entirely and always show every fixture
+added under them, since a European away leg's foreign host is never set up
+in `teamSeasons` at all. Matches are listed in kickoff order (date, then
+time) rather than sheet row order. Clicking a fixture expands its own
+guest-list section directly below it
 (an accordion, not a checkbox-then-separate-list). Each one shows "X/Y"
 (`X` = guests already added to that match, `Y` = that club's
 `ticketsCount`) - going over `Y` is allowed (better to let you over-allocate
