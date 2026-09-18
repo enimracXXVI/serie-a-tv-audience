@@ -76,6 +76,9 @@ export function enrichFixture(raw, clubsBySlug, clubsByName) {
     penHomeScore: raw.penHomeScore,
     penAwayScore: raw.penAwayScore,
     updatedAt: raw.updatedAt,
+    // One-off hospitality ticket access for this specific match - see
+    // HospitalityPage's ticketFixtures filter/EnableMatchPicker.
+    hospitalityOverride: raw.hospitalityOverride,
   };
 }
 
