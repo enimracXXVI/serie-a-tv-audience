@@ -19,6 +19,7 @@ import {
 } from '../lib/dashboardMetrics.js';
 import { isPlayed } from '../lib/standings.js';
 import { useSeasonComparison } from '../lib/useSeasonComparison.js';
+import { useTeamAudienceYoY } from '../lib/useTeamAudienceYoY.js';
 import { useCupFixtures } from '../lib/useCupFixtures.js';
 import { isCoppaItalia } from '../lib/competitions.js';
 import SeasonSelector from '../components/SeasonSelector.jsx';
@@ -34,6 +35,7 @@ import ActivationDonut from '../components/ActivationDonut.jsx';
 import OpponentAudienceChart from '../components/OpponentAudienceChart.jsx';
 import LedExposureCard from '../components/LedExposureCard.jsx';
 import SeasonComparisonCard from '../components/SeasonComparisonCard.jsx';
+import TeamYoYTable from '../components/TeamYoYTable.jsx';
 import ToggleSwitch from '../components/ToggleSwitch.jsx';
 import ScreenshotableCard from '../components/ScreenshotableCard.jsx';
 import Dropdown from '../components/Dropdown.jsx';
@@ -113,6 +115,7 @@ function RemainingScheduleCard({ remaining, team }) {
 const NAV_SECTIONS = [
   { id: 'dash-stats', label: 'Stats' },
   { id: 'dash-comparison', label: 'Season comparison' },
+  { id: 'dash-yoy', label: 'Audience YoY' },
   { id: 'dash-ranked', label: 'Audience by club' },
   { id: 'dash-table', label: 'Club table' },
   { id: 'dash-trend', label: 'Season trend' },
@@ -326,6 +329,12 @@ export default function DashboardPage() {
   );
 
   const { seasons: comparisonSeasons } = useSeasonComparison(teams, includeSimulcast, includeOther, focusedSlug);
+  const {
+    previousSeason: yoyPreviousSeason,
+    rows: yoyRows,
+    loading: yoyLoading,
+    error: yoyError,
+  } = useTeamAudienceYoY(season, metrics, includeSimulcast, includeOther);
 
   return (
     <div className="min-h-screen">
@@ -388,6 +397,18 @@ export default function DashboardPage() {
             <div id="dash-comparison" className="scroll-mt-20">
               <ScreenshotableCard filename="dashboard-season-comparison">
                 <SeasonComparisonCard seasons={comparisonSeasons} focusedTeam={focusedTeam} />
+              </ScreenshotableCard>
+            </div>
+
+            <div id="dash-yoy" className="scroll-mt-20">
+              <ScreenshotableCard filename={`dashboard-audience-yoy-${season.label.replace('/', '-')}`}>
+                {yoyLoading ? (
+                  <p className="text-sm text-white/40">Loading year-on-year comparison…</p>
+                ) : yoyError ? (
+                  <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{yoyError}</p>
+                ) : (
+                  <TeamYoYTable rows={yoyRows} currentLabel={season.label} previousLabel={yoyPreviousSeason?.label ?? null} />
+                )}
               </ScreenshotableCard>
             </div>
 

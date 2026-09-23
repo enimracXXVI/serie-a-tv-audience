@@ -118,6 +118,41 @@ export function computeAllTeamMetrics(teams, fixtures, includeSimulcast, include
   return teams.map((team) => computeTeamMetrics(team, fixtures, simulcastInfo, includeSimulcast, includeOther));
 }
 
+// Pairs up each club's home-audience average between two seasons' own
+// computeAllTeamMetrics results (see DashboardPage's "Audience by team,
+// year on year" section). A club with no home games recorded in one of the
+// two seasons (promoted/relegated since, or simply not played yet) gets
+// null for that side and for the delta, rather than a misleading 0 or a
+// bogus +/-100% swing against a non-existent baseline.
+export function computeTeamYoY(currentMetrics, previousMetrics) {
+  const prevBySlug = new Map(previousMetrics.map((m) => [m.team.slug, m]));
+  const seen = new Set();
+  const rows = [];
+
+  function toRow(team, currentAvg, previousAvg) {
+    const delta = currentAvg !== null && previousAvg !== null ? currentAvg - previousAvg : null;
+    const deltaPct = delta !== null && previousAvg > 0 ? (delta / previousAvg) * 100 : null;
+    return { team, currentAvg, previousAvg, delta, deltaPct };
+  }
+
+  for (const cur of currentMetrics) {
+    seen.add(cur.team.slug);
+    const prev = prevBySlug.get(cur.team.slug);
+    const currentAvg = cur.homeGamesPlayed > 0 ? cur.homeAudienceAvg : null;
+    const previousAvg = prev && prev.homeGamesPlayed > 0 ? prev.homeAudienceAvg : null;
+    rows.push(toRow(cur.team, currentAvg, previousAvg));
+  }
+  // A club that played the previous season but isn't in this season's own
+  // roster at all (relegated since) - still worth surfacing as a full
+  // drop-off rather than silently vanishing from the comparison.
+  for (const prev of previousMetrics) {
+    if (seen.has(prev.team.slug)) continue;
+    const previousAvg = prev.homeGamesPlayed > 0 ? prev.homeAudienceAvg : null;
+    rows.push(toRow(prev.team, null, previousAvg));
+  }
+  return rows;
+}
+
 export function computeTopGames(
   fixtures,
   simulcastInfo,
