@@ -47,6 +47,14 @@ export default function TeamYoYTable({ rows, currentLabel, previousLabel }) {
     );
   }
 
+  if (sorted.length === 0) {
+    return (
+      <Card title="Audience by club, year on year">
+        <p className="text-xs text-gray-400">No {currentLabel} games played yet to compare against {previousLabel}.</p>
+      </Card>
+    );
+  }
+
   return (
     <Card title="Audience by club, year on year" bodyClassName="overflow-x-auto">
       <table className="w-full min-w-[560px] border-collapse text-sm">

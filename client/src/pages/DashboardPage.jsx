@@ -115,8 +115,8 @@ function RemainingScheduleCard({ remaining, team }) {
 const NAV_SECTIONS = [
   { id: 'dash-stats', label: 'Stats' },
   { id: 'dash-comparison', label: 'Season comparison' },
-  { id: 'dash-yoy', label: 'Audience YoY' },
   { id: 'dash-ranked', label: 'Audience by club' },
+  { id: 'dash-yoy', label: 'Audience YoY' },
   { id: 'dash-table', label: 'Club table' },
   { id: 'dash-trend', label: 'Season trend' },
   { id: 'dash-matchday-audience', label: 'Audience by matchday' },
@@ -329,12 +329,17 @@ export default function DashboardPage() {
   );
 
   const { seasons: comparisonSeasons } = useSeasonComparison(teams, includeSimulcast, includeOther, focusedSlug);
+  // Comparing a partial current season against a prior season's FULL 38
+  // matchdays would understate this season's pace - cap the prior season at
+  // the same matchday this one has reached so far, so both sides cover the
+  // same number of rounds.
+  const currentMatchday = playedGames.length ? Math.max(...playedGames.map((f) => f.matchday)) : null;
   const {
     previousSeason: yoyPreviousSeason,
     rows: yoyRows,
     loading: yoyLoading,
     error: yoyError,
-  } = useTeamAudienceYoY(season, metrics, includeSimulcast, includeOther);
+  } = useTeamAudienceYoY(season, metrics, includeSimulcast, includeOther, currentMatchday);
 
   return (
     <div className="min-h-screen">
@@ -400,6 +405,12 @@ export default function DashboardPage() {
               </ScreenshotableCard>
             </div>
 
+            <div id="dash-ranked" className="scroll-mt-20">
+              <ScreenshotableCard filename={`dashboard-audience-by-club-${season.label.replace('/', '-')}`}>
+                <AudienceBarChart metrics={metrics} focusedSlug={focusedSlug} onFocus={setFocusedSlug} />
+              </ScreenshotableCard>
+            </div>
+
             <div id="dash-yoy" className="scroll-mt-20">
               <ScreenshotableCard filename={`dashboard-audience-yoy-${season.label.replace('/', '-')}`}>
                 {yoyLoading ? (
@@ -409,12 +420,6 @@ export default function DashboardPage() {
                 ) : (
                   <TeamYoYTable rows={yoyRows} currentLabel={season.label} previousLabel={yoyPreviousSeason?.label ?? null} />
                 )}
-              </ScreenshotableCard>
-            </div>
-
-            <div id="dash-ranked" className="scroll-mt-20">
-              <ScreenshotableCard filename={`dashboard-audience-by-club-${season.label.replace('/', '-')}`}>
-                <AudienceBarChart metrics={metrics} focusedSlug={focusedSlug} onFocus={setFocusedSlug} />
               </ScreenshotableCard>
             </div>
 
