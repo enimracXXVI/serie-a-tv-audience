@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Crest from './Crest.jsx';
 import Card from './Card.jsx';
 import MatchdaySlider from './MatchdaySlider.jsx';
@@ -6,13 +6,54 @@ import VariancePill from './VariancePill.jsx';
 import { formatNumber } from '../lib/formatNumber.js';
 
 export default function TeamYoYTable({ rows, currentLabel, previousLabel, matchday, maxMatchday, onMatchdayChange }) {
-  // Biggest movers first (either direction) - a flat "same as last year"
-  // club is the least interesting row here, not the most, so it sinks to
-  // the bottom.
-  const sorted = useMemo(
-    () => [...rows].sort((a, b) => Math.abs(b.deltaPct ?? 0) - Math.abs(a.deltaPct ?? 0)),
-    [rows]
+  // Sortable by clicking a header, same as the Club table below it - sorting
+  // by the RAW (signed) variance, not its absolute value, so a -70% lands
+  // where -70% actually belongs instead of next to +71%.
+  const columns = useMemo(
+    () => [
+      { key: 'team', label: 'Club', sortable: false },
+      { key: 'previousAvg', label: `${previousLabel} avg` },
+      { key: 'currentAvg', label: `${currentLabel} avg` },
+      { key: 'deltaPct', label: 'Variation', title: 'Change vs the previous season, high to low' },
+    ],
+    [previousLabel, currentLabel]
   );
+
+  const [sortChain, setSortChain] = useState([{ key: 'deltaPct', dir: 'desc' }]);
+  const [multiSort, setMultiSort] = useState(false);
+
+  // Shift+click still works for anyone using a mouse - the "Multi-sort"
+  // toggle (mobile-only) is purely an additional touch equivalent for it,
+  // same convention as the Club table.
+  function headerClick(key, event) {
+    if (key === 'team') return;
+    setSortChain((prev) => {
+      if (!multiSort && !event.shiftKey) {
+        if (prev.length === 1 && prev[0].key === key) {
+          return [{ key, dir: prev[0].dir === 'asc' ? 'desc' : 'asc' }];
+        }
+        return [{ key, dir: 'desc' }];
+      }
+      const idx = prev.findIndex((s) => s.key === key);
+      if (idx === -1) return [...prev, { key, dir: 'desc' }];
+      const next = [...prev];
+      next[idx] = { key, dir: next[idx].dir === 'asc' ? 'desc' : 'asc' };
+      return next;
+    });
+  }
+
+  const sorted = useMemo(() => {
+    const list = [...rows];
+    list.sort((a, b) => {
+      for (const { key, dir } of sortChain) {
+        const mul = dir === 'asc' ? 1 : -1;
+        const cmp = key === 'team' ? a.team.name.localeCompare(b.team.name) : a[key] - b[key];
+        if (cmp !== 0) return cmp * mul;
+      }
+      return 0;
+    });
+    return list;
+  }, [rows, sortChain]);
 
   if (!previousLabel) {
     return (
@@ -22,8 +63,26 @@ export default function TeamYoYTable({ rows, currentLabel, previousLabel, matchd
     );
   }
 
-  const controls = maxMatchday > 1 && (
+  const matchdayReadout = maxMatchday > 1 && (
     <span className="text-xs font-semibold text-[#0f1e54]/70">Through matchday {matchday}</span>
+  );
+  const multiSortButton = (
+    <button
+      type="button"
+      onClick={() => setMultiSort((v) => !v)}
+      title="When on, tapping a column adds it to the sort instead of replacing it"
+      className={`rounded-full px-2.5 py-1 text-xs font-bold sm:hidden ${
+        multiSort ? 'bg-white text-[#0f1e54]' : 'bg-black/10 text-[#0f1e54]/70 hover:bg-black/20'
+      }`}
+    >
+      Multi-sort
+    </button>
+  );
+  const controls = (
+    <>
+      {matchdayReadout}
+      {sorted.length > 0 && multiSortButton}
+    </>
   );
 
   if (sorted.length === 0) {
@@ -44,10 +103,27 @@ export default function TeamYoYTable({ rows, currentLabel, previousLabel, matchd
       <table className="w-full min-w-[560px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wide text-gray-400">
-            <th className="px-3 py-2.5 text-left">Club</th>
-            <th className="px-2 py-2.5 text-center">{previousLabel} avg</th>
-            <th className="px-2 py-2.5 text-center">{currentLabel} avg</th>
-            <th className="px-2 py-2.5 text-center">Variation</th>
+            {columns.map((col) => {
+              const chainIdx = sortChain.findIndex((s) => s.key === col.key);
+              return (
+                <th
+                  key={col.key}
+                  title={col.title}
+                  onClick={(e) => headerClick(col.key, e)}
+                  className={`px-3 py-2.5 text-center first:text-left ${
+                    col.sortable === false ? '' : 'cursor-pointer select-none hover:text-[#0f1e54]'
+                  }`}
+                >
+                  {col.label}
+                  {chainIdx !== -1 && (
+                    <span className="ml-0.5">
+                      {sortChain[chainIdx].dir === 'asc' ? '▲' : '▼'}
+                      {sortChain.length > 1 && <sup>{chainIdx + 1}</sup>}
+                    </span>
+                  )}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
