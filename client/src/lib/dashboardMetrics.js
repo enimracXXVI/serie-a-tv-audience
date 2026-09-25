@@ -14,6 +14,16 @@ function blockKey(fixture) {
   return `${fixture.date ?? ''}|${fixture.kickoffTime ?? ''}`;
 }
 
+// Caps a fixture list to a given matchday - the shared building block behind
+// every "up to matchday N" slider (season-on-season and year-on-year
+// comparisons alike), so a partial current season is never measured against
+// more rounds than it's actually played. `matchday` of null/undefined means
+// no cap at all (the full list, unchanged).
+export function filterUpToMatchday(fixtures, matchday) {
+  if (matchday == null) return fixtures;
+  return fixtures.filter((f) => f.matchday != null && f.matchday <= matchday);
+}
+
 // Games sharing an exact date+kickoff slot air as one simulcast block - only
 // the first one in the block collects the shared simulcastAudience figure
 // (see CalendarView's isFirstInBlock). This finds that figure for every

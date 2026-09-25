@@ -5,16 +5,28 @@ import { enrichFixture, teamsInFixtures, applySeasonTeamAttributes } from './tea
 import { isSerieARow } from './competitions.js';
 import { useClubs } from './useClubs.jsx';
 import { useTeamSeasons } from './useTeamSeasons.jsx';
-import { computeAllTeamMetrics } from './dashboardMetrics.js';
+import { computeAllTeamMetrics, filterUpToMatchday } from './dashboardMetrics.js';
 import { useSeasons } from './useSeasons.jsx';
+
+function delta(currentValue, previousValue) {
+  if (currentValue === null || currentValue === undefined || previousValue === null || previousValue === undefined) {
+    return { delta: null, deltaPct: null };
+  }
+  const d = currentValue - previousValue;
+  return { delta: d, deltaPct: previousValue ? (d / previousValue) * 100 : null };
+}
 
 // Summary-level, season-by-season comparison (league-wide total audience and
 // home avg, plus a focused club's own home avg and total audience) -
 // deliberately not a full re-run of every Dashboard metric for every season,
 // just these few headline numbers, computed by calling the exact same
 // computeAllTeamMetrics used for the current season's own cards, once per
-// season.
-export function useSeasonComparison(teams, includeSimulcast, includeOther, focusedSlug) {
+// season. `matchdayCap` (from the card's own slider, never above the
+// furthest matchday the CURRENT season has actually reached) is applied to
+// every season alike - without it, a partial current season would sit next
+// to archive seasons' full 38-round figures, making the bars incomparable at
+// a glance.
+export function useSeasonComparison(teams, includeSimulcast, includeOther, focusedSlug, matchdayCap) {
   const live = useFixtures([], teams);
   const { seasons } = useSeasons();
   // Every season has a real `tab` now (the live one included), so archive
@@ -53,9 +65,9 @@ export function useSeasonComparison(teams, includeSimulcast, includeOther, focus
   const { rows: teamSeasonRows } = useTeamSeasons();
 
   const seasonSummaries = useMemo(() => {
-    return seasons.map((s) => {
+    const base = seasons.map((s) => {
       const isCurrent = Boolean(s.current);
-      const fixtures = isCurrent
+      const rawFixtures = isCurrent
         ? live.fixtures
         : applySeasonTeamAttributes(
             // The archive tab now also holds that season's cup fixtures -
@@ -64,6 +76,7 @@ export function useSeasonComparison(teams, includeSimulcast, includeOther, focus
             s.label,
             teamSeasonRows
           );
+      const fixtures = filterUpToMatchday(rawFixtures, matchdayCap);
       const loading = isCurrent ? live.loading : archiveLoading;
       const error = isCurrent ? live.error : (archiveErrors[s.tab] ?? null);
 
@@ -105,6 +118,26 @@ export function useSeasonComparison(teams, includeSimulcast, includeOther, focus
         focusedTotal: focusedMetric && focusedMetric.totalGamesPlayed > 0 ? focusedMetric.totalAudienceTotal : null,
       };
     });
+
+    // Season-on-season variance vs whichever season comes immediately before
+    // it in time - `seasons` itself leads with the current season and isn't
+    // chronologically sorted after that, so this re-sorts by label just to
+    // find each row's real predecessor, then attaches the delta back onto
+    // the original (display-order) rows.
+    const chronological = [...base].sort((a, b) => a.label.localeCompare(b.label));
+    const deltasByLabel = new Map();
+    chronological.forEach((s, i) => {
+      const prev = i > 0 ? chronological[i - 1] : null;
+      if (!prev || s.loading || s.error || prev.loading || prev.error) return;
+      deltasByLabel.set(s.label, {
+        totalAudience: delta(s.totalAudience, prev.totalAudience),
+        leagueAvg: delta(s.leagueAvg, prev.leagueAvg),
+        focusedAvg: delta(s.focusedAvg, prev.focusedAvg),
+        focusedTotal: delta(s.focusedTotal, prev.focusedTotal),
+      });
+    });
+
+    return base.map((s) => ({ ...s, deltas: deltasByLabel.get(s.label) ?? null }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     seasons,
@@ -121,6 +154,7 @@ export function useSeasonComparison(teams, includeSimulcast, includeOther, focus
     includeSimulcast,
     includeOther,
     focusedSlug,
+    matchdayCap,
   ]);
 
   return { seasons: seasonSummaries, loading: live.loading || archiveLoading };

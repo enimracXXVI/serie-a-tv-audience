@@ -17,7 +17,7 @@ import {
   computeOpponentAudience,
   computeLedExposure,
 } from '../lib/dashboardMetrics.js';
-import { isPlayed } from '../lib/standings.js';
+import { isPlayed, maxPlayedMatchday } from '../lib/standings.js';
 import { useSeasonComparison } from '../lib/useSeasonComparison.js';
 import { useTeamAudienceYoY } from '../lib/useTeamAudienceYoY.js';
 import { useCupFixtures } from '../lib/useCupFixtures.js';
@@ -116,8 +116,8 @@ const NAV_SECTIONS = [
   { id: 'dash-stats', label: 'Stats' },
   { id: 'dash-comparison', label: 'Season comparison' },
   { id: 'dash-ranked', label: 'Audience by club' },
-  { id: 'dash-yoy', label: 'Audience YoY' },
   { id: 'dash-table', label: 'Club table' },
+  { id: 'dash-yoy', label: 'Audience YoY' },
   { id: 'dash-trend', label: 'Season trend' },
   { id: 'dash-matchday-audience', label: 'Audience by matchday' },
   { id: 'dash-scheduling', label: 'Scheduling patterns' },
@@ -282,6 +282,10 @@ export default function DashboardPage() {
   );
 
   const playedGames = useMemo(() => fixtures.filter(isPlayed), [fixtures]);
+  // The furthest matchday THIS season has actually reached - the ceiling for
+  // both matchday sliders below, since neither comparison can go further
+  // than the current season's own progress.
+  const maxMatchday = useMemo(() => maxPlayedMatchday(fixtures), [fixtures]);
   const teamsWithHomeGames = metrics.filter((m) => m.homeGamesPlayed > 0);
   const leagueAvgHome = teamsWithHomeGames.length
     ? teamsWithHomeGames.reduce((a, m) => a + m.homeAudienceAvg, 0) / teamsWithHomeGames.length
@@ -328,18 +332,48 @@ export default function DashboardPage() {
     [focusedTeam, ledFixtures, simulcastInfo, includeSimulcast, includeOther]
   );
 
-  const { seasons: comparisonSeasons } = useSeasonComparison(teams, includeSimulcast, includeOther, focusedSlug);
-  // Comparing a partial current season against a prior season's FULL 38
-  // matchdays would understate this season's pace - cap the prior season at
-  // the same matchday this one has reached so far, so both sides cover the
-  // same number of rounds.
-  const currentMatchday = playedGames.length ? Math.max(...playedGames.map((f) => f.matchday)) : null;
+  // Each comparison card's own "up to matchday" slider - shareable via the
+  // URL like the toggles above, and independent of each other since someone
+  // might want the league-wide trend at one cutoff and the per-club YoY at
+  // another. Absent from the URL (or garbage) means "as far as this season
+  // has gone", clamped to that same ceiling so a stale link from an earlier,
+  // less advanced point in the season can't request more matchdays than
+  // exist yet.
+  const cmpMatchdayParam = Number(searchParams.get('cmpMd'));
+  const cmpMatchday = maxMatchday > 0 ? Math.min(Math.max(cmpMatchdayParam || maxMatchday, 1), maxMatchday) : null;
+  const setCmpMatchday = (value) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (value === maxMatchday) next.delete('cmpMd');
+        else next.set('cmpMd', String(value));
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  const yoyMatchdayParam = Number(searchParams.get('yoyMd'));
+  const yoyMatchday = maxMatchday > 0 ? Math.min(Math.max(yoyMatchdayParam || maxMatchday, 1), maxMatchday) : null;
+  const setYoyMatchday = (value) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (value === maxMatchday) next.delete('yoyMd');
+        else next.set('yoyMd', String(value));
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  const { seasons: comparisonSeasons } = useSeasonComparison(teams, includeSimulcast, includeOther, focusedSlug, cmpMatchday);
   const {
     previousSeason: yoyPreviousSeason,
     rows: yoyRows,
     loading: yoyLoading,
     error: yoyError,
-  } = useTeamAudienceYoY(season, metrics, includeSimulcast, includeOther, currentMatchday);
+  } = useTeamAudienceYoY(season, fixtures, effectiveTeams, includeSimulcast, includeOther, yoyMatchday);
 
   return (
     <div className="min-h-screen">
@@ -401,13 +435,25 @@ export default function DashboardPage() {
 
             <div id="dash-comparison" className="scroll-mt-20">
               <ScreenshotableCard filename="dashboard-season-comparison">
-                <SeasonComparisonCard seasons={comparisonSeasons} focusedTeam={focusedTeam} />
+                <SeasonComparisonCard
+                  seasons={comparisonSeasons}
+                  focusedTeam={focusedTeam}
+                  matchday={cmpMatchday}
+                  maxMatchday={maxMatchday}
+                  onMatchdayChange={setCmpMatchday}
+                />
               </ScreenshotableCard>
             </div>
 
             <div id="dash-ranked" className="scroll-mt-20">
               <ScreenshotableCard filename={`dashboard-audience-by-club-${season.label.replace('/', '-')}`}>
                 <AudienceBarChart metrics={metrics} focusedSlug={focusedSlug} onFocus={setFocusedSlug} />
+              </ScreenshotableCard>
+            </div>
+
+            <div id="dash-table" className="scroll-mt-20">
+              <ScreenshotableCard filename={`dashboard-club-table-${season.label.replace('/', '-')}`}>
+                <TeamMetricsTable metrics={metrics} focusedSlug={focusedSlug} onFocus={setFocusedSlug} />
               </ScreenshotableCard>
             </div>
 
@@ -418,14 +464,15 @@ export default function DashboardPage() {
                 ) : yoyError ? (
                   <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{yoyError}</p>
                 ) : (
-                  <TeamYoYTable rows={yoyRows} currentLabel={season.label} previousLabel={yoyPreviousSeason?.label ?? null} />
+                  <TeamYoYTable
+                    rows={yoyRows}
+                    currentLabel={season.label}
+                    previousLabel={yoyPreviousSeason?.label ?? null}
+                    matchday={yoyMatchday}
+                    maxMatchday={maxMatchday}
+                    onMatchdayChange={setYoyMatchday}
+                  />
                 )}
-              </ScreenshotableCard>
-            </div>
-
-            <div id="dash-table" className="scroll-mt-20">
-              <ScreenshotableCard filename={`dashboard-club-table-${season.label.replace('/', '-')}`}>
-                <TeamMetricsTable metrics={metrics} focusedSlug={focusedSlug} onFocus={setFocusedSlug} />
               </ScreenshotableCard>
             </div>
 

@@ -1,7 +1,9 @@
 import { formatNumber } from '../lib/formatNumber.js';
 import Card from './Card.jsx';
+import MatchdaySlider from './MatchdaySlider.jsx';
+import VariancePill from './VariancePill.jsx';
 
-function ComparisonRow({ title, seasons, pick }) {
+function ComparisonRow({ title, seasons, pick, pickDelta }) {
   const values = seasons.map((s) => (s.loading || s.error ? null : pick(s)));
   const max = Math.max(1, ...values.filter((v) => v !== null && v !== undefined));
 
@@ -11,8 +13,9 @@ function ComparisonRow({ title, seasons, pick }) {
       <div className="flex flex-col gap-1.5">
         {seasons.map((s, i) => {
           const value = values[i];
+          const variance = s.deltas ? pickDelta(s.deltas) : null;
           return (
-            <div key={s.label} className="flex items-center gap-2">
+            <div key={s.label} className="flex flex-wrap items-center gap-2">
               <span className="w-12 shrink-0 text-xs font-bold text-gray-600">{s.label}</span>
               <div className="h-4 flex-1 overflow-hidden rounded-full bg-gray-100">
                 {value !== null && value !== undefined && (
@@ -25,6 +28,11 @@ function ComparisonRow({ title, seasons, pick }) {
               <span className="w-20 shrink-0 text-right text-xs font-bold text-[#0f1e54]">
                 {s.loading ? '…' : s.error ? 'n/a' : formatNumber(value)}
               </span>
+              <span className="w-28 shrink-0 text-right">
+                {!s.loading && !s.error && (
+                  <VariancePill delta={variance?.delta ?? null} deltaPct={variance?.deltaPct ?? null} compact />
+                )}
+              </span>
             </div>
           );
         })}
@@ -33,23 +41,47 @@ function ComparisonRow({ title, seasons, pick }) {
   );
 }
 
-export default function SeasonComparisonCard({ seasons, focusedTeam }) {
+export default function SeasonComparisonCard({ seasons, focusedTeam, matchday, maxMatchday, onMatchdayChange }) {
   const anyError = seasons.some((s) => s.error);
+  const controls = maxMatchday > 1 && (
+    <span className="text-xs font-semibold text-[#0f1e54]/70">Through matchday {matchday}</span>
+  );
 
   return (
-    <Card title="Season comparison">
+    <Card title="Season comparison" controls={controls}>
+      <MatchdaySlider value={matchday} max={maxMatchday} onChange={onMatchdayChange} />
       <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-gray-400">League-wide, all clubs</p>
       <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <ComparisonRow title="Total audience" seasons={seasons} pick={(s) => s.totalAudience} />
-        <ComparisonRow title="League avg home audience" seasons={seasons} pick={(s) => s.leagueAvg} />
+        <ComparisonRow
+          title="Total audience"
+          seasons={seasons}
+          pick={(s) => s.totalAudience}
+          pickDelta={(d) => d.totalAudience}
+        />
+        <ComparisonRow
+          title="League avg home audience"
+          seasons={seasons}
+          pick={(s) => s.leagueAvg}
+          pickDelta={(d) => d.leagueAvg}
+        />
       </div>
 
       {focusedTeam && (
         <>
           <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-gray-400">{focusedTeam.name}</p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <ComparisonRow title="Home avg audience" seasons={seasons} pick={(s) => s.focusedAvg} />
-            <ComparisonRow title="Total audience (home + away)" seasons={seasons} pick={(s) => s.focusedTotal} />
+            <ComparisonRow
+              title="Home avg audience"
+              seasons={seasons}
+              pick={(s) => s.focusedAvg}
+              pickDelta={(d) => d.focusedAvg}
+            />
+            <ComparisonRow
+              title="Total audience (home + away)"
+              seasons={seasons}
+              pick={(s) => s.focusedTotal}
+              pickDelta={(d) => d.focusedTotal}
+            />
           </div>
         </>
       )}
