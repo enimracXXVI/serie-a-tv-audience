@@ -8,7 +8,7 @@ import { useCupData } from '../lib/useCupData.jsx';
 import { useGuestSources } from '../lib/useGuestSources.jsx';
 import { useHospitalityGuests } from '../lib/useHospitalityGuests.jsx';
 import { SERIE_A_VALUE, competitionScope } from '../lib/competitions.js';
-import { closestMatchday } from '../lib/matchdays.js';
+import { nextUpcomingMatchday } from '../lib/matchdays.js';
 import { callWithReauth } from '../lib/reauth.js';
 import { exportHospitalityGuestsCsv } from '../lib/exportHospitalityCsv.js';
 import { isoToDDMMYYYY } from '../lib/dateFormat.js';
@@ -496,10 +496,12 @@ export default function HospitalityPage() {
     return options;
   }, [isSerieA, poolFixtures]);
 
-  // Whichever matchday/round has a fixture dated closest to today - reused
-  // every time poolFixtures/groupOptions change (including a competition
-  // switch, once that competition's own fixtures have loaded), so the page
-  // always opens ready to work on the round that's actually coming up.
+  // Whichever matchday/round is closest to today AND still has a game left
+  // to play - reused every time poolFixtures/groupOptions change (including
+  // a competition switch, once that competition's own fixtures have
+  // loaded). A round that's already been fully played is never useful here
+  // (there's no game left in it to issue tickets for), even if its date
+  // happens to be nearer to today than the next round still to come.
   const defaultGroup = useMemo(() => {
     const byGroup = new Map();
     for (const f of poolFixtures) {
@@ -508,7 +510,7 @@ export default function HospitalityPage() {
       if (!byGroup.has(key)) byGroup.set(key, []);
       byGroup.get(key).push(f);
     }
-    return closestMatchday(groupOptions.map((o) => o.value), byGroup) ?? '';
+    return nextUpcomingMatchday(groupOptions.map((o) => o.value), byGroup) ?? '';
   }, [groupOptions, poolFixtures, isSerieA]);
 
   // A user-picked matchday/round sticks until the competition itself
@@ -517,6 +519,17 @@ export default function HospitalityPage() {
   // Compared rather than reset via an effect, so there's no extra render
   // between picking a new competition and the group catching up to it.
   const group = groupOverride?.competitionValue === competitionValue ? groupOverride.group : defaultGroup;
+  const groupIndex = groupOptions.findIndex((o) => o.value === group);
+
+  // Steps to the previous/next matchday/round in order without opening the
+  // (potentially very long, a full 38-round Serie A season) dropdown at
+  // all - a plain prev/next pair, same as paging through anything else.
+  function stepGroup(delta) {
+    const nextIndex = groupIndex + delta;
+    if (nextIndex < 0 || nextIndex >= groupOptions.length) return;
+    setGroupOverride({ competitionValue, group: groupOptions[nextIndex].value });
+    setExpandedFixtureIds([]);
+  }
 
   const groupFixtures = poolFixtures
     .filter((f) => (isSerieA ? String(f.matchday) === group : f.round === group))
@@ -611,16 +624,36 @@ export default function HospitalityPage() {
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">{isSerieA ? 'Matchday' : 'Round'}</span>
-            <Dropdown
-              variant="sidebar"
-              className="w-44"
-              value={group}
-              onChange={(v) => {
-                setGroupOverride({ competitionValue, group: v });
-                setExpandedFixtureIds([]);
-              }}
-              options={groupOptions.length > 0 ? groupOptions : [{ value: '', label: 'None yet' }]}
-            />
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => stepGroup(-1)}
+                disabled={groupIndex <= 0}
+                aria-label={`Previous ${isSerieA ? 'matchday' : 'round'}`}
+                className="flex h-9 w-7 shrink-0 items-center justify-center rounded-full border border-white/40 text-white disabled:opacity-30"
+              >
+                ‹
+              </button>
+              <Dropdown
+                variant="sidebar"
+                className="w-36"
+                value={group}
+                onChange={(v) => {
+                  setGroupOverride({ competitionValue, group: v });
+                  setExpandedFixtureIds([]);
+                }}
+                options={groupOptions.length > 0 ? groupOptions : [{ value: '', label: 'None yet' }]}
+              />
+              <button
+                type="button"
+                onClick={() => stepGroup(1)}
+                disabled={groupIndex === -1 || groupIndex >= groupOptions.length - 1}
+                aria-label={`Next ${isSerieA ? 'matchday' : 'round'}`}
+                className="flex h-9 w-7 shrink-0 items-center justify-center rounded-full border border-white/40 text-white disabled:opacity-30"
+              >
+                ›
+              </button>
+            </div>
           </div>
         </div>
 

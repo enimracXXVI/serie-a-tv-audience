@@ -1,3 +1,5 @@
+import { isPlayed } from './standings.js';
+
 // Picks whichever matchday's fixtures are closest (by date) to today - used
 // to default the matchday selector without requiring the user to know which
 // round the season is currently on.
@@ -17,6 +19,20 @@ export function closestMatchday(matchdays, byMatchday) {
     }
   }
   return best;
+}
+
+// Same idea as closestMatchday, but restricted to matchdays that still have
+// at least one unplayed fixture - a round that's already been fully played
+// is never a useful default for something like Hospitality, which can't
+// issue tickets for a game that's already happened, even if that round's
+// date happens to be nearer to today than the next one still to come (e.g.
+// today is a Monday right after Sunday's late kickoffs, with next weekend's
+// round still over a week out). Falls back to the plain closest-by-date
+// pick if every matchday given is already fully played (the whole
+// competition's fixtures are in, nothing left to default to).
+export function nextUpcomingMatchday(matchdays, byMatchday) {
+  const pending = matchdays.filter((md) => byMatchday.get(md).some((f) => !isPlayed(f)));
+  return pending.length > 0 ? closestMatchday(pending, byMatchday) : closestMatchday(matchdays, byMatchday);
 }
 
 // The sheet's `day` column is a plain weekday abbreviation set once when a
