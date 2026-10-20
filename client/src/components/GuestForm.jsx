@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import SearchSelect from './SearchSelect.jsx';
 import SuggestInput from './SuggestInput.jsx';
 import { WORLD_NATIONS, ITALY } from '../lib/worldNations.js';
@@ -74,32 +75,92 @@ function uniqueGuests(existingGuests) {
   return [...seen.values()].sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`));
 }
 
-// A plain search box + in-flow result list rather than a Dropdown - this
-// form can sit inside a Card (see HospitalityPage), and Card's own
-// `overflow-hidden` would clip an absolutely-positioned popup at the
-// card's edge. Results only show once there's a query to narrow a guest
-// list that can now span every match of the season, not just this one.
+// A plain search box with its match list portaled to <body> (same approach
+// as Dropdown.jsx/SearchSelect.jsx/SuggestInput.jsx), positioned in viewport
+// coordinates - this form can sit inside a Card (see HospitalityPage), whose
+// own `overflow-hidden` would clip an in-place absolutely-positioned popup
+// at the card's edge, and an in-flow list would instead grow the card every
+// time it opened. The "no matches" line stays in-flow (one line of plain
+// feedback text, not a dropdown). Results only show once there's a query to
+// narrow a guest list that can now span every match of the season, not just
+// this one.
 function ReuseGuestPicker({ guests, onPick }) {
   const [query, setQuery] = useState('');
+  const inputRef = useRef(null);
+  const listRef = useRef(null);
+  const [listPos, setListPos] = useState(null);
+
   const q = query.trim().toLowerCase();
-  const matches = q ? guests.filter((g) => `${g.firstName} ${g.lastName}`.toLowerCase().includes(q)) : [];
+  // Memoized for the same reason as SuggestInput's `filtered` - the position
+  // effect below depends on it, and a fresh array every render would loop.
+  const matches = useMemo(
+    () => (q ? guests.filter((g) => `${g.firstName} ${g.lastName}`.toLowerCase().includes(q)) : []),
+    [q, guests]
+  );
+  const showList = matches.length > 0;
+
+  useLayoutEffect(() => {
+    if (!showList || !inputRef.current || !listRef.current) {
+      setListPos(null);
+      return;
+    }
+    const margin = 8;
+    const triggerRect = inputRef.current.getBoundingClientRect();
+    const listEl = listRef.current;
+    const left = Math.min(Math.max(triggerRect.left, margin), window.innerWidth - listEl.offsetWidth - margin);
+
+    const spaceBelow = window.innerHeight - triggerRect.bottom - margin;
+    const spaceAbove = triggerRect.top - margin;
+    const openUpward = spaceBelow < listEl.scrollHeight && spaceAbove > spaceBelow;
+    setListPos({
+      top: openUpward ? triggerRect.top - 4 : triggerRect.bottom + 4,
+      left,
+      minWidth: triggerRect.width,
+      maxHeight: Math.max(120, openUpward ? spaceAbove : spaceBelow),
+      openUpward,
+    });
+  }, [showList, matches]);
+
+  useEffect(() => {
+    if (!showList) return undefined;
+    function handleScroll(e) {
+      if (listRef.current?.contains(e.target)) return;
+      setQuery('');
+    }
+    window.addEventListener('scroll', handleScroll, true);
+    return () => window.removeEventListener('scroll', handleScroll, true);
+  }, [showList]);
 
   return (
     <div className="flex flex-col gap-1">
       <input
+        ref={inputRef}
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search a previous guest by name…"
         className={inputClass}
       />
-      {q && (
-        matches.length > 0 ? (
-          <div className="max-h-40 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+      {q && !showList && <p className="px-1 text-xs text-gray-400">No previous guest matches “{query.trim()}”.</p>}
+      {showList &&
+        createPortal(
+          <div
+            ref={listRef}
+            className="fixed z-50 w-max max-w-[min(24rem,90vw)] overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white shadow-lg"
+            style={{
+              top: listPos?.top ?? 0,
+              left: listPos?.left ?? 0,
+              minWidth: listPos ? `${listPos.minWidth}px` : undefined,
+              maxHeight: listPos ? `${listPos.maxHeight}px` : '40vh',
+              transform: listPos?.openUpward ? 'translateY(-100%)' : undefined,
+              visibility: listPos ? 'visible' : 'hidden',
+            }}
+          >
             {matches.map((g, i) => (
               <button
                 key={`${g.firstName}|${g.lastName}|${g.dateOfBirth}|${i}`}
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
                   onPick(g);
                   setQuery('');
@@ -112,11 +173,9 @@ function ReuseGuestPicker({ guests, onPick }) {
                 <span className="text-xs text-gray-400">{g.dateOfBirth ? isoToDDMMYYYY(g.dateOfBirth) : 'no DOB'}</span>
               </button>
             ))}
-          </div>
-        ) : (
-          <p className="px-1 text-xs text-gray-400">No previous guest matches “{query.trim()}”.</p>
-        )
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
