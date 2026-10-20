@@ -8,6 +8,7 @@ import { useCupData } from '../lib/useCupData.jsx';
 import { useGuestSources } from '../lib/useGuestSources.jsx';
 import { useHospitalityGuests } from '../lib/useHospitalityGuests.jsx';
 import { SERIE_A_VALUE, competitionScope } from '../lib/competitions.js';
+import { closestMatchday } from '../lib/matchdays.js';
 import { callWithReauth } from '../lib/reauth.js';
 import { exportHospitalityGuestsCsv } from '../lib/exportHospitalityCsv.js';
 import { isoToDDMMYYYY } from '../lib/dateFormat.js';
@@ -453,7 +454,13 @@ export default function HospitalityPage() {
   const { guests, loading: guestsLoading, error: guestsError, addGuest, updateGuest, removeGuest } = useHospitalityGuests();
 
   const [competitionValue, setCompetitionValue] = useState(SERIE_A_VALUE);
-  const [group, setGroup] = useState('');
+  // null means "no explicit pick for THIS competition yet" - the group
+  // below falls back to whichever matchday/round is closest to today, same
+  // convention as the Fixtures calendar (see closestMatchday), rather than
+  // forcing a manual pick every time the page opens or the competition
+  // changes. Tagged with the competition it was picked under so switching
+  // competitions never keeps a stale selection from a different one.
+  const [groupOverride, setGroupOverride] = useState(null);
   const [expandedFixtureIds, setExpandedFixtureIds] = useState([]);
 
   const isSerieA = competitionValue === SERIE_A_VALUE;
@@ -488,6 +495,28 @@ export default function HospitalityPage() {
     }
     return options;
   }, [isSerieA, poolFixtures]);
+
+  // Whichever matchday/round has a fixture dated closest to today - reused
+  // every time poolFixtures/groupOptions change (including a competition
+  // switch, once that competition's own fixtures have loaded), so the page
+  // always opens ready to work on the round that's actually coming up.
+  const defaultGroup = useMemo(() => {
+    const byGroup = new Map();
+    for (const f of poolFixtures) {
+      const key = isSerieA ? String(f.matchday) : f.round;
+      if (!key) continue;
+      if (!byGroup.has(key)) byGroup.set(key, []);
+      byGroup.get(key).push(f);
+    }
+    return closestMatchday(groupOptions.map((o) => o.value), byGroup) ?? '';
+  }, [groupOptions, poolFixtures, isSerieA]);
+
+  // A user-picked matchday/round sticks until the competition itself
+  // changes - switching competitions always re-centers on ITS closest
+  // round rather than keeping a selection that may not even exist there.
+  // Compared rather than reset via an effect, so there's no extra render
+  // between picking a new competition and the group catching up to it.
+  const group = groupOverride?.competitionValue === competitionValue ? groupOverride.group : defaultGroup;
 
   const groupFixtures = poolFixtures
     .filter((f) => (isSerieA ? String(f.matchday) === group : f.round === group))
@@ -575,7 +604,6 @@ export default function HospitalityPage() {
               value={competitionValue}
               onChange={(v) => {
                 setCompetitionValue(v);
-                setGroup('');
                 setExpandedFixtureIds([]);
               }}
               options={competitionOptions}
@@ -588,7 +616,7 @@ export default function HospitalityPage() {
               className="w-44"
               value={group}
               onChange={(v) => {
-                setGroup(v);
+                setGroupOverride({ competitionValue, group: v });
                 setExpandedFixtureIds([]);
               }}
               options={groupOptions.length > 0 ? groupOptions : [{ value: '', label: 'None yet' }]}
