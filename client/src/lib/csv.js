@@ -16,17 +16,34 @@ export function csvEscape(value) {
 // Wrapping the value in ="..." is the standard workaround: Excel (and
 // Sheets) evaluate it as a formula that resolves right back to the quoted
 // text, so it imports as literal text instead of getting reinterpreted.
+//
+// The trick only works if ="..." lands in the file UNQUOTED at the CSV
+// level - a field that's itself wrapped in an outer pair of CSV quotes
+// (which csvEscape would do here, since ="..." contains literal " chars)
+// gets read by some importers, Google Sheets in particular, as "this is
+// just quoted text", skipping formula evaluation entirely and leaving the
+// date/time to fall straight back into the 5-digit-serial-number/0.xxxx-
+// decimal auto-reformatting this was meant to prevent. So this returns a
+// marker object instead of a plain string - toCSV below recognizes it and
+// writes the ="..." text out raw, bypassing csvEscape rather than running
+// it through a second (self-defeating) layer of quoting.
+//
 // Use this for any column holding a bare date/time/kickoff-shaped string,
 // not for every column - forcing e.g. a score column through this would
 // stop it importing as a number.
 export function csvText(value) {
   if (value === null || value === undefined || value === '') return '';
-  return `="${String(value).replace(/"/g, '""')}"`;
+  return { __csvRaw: `="${String(value).replace(/"/g, '""')}"` };
+}
+
+function csvField(value) {
+  if (value && typeof value === 'object' && '__csvRaw' in value) return value.__csvRaw;
+  return csvEscape(value);
 }
 
 export function toCSV(columns, rows) {
   const header = columns.map((c) => csvEscape(c.label)).join(',');
-  const lines = rows.map((row) => columns.map((c) => csvEscape(row[c.key])).join(','));
+  const lines = rows.map((row) => columns.map((c) => csvField(row[c.key])).join(','));
   return [header, ...lines].join('\r\n');
 }
 
