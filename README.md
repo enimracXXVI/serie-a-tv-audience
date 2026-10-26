@@ -588,7 +588,13 @@ rows to start:
 - `homeTeam`, `awayTeam`, `matchDate`, `kickoffTime` are copied in from the
   fixture at the moment the guest is added, not looked up live - so the row
   (and the CSV built from it) stays accurate even if that fixture's own date
-  or kickoff time is edited afterwards.
+  or kickoff time is edited afterwards. `homeTeam`/`awayTeam` store the
+  club's **slug** (same convention as `competition` above, and as a
+  fixture's own `home`/`away` cells), not its display name - the CSV export
+  resolves it back to a human name at download time. Older rows written
+  before this was fixed may still have the display name instead; the
+  Hospitality page shows a one-off "Fix now" banner (only while such rows
+  exist) that rewrites them in place.
 - `provinceOfBirth`/`cityOfBirth` and `provinceOfResidence`/`cityOfResidence`
   are only ever filled in when the corresponding nation is Italy - blank
   otherwise, since a comune/province pair only exists for a genuinely

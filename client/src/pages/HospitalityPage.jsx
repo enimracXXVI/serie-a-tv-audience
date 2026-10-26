@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useSession } from '../lib/useSession.jsx';
 import { useSeasons } from '../lib/useSeasons.jsx';
 import { useTeams } from '../lib/useTeams.jsx';
+import { useClubs } from '../lib/useClubs.jsx';
 import { useFixtures } from '../lib/useFixtures.js';
 import { useCupFixtures } from '../lib/useCupFixtures.js';
 import { useCupData } from '../lib/useCupData.jsx';
@@ -208,6 +209,7 @@ function MatchGuestSection({
   fixture,
   competitionValue,
   competitions,
+  clubsBySlug,
   guestSources,
   guests,
   allGuests,
@@ -258,8 +260,11 @@ function MatchGuestSection({
         matchday: fixture.matchday || '',
         round: fixture.round || '',
         fixtureId: fixture.id,
-        homeTeam: fixture.home.name,
-        awayTeam: fixture.away.name,
+        // The slug, not the display name - same reasoning as `competition`
+        // above (a stable key, resolved back to a human name by the CSV
+        // export). Was wrongly writing fixture.home.name/away.name before.
+        homeTeam: fixture.home.slug,
+        awayTeam: fixture.away.slug,
         matchDate: fixture.date || '',
         kickoffTime: fixture.kickoffTime || '',
         addedBy: session.login || '',
@@ -300,7 +305,7 @@ function MatchGuestSection({
 
   function handleExport() {
     const safeName = `${fixture.home.slug}-vs-${fixture.away.slug}-${fixture.date || 'tbd'}`;
-    exportHospitalityGuestsCsv(guests, `${safeName}.csv`, competitions);
+    exportHospitalityGuestsCsv(guests, `${safeName}.csv`, competitions, clubsBySlug);
   }
 
   return (
@@ -443,6 +448,7 @@ export default function HospitalityPage() {
   const session = useSession();
   const { currentSeason } = useSeasons();
   const { teams } = useTeams();
+  const { bySlug: clubsBySlug, byName: clubsByName } = useClubs();
   const { competitions } = useCupData();
   const { guestSources } = useGuestSources();
   const { fixtures: serieAFixtures, loading: serieALoading, updateFixture: updateSerieAFixture } = useFixtures([], teams);
@@ -452,6 +458,53 @@ export default function HospitalityPage() {
     updateFixture: updateCupFixture,
   } = useCupFixtures(currentSeason);
   const { guests, loading: guestsLoading, error: guestsError, addGuest, updateGuest, removeGuest } = useHospitalityGuests();
+
+  // Guest rows written before homeTeam/awayTeam were fixed to store a
+  // club's slug (see MatchGuestSection's handleAdd) still carry its display
+  // name instead - caught here by checking whether the stored value is a
+  // real slug at all, and resolved back to one via clubsByName, exactly the
+  // same way a fixture's own home/away cell resolves either a slug or a
+  // legacy name (see resolveClub in teams.js). A row whose name doesn't
+  // match any known club (renamed/deleted since) is left alone rather than
+  // guessed at.
+  const legacyTeamFixes = useMemo(() => {
+    if (clubsBySlug.size === 0) return [];
+    return guests
+      .map((g) => {
+        const home = clubsBySlug.has(g.homeTeam) ? g.homeTeam : clubsByName.get(g.homeTeam)?.slug;
+        const away = clubsBySlug.has(g.awayTeam) ? g.awayTeam : clubsByName.get(g.awayTeam)?.slug;
+        if (!home || !away) return null;
+        if (home === g.homeTeam && away === g.awayTeam) return null;
+        return { id: g.id, homeTeam: home, awayTeam: away };
+      })
+      .filter(Boolean);
+  }, [guests, clubsBySlug, clubsByName]);
+  const [fixingLegacyTeams, setFixingLegacyTeams] = useState(false);
+  const [legacyTeamFixError, setLegacyTeamFixError] = useState(null);
+  const [legacyConfirm, legacyConfirmDialog] = useConfirm();
+
+  async function handleFixLegacyTeamNames() {
+    if (
+      !(await legacyConfirm(
+        `Fix ${legacyTeamFixes.length} old guest row${legacyTeamFixes.length === 1 ? '' : 's'} that still store the club's name instead of its slug? This only changes how the row is keyed internally - nothing a guest or export sees changes.`
+      ))
+    ) {
+      return;
+    }
+    setFixingLegacyTeams(true);
+    setLegacyTeamFixError(null);
+    try {
+      await callWithReauth(session, async (token) => {
+        for (const fix of legacyTeamFixes) {
+          await updateGuest(fix.id, { homeTeam: fix.homeTeam, awayTeam: fix.awayTeam }, token);
+        }
+      });
+    } catch (err) {
+      setLegacyTeamFixError(err.message);
+    } finally {
+      setFixingLegacyTeams(false);
+    }
+  }
 
   const [competitionValue, setCompetitionValue] = useState(SERIE_A_VALUE);
   // null means "no explicit pick for THIS competition yet" - the group
@@ -576,7 +629,7 @@ export default function HospitalityPage() {
 
   function handleExportGroup() {
     const safeGroup = String(groupLabel || 'group').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    exportHospitalityGuestsCsv(guestsForGroup, `${competitionValue}-${safeGroup}.csv`, competitions);
+    exportHospitalityGuestsCsv(guestsForGroup, `${competitionValue}-${safeGroup}.csv`, competitions, clubsBySlug);
   }
 
   if (!session.signedIn) {
@@ -609,11 +662,18 @@ export default function HospitalityPage() {
 
       <main className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-6">
         <div className="flex flex-wrap items-end gap-3 rounded-2xl bg-white/5 p-4">
-          <div className="flex flex-col gap-1">
+          {/* flex-1 on both groups (plus Dropdown's own w-full) - this bar
+              otherwise has nothing else in it, so letting the two controls
+              share whatever width is left reads a lot less cramped than a
+              couple of narrow fixed-width pills floating in a mostly-empty
+              bar. Dropdown.jsx measures its OWN trigger's width when it
+              opens (not a width baked in here), so its popup list widens
+              right along with the trigger automatically. */}
+          <div className="flex min-w-[180px] flex-1 flex-col gap-1">
             <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">Competition</span>
             <Dropdown
               variant="sidebar"
-              className="w-44"
+              className="w-full"
               value={competitionValue}
               onChange={(v) => {
                 setCompetitionValue(v);
@@ -622,7 +682,7 @@ export default function HospitalityPage() {
               options={competitionOptions}
             />
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex min-w-[220px] flex-1 flex-col gap-1">
             <span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">{isSerieA ? 'Matchday' : 'Round'}</span>
             <div className="flex items-center gap-1">
               <button
@@ -636,7 +696,7 @@ export default function HospitalityPage() {
               </button>
               <Dropdown
                 variant="sidebar"
-                className="w-36"
+                className="w-full"
                 value={group}
                 onChange={(v) => {
                   setGroupOverride({ competitionValue, group: v });
@@ -660,6 +720,30 @@ export default function HospitalityPage() {
         {guestsError && (
           <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs text-red-200">{guestsError}</p>
         )}
+
+        {/* Self-hiding one-off - once every legacy row's been fixed this
+            never has anything to show again, so it doesn't linger as a
+            permanent fixture of the page. */}
+        {legacyTeamFixes.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-4 py-2.5 text-xs text-amber-100">
+            <span>
+              {legacyTeamFixes.length} guest row{legacyTeamFixes.length === 1 ? '' : 's'} still store the club by name
+              instead of its slug (from before this was fixed).
+            </span>
+            <button
+              type="button"
+              onClick={handleFixLegacyTeamNames}
+              disabled={fixingLegacyTeams}
+              className="shrink-0 rounded-full bg-amber-400/90 px-3 py-1 font-bold text-[#0f1e54] hover:bg-amber-400 disabled:opacity-50"
+            >
+              {fixingLegacyTeams ? 'Fixing…' : 'Fix now'}
+            </button>
+          </div>
+        )}
+        {legacyTeamFixError && (
+          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs text-red-200">{legacyTeamFixError}</p>
+        )}
+        {legacyConfirmDialog}
 
         {loading ? (
           <p className="text-sm text-white/40">Loading…</p>
@@ -702,6 +786,7 @@ export default function HospitalityPage() {
                           fixture={f}
                           competitionValue={competitionValue}
                           competitions={competitions}
+                          clubsBySlug={clubsBySlug}
                           guestSources={guestSources}
                           guests={fixtureGuests}
                           allGuests={guests}

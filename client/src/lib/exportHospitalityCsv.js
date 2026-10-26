@@ -27,7 +27,15 @@ export function competitionNameForSlug(slug, competitions) {
   return competitions.find((c) => c.slug === slug)?.name ?? slug;
 }
 
-function toRow(guest, competitions) {
+// Same idea for homeTeam/awayTeam - guest rows store each club's own slug
+// (see HospitalityPage), not its display name, so this resolves it back for
+// the download. Falls back to the raw value for a slug that isn't in the
+// clubs list at all (shouldn't happen, but better than a blank cell).
+export function teamNameForSlug(slug, clubsBySlug) {
+  return clubsBySlug.get(slug)?.name ?? slug;
+}
+
+function toRow(guest, competitions, clubsBySlug) {
   return {
     competition: competitionNameForSlug(guest.competition, competitions),
     matchdayOrRound: guest.matchday || guest.round || '',
@@ -39,7 +47,7 @@ function toRow(guest, competitions) {
     // as a raw decimal instead of a readable date/time.
     date: csvText(isoToDDMMYYYY(guest.matchDate)),
     kickoff: csvText(guest.kickoffTime),
-    match: `${guest.homeTeam} v ${guest.awayTeam}`,
+    match: `${teamNameForSlug(guest.homeTeam, clubsBySlug)} v ${teamNameForSlug(guest.awayTeam, clubsBySlug)}`,
     firstName: guest.firstName,
     lastName: guest.lastName,
     dob: csvText(isoToDDMMYYYY(guest.dateOfBirth)),
@@ -56,6 +64,6 @@ function toRow(guest, competitions) {
 // per-row slug-to-name resolution is needed before handing off to toCSV.
 // Source/Instagram handle/email are tracked in the app and shown on-screen
 // (see GuestRow) but deliberately left out of this download.
-export function exportHospitalityGuestsCsv(guests, filename, competitions) {
-  downloadCSV(toCSV(COLUMNS, guests.map((g) => toRow(g, competitions))), filename);
+export function exportHospitalityGuestsCsv(guests, filename, competitions, clubsBySlug) {
+  downloadCSV(toCSV(COLUMNS, guests.map((g) => toRow(g, competitions, clubsBySlug))), filename);
 }
