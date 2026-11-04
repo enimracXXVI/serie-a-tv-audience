@@ -2,6 +2,7 @@ import { SPREADSHEET_ID, GOOGLE_API_KEY } from './config.js';
 import { columnIndexToLetter, buildHeaderIndex, normalizeHeaderIndex, cell, getSheetId } from './sheetsCommon.js';
 import { computeMatchTags } from './matchTags.js';
 import { computeDayOfWeek } from './matchdays.js';
+import { excelSerialToISODate, excelSerialToTime } from './dateFormat.js';
 
 const NUMERIC_FIELDS = new Set([
   'id',
@@ -113,21 +114,6 @@ let headerIndexCache = null;
 // sync with reality by deleteFixtureRow refetching after an actual delete -
 // see there for why "row N+1 holds fixture id N" can no longer be assumed.
 let rowIndexCache = null;
-
-function excelSerialToISODate(serial) {
-  const epoch = Date.UTC(1899, 11, 30);
-  return new Date(epoch + serial * 86400000).toISOString().slice(0, 10);
-}
-
-// Typing a time like "20:45" straight into a cell makes Sheets store it as a
-// real TIME value (a fraction-of-day serial, e.g. 0.864583) rather than
-// text - UNFORMATTED_VALUE then returns that number instead of a string.
-function excelSerialToTime(serial) {
-  const totalMinutes = Math.round(serial * 24 * 60);
-  const hours = Math.floor(totalMinutes / 60) % 24;
-  const minutes = totalMinutes % 60;
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-}
 
 // Manually-typed data can hold "true"/"True"/" TRUE " instead of a real
 // checkbox or an exact-cased "TRUE" string - match leniently rather than

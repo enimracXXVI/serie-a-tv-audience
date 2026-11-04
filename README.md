@@ -591,10 +591,27 @@ rows to start:
   or kickoff time is edited afterwards. `homeTeam`/`awayTeam` store the
   club's **slug** (same convention as `competition` above, and as a
   fixture's own `home`/`away` cells), not its display name - the CSV export
-  resolves it back to a human name at download time. Older rows written
-  before this was fixed may still have the display name instead; the
+  resolves it back to a human name at download time. `matchDate`/
+  `kickoffTime` are plain `"YYYY-MM-DD"`/`"HH:MM"` text, same as the
+  fixtures tab's own columns.
+  
+  Both kinds of value can end up wrong on an older row: `homeTeam`/
+  `awayTeam` holding a display name instead of a slug (from before that was
+  fixed), or `matchDate`/`kickoffTime` holding a raw Excel/Sheets serial
+  number (a 5-digit integer for a date, a `0.xxxx` decimal for a time)
+  instead of readable text - this happens if the **fixtures tab's own**
+  `date`/`kickoffTime` cell was ever hand-typed directly into the sheet
+  (rather than through this app, which always writes plain text) at the
+  exact moment a guest was added against that match; Sheets auto-types a
+  hand-typed date/time into a real Date/Time cell, and the API's
+  `UNFORMATTED_VALUE` read then returns its raw serial instead of text - see
+  `excelSerialToISODate`/`excelSerialToTime` in `dateFormat.js`, which both
+  `sheets.js` and `seasonFixtures.js` already convert back on every read, so
+  this only ever affects a guest row that copied the bad value in at that
+  exact moment, not the fixture itself afterwards. Either way, the
   Hospitality page shows a one-off "Fix now" banner (only while such rows
-  exist) that rewrites them in place.
+  exist) that repairs whichever of the two problems a row actually has and
+  rewrites it in place.
 - `provinceOfBirth`/`cityOfBirth` and `provinceOfResidence`/`cityOfResidence`
   are only ever filled in when the corresponding nation is Italy - blank
   otherwise, since a comune/province pair only exists for a genuinely

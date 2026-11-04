@@ -1,10 +1,12 @@
 import { SPREADSHEET_ID, GOOGLE_API_KEY } from './config.js';
 import { buildHeaderIndex, normalizeHeaderIndex, cell } from './sheetsCommon.js';
+import { excelSerialToISODate, excelSerialToTime } from './dateFormat.js';
 
 // Same parsing rules as sheets.js's rowToFixture (numeric/boolean coercion,
-// Excel serial date handling) - kept as its own copy rather than sharing
-// code with the live fixtures module, since this path is read-only and
-// should never risk the live current-season read/write path.
+// Excel serial date handling, via the same shared dateFormat.js helpers) -
+// kept as its own copy of rowToFixture itself rather than sharing THAT code
+// with the live fixtures module, since this path is read-only and should
+// never risk the live current-season read/write path.
 const NUMERIC_FIELDS = new Set([
   'id',
   'matchday',
@@ -61,21 +63,6 @@ const ALL_FIXTURE_FIELDS = [
     'round',
   ]),
 ];
-
-function excelSerialToISODate(serial) {
-  const epoch = Date.UTC(1899, 11, 30);
-  return new Date(epoch + serial * 86400000).toISOString().slice(0, 10);
-}
-
-// Typing a time like "20:45" straight into a cell makes Sheets store it as a
-// real TIME value (a fraction-of-day serial, e.g. 0.864583) rather than
-// text - UNFORMATTED_VALUE then returns that number instead of a string.
-function excelSerialToTime(serial) {
-  const totalMinutes = Math.round(serial * 24 * 60);
-  const hours = Math.floor(totalMinutes / 60) % 24;
-  const minutes = totalMinutes % 60;
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-}
 
 // Manually-typed archive data can hold "true"/"True"/" TRUE " instead of a
 // real checkbox or an exact-cased "TRUE" string - match leniently rather

@@ -20,3 +20,25 @@ export function todayISO() {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${mo}-${day}`;
 }
+
+// Typing a date/time straight into a Sheets cell (rather than through this
+// app, which always writes plain "YYYY-MM-DD"/"HH:MM" text) makes Sheets
+// store it as a real Date/Time value internally - a serial number, read
+// back raw as a bare number via the Sheets API's UNFORMATTED_VALUE mode
+// (see sheets.js/seasonFixtures.js's own rowToFixture) instead of the text
+// every date/time field here otherwise holds. These convert that serial
+// back to the shape the app expects, so a hand-edited cell self-heals
+// instead of leaking a raw 5-digit number (or a 0.xxxx decimal, for a time)
+// into the UI, a CSV export, or anywhere else that copies the value in at
+// some point and keeps it from then on (see HospitalityPage's guest rows).
+export function excelSerialToISODate(serial) {
+  const epoch = Date.UTC(1899, 11, 30);
+  return new Date(epoch + serial * 86400000).toISOString().slice(0, 10);
+}
+
+export function excelSerialToTime(serial) {
+  const totalMinutes = Math.round(serial * 24 * 60);
+  const hours = Math.floor(totalMinutes / 60) % 24;
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}

@@ -12,7 +12,7 @@ import { useHospitalityGuests } from '../lib/useHospitalityGuests.jsx';
 import { SERIE_A_VALUE, competitionScope } from '../lib/competitions.js';
 import { callWithReauth } from '../lib/reauth.js';
 import { exportHospitalityGuestsCsv } from '../lib/exportHospitalityCsv.js';
-import { isoToDDMMYYYY, todayISO } from '../lib/dateFormat.js';
+import { isoToDDMMYYYY, todayISO, excelSerialToISODate, excelSerialToTime } from '../lib/dateFormat.js';
 import { instagramUrl } from '../lib/instagram.js';
 import { useConfirm } from '../lib/useConfirm.jsx';
 import Crest from '../components/Crest.jsx';
@@ -30,6 +30,32 @@ function formatDateHeading(dateStr) {
 function competitionLabel(slug, competitions) {
   if (slug === SERIE_A_VALUE) return 'Serie A';
   return competitions.find((c) => c.slug === slug)?.name ?? slug;
+}
+
+// A guest row's matchDate/kickoffTime are copied in from the fixture at the
+// moment the guest is added, then never looked up live again - so if that
+// fixture's own date/kickoffTime cell was ever a raw Excel/Sheets serial
+// number at that exact moment (a cell hand-typed directly into the sheet
+// rather than through this app), the bad value is permanently baked into
+// this row regardless of whether the live fixture itself is fine now.
+// Caught here by checking the stored string isn't already the expected
+// "YYYY-MM-DD"/"HH:MM" shape but does look like a plausible serial, and
+// repaired the same way sheets.js's own rowToFixture would have on a clean
+// read. Bounded to a sane calendar-year range so genuinely unrelated
+// garbage in the field is left alone rather than "fixed" into a nonsense
+// date.
+function fixedMatchDate(value) {
+  if (!value || /^\d{4}-\d{2}-\d{2}$/.test(value) || !/^\d+$/.test(value)) return null;
+  const serial = Number(value);
+  if (serial < 25000 || serial > 80000) return null; // roughly year 1968-2119
+  return excelSerialToISODate(serial);
+}
+
+function fixedKickoffTime(value) {
+  if (!value || /^\d{2}:\d{2}$/.test(value) || !/^0?\.\d+$/.test(value)) return null;
+  const serial = Number(value);
+  if (!(serial >= 0 && serial < 1)) return null;
+  return excelSerialToTime(serial);
 }
 
 // European competitions (Champions/Europa/Conference League) always carry
@@ -445,49 +471,62 @@ export default function HospitalityPage() {
   } = useCupFixtures(currentSeason);
   const { guests, loading: guestsLoading, error: guestsError, addGuest, updateGuest, removeGuest } = useHospitalityGuests();
 
-  // Guest rows written before homeTeam/awayTeam were fixed to store a
-  // club's slug still carry its display name instead - caught here by
-  // checking whether the stored value is a real slug at all, and resolved
-  // back to one via clubsByName, exactly the same way a fixture's own
-  // home/away cell resolves either a slug or a legacy name (see resolveClub
-  // in teams.js). A row whose name doesn't match any known club
-  // (renamed/deleted since) is left alone rather than guessed at.
-  const legacyTeamFixes = useMemo(() => {
+  // Two independent kinds of bad legacy data a guest row can be stuck with,
+  // from before each was fixed at the source: homeTeam/awayTeam holding a
+  // display name instead of a slug (resolved back via clubsByName, the same
+  // way a fixture's own home/away cell resolves either shape - see
+  // resolveClub in teams.js), and matchDate/kickoffTime holding a raw
+  // Excel/Sheets serial number instead of "YYYY-MM-DD"/"HH:MM" text (see
+  // fixedMatchDate/fixedKickoffTime above). Each field is fixed
+  // independently - a row needing only one of the two still gets listed and
+  // repaired, nothing waits on the other one also being fixable. A field
+  // that can't be resolved (an unknown club name, a number outside any
+  // sane date range) is left alone rather than guessed at.
+  const legacyFixes = useMemo(() => {
     if (clubsBySlug.size === 0) return [];
     return guests
       .map((g) => {
-        const home = clubsBySlug.has(g.homeTeam) ? g.homeTeam : clubsByName.get(g.homeTeam)?.slug;
-        const away = clubsBySlug.has(g.awayTeam) ? g.awayTeam : clubsByName.get(g.awayTeam)?.slug;
-        if (!home || !away) return null;
-        if (home === g.homeTeam && away === g.awayTeam) return null;
-        return { id: g.id, homeTeam: home, awayTeam: away };
+        const fields = {};
+        if (!clubsBySlug.has(g.homeTeam)) {
+          const resolved = clubsByName.get(g.homeTeam)?.slug;
+          if (resolved) fields.homeTeam = resolved;
+        }
+        if (!clubsBySlug.has(g.awayTeam)) {
+          const resolved = clubsByName.get(g.awayTeam)?.slug;
+          if (resolved) fields.awayTeam = resolved;
+        }
+        const matchDate = fixedMatchDate(g.matchDate);
+        if (matchDate) fields.matchDate = matchDate;
+        const kickoffTime = fixedKickoffTime(g.kickoffTime);
+        if (kickoffTime) fields.kickoffTime = kickoffTime;
+        return Object.keys(fields).length > 0 ? { id: g.id, fields } : null;
       })
       .filter(Boolean);
   }, [guests, clubsBySlug, clubsByName]);
-  const [fixingLegacyTeams, setFixingLegacyTeams] = useState(false);
-  const [legacyTeamFixError, setLegacyTeamFixError] = useState(null);
+  const [fixingLegacyRows, setFixingLegacyRows] = useState(false);
+  const [legacyFixError, setLegacyFixError] = useState(null);
   const [legacyConfirm, legacyConfirmDialog] = useConfirm();
 
-  async function handleFixLegacyTeamNames() {
+  async function handleFixLegacyRows() {
     if (
       !(await legacyConfirm(
-        `Fix ${legacyTeamFixes.length} old guest row${legacyTeamFixes.length === 1 ? '' : 's'} that still store the club's name instead of its slug? This only changes how the row is keyed internally - nothing a guest or export sees changes.`
+        `Fix ${legacyFixes.length} old guest row${legacyFixes.length === 1 ? '' : 's'} with stale internal data (the club stored by name instead of its slug, and/or the match's date or kickoff time stored as a raw spreadsheet number)? This only changes how the row is keyed/read internally - nothing a guest or export sees changes.`
       ))
     ) {
       return;
     }
-    setFixingLegacyTeams(true);
-    setLegacyTeamFixError(null);
+    setFixingLegacyRows(true);
+    setLegacyFixError(null);
     try {
       await callWithReauth(session, async (token) => {
-        for (const fix of legacyTeamFixes) {
-          await updateGuest(fix.id, { homeTeam: fix.homeTeam, awayTeam: fix.awayTeam }, token);
+        for (const fix of legacyFixes) {
+          await updateGuest(fix.id, fix.fields, token);
         }
       });
     } catch (err) {
-      setLegacyTeamFixError(err.message);
+      setLegacyFixError(err.message);
     } finally {
-      setFixingLegacyTeams(false);
+      setFixingLegacyRows(false);
     }
   }
 
@@ -643,24 +682,25 @@ export default function HospitalityPage() {
         {/* Self-hiding one-off - once every legacy row's been fixed this
             never has anything to show again, so it doesn't linger as a
             permanent fixture of the page. */}
-        {legacyTeamFixes.length > 0 && (
+        {legacyFixes.length > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-4 py-2.5 text-xs text-amber-100">
             <span>
-              {legacyTeamFixes.length} guest row{legacyTeamFixes.length === 1 ? '' : 's'} still store the club by name
-              instead of its slug (from before this was fixed).
+              {legacyFixes.length} guest row{legacyFixes.length === 1 ? '' : 's'} still store stale internal data (club
+              by name instead of slug, and/or a raw spreadsheet number for the date/kickoff) from before this was
+              fixed.
             </span>
             <button
               type="button"
-              onClick={handleFixLegacyTeamNames}
-              disabled={fixingLegacyTeams}
+              onClick={handleFixLegacyRows}
+              disabled={fixingLegacyRows}
               className="shrink-0 rounded-full bg-amber-400/90 px-3 py-1 font-bold text-[#0f1e54] hover:bg-amber-400 disabled:opacity-50"
             >
-              {fixingLegacyTeams ? 'Fixing…' : 'Fix now'}
+              {fixingLegacyRows ? 'Fixing…' : 'Fix now'}
             </button>
           </div>
         )}
-        {legacyTeamFixError && (
-          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs text-red-200">{legacyTeamFixError}</p>
+        {legacyFixError && (
+          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-xs text-red-200">{legacyFixError}</p>
         )}
         {legacyConfirmDialog}
 
