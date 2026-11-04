@@ -9,3 +9,14 @@ export function isoToDDMMYYYY(isoDate) {
   const [, y, mo, d] = m;
   return `${d}/${mo}/${y}`;
 }
+
+// Today's own date as the same "YYYY-MM-DD" shape fixtures store - in the
+// viewer's LOCAL calendar day, not UTC, so "today" matches what the clock
+// on the wall actually says regardless of time zone.
+export function todayISO() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${day}`;
+}

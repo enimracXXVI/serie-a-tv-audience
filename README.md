@@ -615,40 +615,57 @@ rows to start:
   guest - an audit trail, since this is the one tab in the whole app holding
   real personal data.
 
-Only fixtures whose **home** club has `ticketsAvailable` turned on for the
-current season (see the `teamSeasons` tab above) show up as pickable at all -
-or whose own `hospitalityOverride` cell (on the fixtures tab itself, TRUE/
-FALSE, same as `isBigMatch`/`isDerby`) is TRUE, for one-off ticket access to
-a specific game whose home club has no standing allocation deal. The
-Hospitality page has its own small "+ Enable a match without tickets" link
-for turning that flag on (and a "Remove access" button on a match only
-shown because of it, to turn it back off) - there's no need to touch the
-fixture's own edit box for this. European competitions (Champions/Europa/
-Conference League) skip both checks entirely and always show every fixture
-added under them, since a European away leg's foreign host is never set up
-in `teamSeasons` at all. Matches are listed in kickoff order (date, then
-time) rather than sheet row order. Clicking a fixture expands its own
-guest-list section directly below it
-(an accordion, not a checkbox-then-separate-list). Each one shows "X/Y"
-(`X` = guests already added to that match, `Y` = that club's
-`ticketsCount`) - going over `Y` is allowed (better to let you over-allocate
-than hard-block you), just flagged in red rather than green. A guest already
-added can be edited in place (their personal-info fields only - the match
-fields a row was created with never change) via the same form used to add
-one, or removed entirely. World nations and Italian provinces are small,
-static lists bundled directly into the app; Italian comuni (~7,900 of them)
-are a much larger dataset loaded on demand only once this page is opened,
-grouped by province.
+The Hospitality page shows **every** fixture across every competition in one
+flat list, grouped by date first and competition second (so a date with
+games in more than one competition gets its own sub-heading per
+competition; a date with only one doesn't bother). A "Show past games"
+toggle in the header is off by default - any fixture dated strictly before
+today is hidden, but a fixture dated **today** always stays visible even
+though it's technically "now", and a fixture with no date yet (TBD) is
+never hidden by this at all, since there's nothing to compare. Matches
+within a date/competition group are listed in kickoff order.
 
-Every match's own card can download a CSV of just its own guest list; the
-matchday/round header has a second "Download CSV for ..." button covering
-every guest across every match in that matchday/round in one file. Both
-produce the same column layout: competition (name, not slug), matchday-or-
-round, date, kickoff, match (`home v away`), name, date of birth, then
-nation/city/province of birth and of residence - flattened and joined-free
-so the file is ready to forward by email as-is. Source, Instagram handle,
-and email are tracked and shown on-screen (see above) but deliberately left
-out of this download.
+Only fixtures whose **home** club has `ticketsAvailable` turned on for the
+current season (see the `teamSeasons` tab above) can have guests added at
+all - or whose own `hospitalityOverride` cell (on the fixtures tab itself,
+TRUE/FALSE, same as `isBigMatch`/`isDerby`) is TRUE, for one-off ticket
+access to a specific game whose home club has no standing allocation deal.
+A fixture without either shows as a dashed, muted row with an inline
+"Enable" button right there in the list (turning `hospitalityOverride` on)
+instead of a separate picker - and a "Remove access" button once expanded,
+to turn it back off, on a match only shown because of the override (never
+on one with a real standing ticket deal). European competitions
+(Champions/Europa/Conference League) skip both checks entirely and always
+show every fixture added under them, since a European away leg's foreign
+host is never set up in `teamSeasons` at all.
+
+Clicking a fixture with access expands its own guest-list section directly
+below it (an accordion, not a checkbox-then-separate-list). Each one shows
+"X/Y" (`X` = guests already added to that match, `Y` = that club's
+`ticketsCount`) - going over `Y` is allowed (better to let you
+over-allocate than hard-block you), just flagged in red rather than green.
+A guest already added can be edited in place (their personal-info fields
+only - the match fields a row was created with never change) via the same
+form used to add one, or removed entirely. World nations and Italian
+provinces are small, static lists bundled directly into the app; Italian
+comuni (~7,900 of them) are a much larger dataset loaded on demand only
+once this page is opened, grouped by province.
+
+Clicking a fixture row elsewhere in the app (the Fixtures calendar, a cup
+competition's own rounds) jumps straight here with that match's own guest
+section already open and scrolled into view, briefly highlighted - but only
+when signed in; signed out, that link is simply not shown at all, no prompt.
+If the linked fixture is itself in the past, "Show past games" is switched
+on automatically so the very match just clicked isn't hidden by the default
+filter.
+
+Every match's own card can download a CSV of just its own guest list - the
+column layout is competition (name, not slug), matchday-or-round, date,
+kickoff, match (`home v away`), name, date of birth, then nation/city/
+province of birth and of residence - flattened and joined-free so the file
+is ready to forward by email as-is. Source, Instagram handle, and email are
+tracked and shown on-screen (see above) but deliberately left out of this
+download.
 
 ### Rolling over to a new season (promotion/relegation)
 

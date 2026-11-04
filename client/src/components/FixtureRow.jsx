@@ -8,8 +8,10 @@ import { SPONSOR_TYPES } from '../lib/sponsorCounts.js';
 import { useCupData } from '../lib/useCupData.jsx';
 import { resolveBroadcaster } from '../lib/broadcasters.js';
 import { hasLedDeal, hasLedMinutesConcept } from '../lib/teams.js';
+import { SERIE_A_VALUE } from '../lib/competitions.js';
 import ToggleSwitch from './ToggleSwitch.jsx';
 import { useConfirm } from '../lib/useConfirm.jsx';
+import HospitalityLinkButton from './HospitalityLinkButton.jsx';
 
 const inputClass =
   'h-9 w-full rounded-lg border border-gray-200 bg-gray-50 px-2.5 text-sm text-[#0f1e54] shadow-sm outline-none transition-colors focus:border-[#1fd8c9] focus:bg-white focus:ring-2 focus:ring-[#1fd8c9]/20';
@@ -382,6 +384,7 @@ export default function FixtureRow({ fixture, onUpdate, onDelete, highlightSlugs
           </span>
         )}
       </SummaryWrapper>
+      <HospitalityLinkButton fixtureId={fixture.id} competition={SERIE_A_VALUE} className="ml-1 sm:ml-2" />
       {showEdit && onDelete && (
         <button
           onClick={handleDelete}
