@@ -88,53 +88,100 @@ function isFullyBooked(guestCount, ticketsCount) {
 // this is ever called with), so clicking it just expands its own
 // guest-list section directly below. Getting a fixture WITHOUT standing
 // tickets into this list at all happens from the Fixtures/Cup page's own
-// hospitality link (see HospitalityLinkButton), never from here.
-function FixtureListRow({ fixture, expanded, onToggle, guestCount, highlighted }) {
+// hospitality link (see HospitalityLinkButton), never from here - but
+// undoing that (isOverrideOnly) is right here on the row itself, a small
+// "×" next to the badge, rather than buried inside the expanded guest
+// card where it's easy to miss right after that same link just put you
+// here. Removing it this way needs no guests added first.
+function FixtureListRow({ fixture, expanded, onToggle, guestCount, highlighted, isOverrideOnly, onRemoveOverride }) {
   const ticketsCount = fixture.home.ticketsCount ?? null;
+  const [removing, setRemoving] = useState(false);
+  const [error, setError] = useState(null);
+  const [confirm, confirmDialog] = useConfirm();
+
+  async function handleRemove(e) {
+    e.stopPropagation();
+    if (
+      !(await confirm(
+        `Remove hospitality access for ${fixture.home.name} vs ${fixture.away.name}? Any guests already added stay on file, just no longer editable from here unless you re-add it.`
+      ))
+    ) {
+      return;
+    }
+    setRemoving(true);
+    setError(null);
+    try {
+      await onRemoveOverride();
+    } catch (err) {
+      setError(err.message);
+      setRemoving(false);
+    }
+  }
 
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-expanded={expanded}
-      className={`flex w-full items-start gap-3 rounded-lg border-2 px-3 py-2 text-left transition-colors ${
-        highlighted ? 'ring-2 ring-amber-400' : ''
-      } ${
-        // An opaque tint, not a semi-transparent one - this row sits
-        // directly on the page's own navy (#0f1e54) body background, the
-        // same colour as the team-name text below, so a see-through
-        // background here let that navy show straight through and made the
-        // text unreadable once expanded.
-        expanded ? 'border-[#1fd8c9] bg-teal-50' : 'border-gray-100 bg-white hover:border-[#1fd8c9]/40'
-      }`}
-    >
-      <span
-        aria-hidden="true"
-        className={`mt-1 shrink-0 text-[10px] text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
+    <div className="flex flex-col gap-1">
+      {confirmDialog}
+      {/* The outer box is a plain div, not a button - isOverrideOnly puts a
+          real <button> (the "×") inside it as a SIBLING of the toggle
+          button below, never nested inside one (nested buttons are invalid
+          HTML and browsers handle the click ambiguously - see
+          FixtureRow.jsx's own SummaryWrapper/DELETE split for the same
+          reasoning). */}
+      <div
+        className={`flex w-full items-start gap-2 rounded-lg border-2 px-3 py-2 transition-colors ${
+          highlighted ? 'ring-2 ring-amber-400' : ''
+        } ${
+          // An opaque tint, not a semi-transparent one - this row sits
+          // directly on the page's own navy (#0f1e54) body background, the
+          // same colour as the team-name text below, so a see-through
+          // background here let that navy show straight through and made the
+          // text unreadable once expanded.
+          expanded ? 'border-[#1fd8c9] bg-teal-50' : 'border-gray-100 bg-white hover:border-[#1fd8c9]/40'
+        }`}
       >
-        ▶
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <Crest team={fixture.home} size={16} />
-          <span className="min-w-0 truncate text-sm font-semibold text-[#0f1e54]">{fixture.home.name}</span>
-        </div>
-        <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
-          <Crest team={fixture.away} size={16} />
-          <span className="min-w-0 truncate text-sm font-semibold text-[#0f1e54]">{fixture.away.name}</span>
-        </div>
+        <button type="button" onClick={onToggle} aria-expanded={expanded} className="flex min-w-0 flex-1 items-start gap-3 text-left">
+          <span
+            aria-hidden="true"
+            className={`mt-1 shrink-0 text-[10px] text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
+          >
+            ▶
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <Crest team={fixture.home} size={16} />
+              <span className="min-w-0 truncate text-sm font-semibold text-[#0f1e54]">{fixture.home.name}</span>
+            </div>
+            <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
+              <Crest team={fixture.away} size={16} />
+              <span className="min-w-0 truncate text-sm font-semibold text-[#0f1e54]">{fixture.away.name}</span>
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            {fixture.kickoffTime && <span className="text-xs text-gray-400">{fixture.kickoffTime}</span>}
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                isFullyBooked(guestCount, ticketsCount) ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'
+              }`}
+            >
+              {ticketBadgeText(guestCount, ticketsCount)}
+            </span>
+          </div>
+        </button>
+        {isOverrideOnly && (
+          <button
+            type="button"
+            onClick={handleRemove}
+            disabled={removing}
+            title="Remove this one-off hospitality access - this match has no standing ticket deal"
+            aria-label="Remove hospitality access for this match"
+            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-red-200 text-xs font-bold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            ×
+          </button>
+        )}
       </div>
-      <div className="flex shrink-0 flex-col items-end gap-1">
-        {fixture.kickoffTime && <span className="text-xs text-gray-400">{fixture.kickoffTime}</span>}
-        <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-            isFullyBooked(guestCount, ticketsCount) ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'
-          }`}
-        >
-          {ticketBadgeText(guestCount, ticketsCount)}
-        </span>
-      </div>
-    </button>
+      {error && <p className="px-3 text-xs text-red-300">{error}</p>}
+    </div>
   );
 }
 
@@ -713,6 +760,11 @@ export default function HospitalityPage() {
                     {fixtures.map((f) => {
                       const expanded = expandedFixtureIds.includes(f.id);
                       const fixtureGuests = guestsForFixture(f.id);
+                      // Only a match let in purely via the one-off override
+                      // (not a real team-level ticket deal) gets an undo
+                      // control - computed once, shared by the row's own
+                      // "×" and the expanded card's "Remove access".
+                      const isOverrideOnly = !f.home.ticketsAvailable && Boolean(f.hospitalityOverride);
                       return (
                         <div key={`${f.competition}-${f.id}`} id={`hospitality-fixture-${f.competition}-${f.id}`} className="flex flex-col gap-2">
                           <FixtureListRow
@@ -721,6 +773,8 @@ export default function HospitalityPage() {
                             onToggle={() => toggleExpanded(f.id)}
                             guestCount={fixtureGuests.length}
                             highlighted={highlightFixtureId === f.id}
+                            isOverrideOnly={isOverrideOnly}
+                            onRemoveOverride={() => handleDisableOverride(f)}
                           />
                           {expanded && (
                             <MatchGuestSection
@@ -734,10 +788,7 @@ export default function HospitalityPage() {
                               addGuest={addGuest}
                               updateGuest={updateGuest}
                               removeGuest={removeGuest}
-                              // Only a match let in purely via the one-off
-                              // override (not a real team-level ticket deal)
-                              // gets an undo control.
-                              isOverrideOnly={!f.home.ticketsAvailable && Boolean(f.hospitalityOverride)}
+                              isOverrideOnly={isOverrideOnly}
                               onRemoveOverride={() => handleDisableOverride(f)}
                             />
                           )}

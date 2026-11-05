@@ -661,11 +661,14 @@ already open, scrolled into view and briefly highlighted, turning its
 click **is** the "add this match to Hospitality" action now. Signed out,
 that link simply isn't shown at all, no prompt. If the linked fixture is
 itself in the past, "Show past games" is switched on automatically so the
-very match just clicked isn't hidden by the default filter. A "Remove
-access" button, once a match's guest section is expanded, turns the
-override back off again (never shown on a match with a real standing
-ticket deal) - at which point it drops out of this list entirely, the same
-way it never would have shown up without the override in the first place.
+very match just clicked isn't hidden by the default filter. An override-
+only match (never one with a real standing ticket deal) gets a small "×"
+right on its own row - no need to expand the guest section first - that
+turns the override back off again, with the same confirm prompt as any
+other delete; the expanded guest card below has the identical control too
+("Remove access"), for whichever's more convenient. Either way, the match
+then drops out of this list entirely, the same way it never would have
+shown up without the override in the first place.
 
 Clicking a fixture with access expands its own guest-list section directly
 below it (an accordion, not a checkbox-then-separate-list). Each one shows
