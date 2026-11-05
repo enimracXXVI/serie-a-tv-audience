@@ -633,28 +633,39 @@ rows to start:
   real personal data.
 
 The Hospitality page shows **every** fixture across every competition in one
-flat list, grouped by date first and competition second (so a date with
-games in more than one competition gets its own sub-heading per
-competition; a date with only one doesn't bother). A "Show past games"
-toggle in the header is off by default - any fixture dated strictly before
-today is hidden, but a fixture dated **today** always stays visible even
-though it's technically "now", and a fixture with no date yet (TBD) is
-never hidden by this at all, since there's nothing to compare. Matches
-within a date/competition group are listed in kickoff order.
+flat list, grouped by date first and competition second - every date's own
+sub-heading always names its competition(s), even on a date with just one,
+so it's never ambiguous whether a given row is Serie A or a cup game. A
+"Show past games" toggle in the header is off by default - any fixture
+dated strictly before today is hidden, but a fixture dated **today** always
+stays visible even though it's technically "now", and a fixture with no
+date yet (TBD) is never hidden by this at all, since there's nothing to
+compare. Matches within a date/competition group are listed in kickoff
+order.
 
 Only fixtures whose **home** club has `ticketsAvailable` turned on for the
 current season (see the `teamSeasons` tab above) can have guests added at
 all - or whose own `hospitalityOverride` cell (on the fixtures tab itself,
 TRUE/FALSE, same as `isBigMatch`/`isDerby`) is TRUE, for one-off ticket
 access to a specific game whose home club has no standing allocation deal.
-A fixture without either shows as a dashed, muted row with an inline
-"Enable" button right there in the list (turning `hospitalityOverride` on)
-instead of a separate picker - and a "Remove access" button once expanded,
-to turn it back off, on a match only shown because of the override (never
-on one with a real standing ticket deal). European competitions
-(Champions/Europa/Conference League) skip both checks entirely and always
-show every fixture added under them, since a European away leg's foreign
-host is never set up in `teamSeasons` at all.
+European competitions (Champions/Europa/Conference League) skip both
+checks entirely and always show every fixture added under them, since a
+European away leg's foreign host is never set up in `teamSeasons` at all. A
+fixture without access simply isn't listed on this page at all - there's no
+picker or inline "Enable" row here to clutter the list. Instead, every
+fixture row elsewhere in the app (the Fixtures calendar, a cup
+competition's own rounds) carries its own small "Hospitality" link; signed
+in, clicking it jumps straight here with that match's own guest section
+already open, scrolled into view and briefly highlighted, turning its
+`hospitalityOverride` on first if it didn't already have access - that
+click **is** the "add this match to Hospitality" action now. Signed out,
+that link simply isn't shown at all, no prompt. If the linked fixture is
+itself in the past, "Show past games" is switched on automatically so the
+very match just clicked isn't hidden by the default filter. A "Remove
+access" button, once a match's guest section is expanded, turns the
+override back off again (never shown on a match with a real standing
+ticket deal) - at which point it drops out of this list entirely, the same
+way it never would have shown up without the override in the first place.
 
 Clicking a fixture with access expands its own guest-list section directly
 below it (an accordion, not a checkbox-then-separate-list). Each one shows
@@ -667,14 +678,6 @@ form used to add one, or removed entirely. World nations and Italian
 provinces are small, static lists bundled directly into the app; Italian
 comuni (~7,900 of them) are a much larger dataset loaded on demand only
 once this page is opened, grouped by province.
-
-Clicking a fixture row elsewhere in the app (the Fixtures calendar, a cup
-competition's own rounds) jumps straight here with that match's own guest
-section already open and scrolled into view, briefly highlighted - but only
-when signed in; signed out, that link is simply not shown at all, no prompt.
-If the linked fixture is itself in the past, "Show past games" is switched
-on automatically so the very match just clicked isn't hidden by the default
-filter.
 
 Every match's own card can download a CSV of just its own guest list - the
 column layout is competition (name, not slug), matchday-or-round, date,

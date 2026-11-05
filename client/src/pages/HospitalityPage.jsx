@@ -63,7 +63,9 @@ function fixedKickoffTime(value) {
 // need its own `ticketsAvailable` toggle set for its games to show up here
 // at all. Everything else (Serie A, Coppa Italia) needs either a standing
 // ticket deal on the home club or a one-off override on this specific
-// fixture (see the "Enable" action below).
+// fixture - turned on by clicking that match's own hospitality link on the
+// Fixtures/Cup page (see HospitalityLinkButton), not from anywhere on this
+// page itself. A fixture without access simply isn't shown here at all.
 function hasHospitalityAccess(fixture, competitions) {
   if (fixture.competition !== SERIE_A_VALUE) {
     const comp = competitions.find((c) => c.slug === fixture.competition);
@@ -81,101 +83,58 @@ function isFullyBooked(guestCount, ticketsCount) {
   return ticketsCount !== null && ticketsCount !== undefined && guestCount >= ticketsCount;
 }
 
-// One row per fixture in the flat, date-grouped list - clicking it expands
-// its own guest-list section directly below (if it has hospitality access
-// at all), same as before; a fixture that doesn't gets a dashed/muted row
-// with an inline "Enable" action instead of a separate picker, since
-// everything's already visible in the list rather than tucked behind a
-// matchday/competition filter.
-function FixtureListRow({ fixture, hasAccess, expanded, onToggle, guestCount, onEnable, highlighted }) {
+// One row per fixture in the flat, date-grouped list - every fixture here
+// already has hospitality access (see hasHospitalityAccess's filter above
+// this is ever called with), so clicking it just expands its own
+// guest-list section directly below. Getting a fixture WITHOUT standing
+// tickets into this list at all happens from the Fixtures/Cup page's own
+// hospitality link (see HospitalityLinkButton), never from here.
+function FixtureListRow({ fixture, expanded, onToggle, guestCount, highlighted }) {
   const ticketsCount = fixture.home.ticketsCount ?? null;
-  const [enabling, setEnabling] = useState(false);
-  const [error, setError] = useState(null);
-
-  async function handleEnable(e) {
-    e.stopPropagation();
-    setEnabling(true);
-    setError(null);
-    try {
-      await onEnable(fixture);
-    } catch (err) {
-      setError(err.message);
-      setEnabling(false);
-    }
-  }
-
-  const Wrapper = hasAccess ? 'button' : 'div';
 
   return (
-    <div className="flex flex-col gap-1">
-      <Wrapper
-        type={hasAccess ? 'button' : undefined}
-        onClick={hasAccess ? onToggle : undefined}
-        aria-expanded={hasAccess ? expanded : undefined}
-        className={`flex w-full items-start gap-3 rounded-lg border-2 px-3 py-2 text-left transition-colors ${
-          highlighted ? 'ring-2 ring-amber-400' : ''
-        } ${
-          !hasAccess
-            ? 'border-dashed border-white/20 bg-white/5'
-            : // An opaque tint, not a semi-transparent one - this row sits
-              // directly on the page's own navy (#0f1e54) body background, the
-              // same colour as the team-name text below, so a see-through
-              // background here let that navy show straight through and made
-              // the text unreadable once expanded.
-              expanded
-              ? 'border-[#1fd8c9] bg-teal-50'
-              : 'border-gray-100 bg-white hover:border-[#1fd8c9]/40'
-        }`}
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={expanded}
+      className={`flex w-full items-start gap-3 rounded-lg border-2 px-3 py-2 text-left transition-colors ${
+        highlighted ? 'ring-2 ring-amber-400' : ''
+      } ${
+        // An opaque tint, not a semi-transparent one - this row sits
+        // directly on the page's own navy (#0f1e54) body background, the
+        // same colour as the team-name text below, so a see-through
+        // background here let that navy show straight through and made the
+        // text unreadable once expanded.
+        expanded ? 'border-[#1fd8c9] bg-teal-50' : 'border-gray-100 bg-white hover:border-[#1fd8c9]/40'
+      }`}
+    >
+      <span
+        aria-hidden="true"
+        className={`mt-1 shrink-0 text-[10px] text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
       >
-        {hasAccess && (
-          <span
-            aria-hidden="true"
-            className={`mt-1 shrink-0 text-[10px] text-gray-400 transition-transform ${expanded ? 'rotate-90' : ''}`}
-          >
-            ▶
-          </span>
-        )}
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <Crest team={fixture.home} size={16} />
-            <span className={`min-w-0 truncate text-sm font-semibold ${hasAccess ? 'text-[#0f1e54]' : 'text-white/70'}`}>
-              {fixture.home.name}
-            </span>
-          </div>
-          <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
-            <Crest team={fixture.away} size={16} />
-            <span className={`min-w-0 truncate text-sm font-semibold ${hasAccess ? 'text-[#0f1e54]' : 'text-white/70'}`}>
-              {fixture.away.name}
-            </span>
-          </div>
+        ▶
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <Crest team={fixture.home} size={16} />
+          <span className="min-w-0 truncate text-sm font-semibold text-[#0f1e54]">{fixture.home.name}</span>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          {fixture.kickoffTime && (
-            <span className={`text-xs ${hasAccess ? 'text-gray-400' : 'text-white/40'}`}>{fixture.kickoffTime}</span>
-          )}
-          {hasAccess ? (
-            <span
-              className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                isFullyBooked(guestCount, ticketsCount) ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'
-              }`}
-            >
-              {ticketBadgeText(guestCount, ticketsCount)}
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={handleEnable}
-              disabled={enabling}
-              title="This club doesn't have standing hospitality tickets - enable ad-hoc access to this one match"
-              className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase text-white hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {enabling ? 'Enabling…' : 'Enable'}
-            </button>
-          )}
+        <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
+          <Crest team={fixture.away} size={16} />
+          <span className="min-w-0 truncate text-sm font-semibold text-[#0f1e54]">{fixture.away.name}</span>
         </div>
-      </Wrapper>
-      {error && <p className="px-3 text-xs text-red-300">{error}</p>}
-    </div>
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        {fixture.kickoffTime && <span className="text-xs text-gray-400">{fixture.kickoffTime}</span>}
+        <span
+          className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+            isFullyBooked(guestCount, ticketsCount) ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'
+          }`}
+        >
+          {ticketBadgeText(guestCount, ticketsCount)}
+        </span>
+      </div>
+    </button>
   );
 }
 
@@ -562,11 +521,15 @@ export default function HospitalityPage() {
   const [showPastGames, setShowPastGames] = useState(false);
   const [expandedFixtureIds, setExpandedFixtureIds] = useState([]);
 
+  // Only fixtures with actual hospitality access ever show up in this list
+  // at all - no dashed/muted "doesn't have tickets yet" rows cluttering it.
+  // A fixture without access is brought in by clicking its own hospitality
+  // link on the Fixtures/Cup page instead (see HospitalityLinkButton and
+  // the deep-link effect below, which turns access on for it automatically).
   const visibleFixtures = useMemo(() => {
-    if (showPastGames) return allFixtures;
-    const today = todayISO();
-    return allFixtures.filter((f) => !f.date || f.date >= today);
-  }, [allFixtures, showPastGames]);
+    const dateFiltered = showPastGames ? allFixtures : allFixtures.filter((f) => !f.date || f.date >= todayISO());
+    return dateFiltered.filter((f) => hasHospitalityAccess(f, competitions));
+  }, [allFixtures, showPastGames, competitions]);
 
   // Date first, competition second (Serie A, then every cup in the same
   // order the competitions tab lists them) - fixtures with no date yet sort
@@ -615,29 +578,56 @@ export default function HospitalityPage() {
   // "Click a fixture elsewhere in the app, land here with its guest list
   // already open" (see HospitalityLinkButton) - identified by fixture id
   // AND competition together, since ids aren't guaranteed unique across the
-  // Serie A tab and every cup tab. Forces "Show past games" on rather than
-  // leaving the very fixture just clicked hidden by the default filter.
+  // Serie A tab and every cup tab. A fixture that doesn't have hospitality
+  // access yet (no standing tickets, no prior override) gets one turned on
+  // automatically here - clicking the link IS the "add this match" action
+  // now, there's no separate Enable control left on this page itself.
+  // Forces "Show past games" on rather than leaving the very fixture just
+  // clicked hidden by the default filter.
   const [searchParams] = useSearchParams();
   const linkedFixtureId = searchParams.get('fixture');
   const linkedCompetition = searchParams.get('competition');
   const [highlightFixtureId, setHighlightFixtureId] = useState(null);
   const consumedLinkRef = useRef(false);
+  // Set once the linked fixture's own row needs to be scrolled to - can't
+  // scroll to it immediately on enabling access, since the row (and its DOM
+  // id) doesn't exist until a later render reflects the access change.
+  // Checked on every render (no dependency array) until the element
+  // actually exists, same approach as useFixtureSearchNav.js.
+  const pendingScrollRef = useRef(null);
 
   useEffect(() => {
     if (!linkedFixtureId || consumedLinkRef.current || allFixtures.length === 0) return;
     const fixture = allFixtures.find((f) => String(f.id) === linkedFixtureId && f.competition === linkedCompetition);
     if (!fixture) return;
     consumedLinkRef.current = true;
-    setExpandedFixtureIds((prev) => (prev.includes(fixture.id) ? prev : [...prev, fixture.id]));
-    setHighlightFixtureId(fixture.id);
-    if (fixture.date && fixture.date < todayISO()) setShowPastGames(true);
-    requestAnimationFrame(() => {
-      document.getElementById(`hospitality-fixture-${fixture.competition}-${fixture.id}`)?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
-    });
-  }, [linkedFixtureId, linkedCompetition, allFixtures]);
+    (async () => {
+      if (!hasHospitalityAccess(fixture, competitions)) {
+        try {
+          await handleEnableOverride(fixture);
+        } catch {
+          // Enabling failed (network blip, auth hiccup) - nothing useful
+          // to expand/scroll to, same as if the link pointed nowhere.
+          return;
+        }
+      }
+      setExpandedFixtureIds((prev) => (prev.includes(fixture.id) ? prev : [...prev, fixture.id]));
+      setHighlightFixtureId(fixture.id);
+      if (fixture.date && fixture.date < todayISO()) setShowPastGames(true);
+      pendingScrollRef.current = { competition: fixture.competition, id: fixture.id };
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedFixtureId, linkedCompetition, allFixtures, competitions]);
+
+  useEffect(() => {
+    if (!pendingScrollRef.current) return;
+    const { competition, id } = pendingScrollRef.current;
+    const el = document.getElementById(`hospitality-fixture-${competition}-${id}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      pendingScrollRef.current = null;
+    }
+  });
 
   useEffect(() => {
     if (!highlightFixtureId) return undefined;
@@ -709,8 +699,8 @@ export default function HospitalityPage() {
         ) : dateGroups.length === 0 ? (
           <p className="text-sm text-white/40">
             {showPastGames
-              ? 'No fixtures found for this season yet.'
-              : 'No upcoming fixtures - try "Show past games" to see earlier ones.'}
+              ? 'No fixtures with hospitality access yet - click a fixture’s hospitality link on the Fixtures or Cup page to add one.'
+              : 'No upcoming fixtures with hospitality access - try "Show past games", or click a fixture’s hospitality link on the Fixtures or Cup page to add one.'}
           </p>
         ) : (
           <div className="flex flex-col gap-6">
@@ -719,25 +709,20 @@ export default function HospitalityPage() {
                 <h2 className="text-xs font-bold uppercase tracking-wide text-white/50">{formatDateHeading(date)}</h2>
                 {competitionGroups.map(({ slug, label, fixtures }) => (
                   <div key={slug} className="flex flex-col gap-2">
-                    {competitionGroups.length > 1 && (
-                      <h3 className="text-[10px] font-bold uppercase tracking-wide text-[#1fd8c9]">{label}</h3>
-                    )}
+                    <h3 className="text-[10px] font-bold uppercase tracking-wide text-[#1fd8c9]">{label}</h3>
                     {fixtures.map((f) => {
-                      const access = hasHospitalityAccess(f, competitions);
                       const expanded = expandedFixtureIds.includes(f.id);
                       const fixtureGuests = guestsForFixture(f.id);
                       return (
                         <div key={`${f.competition}-${f.id}`} id={`hospitality-fixture-${f.competition}-${f.id}`} className="flex flex-col gap-2">
                           <FixtureListRow
                             fixture={f}
-                            hasAccess={access}
                             expanded={expanded}
                             onToggle={() => toggleExpanded(f.id)}
                             guestCount={fixtureGuests.length}
-                            onEnable={handleEnableOverride}
                             highlighted={highlightFixtureId === f.id}
                           />
-                          {access && expanded && (
+                          {expanded && (
                             <MatchGuestSection
                               fixture={f}
                               competitions={competitions}
