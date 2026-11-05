@@ -23,9 +23,10 @@ export default function HospitalityLinkButton({ fixtureId, competition, classNam
       type="button"
       onClick={() => navigate(`/hospitality?fixture=${fixtureId}&competition=${encodeURIComponent(competition)}`)}
       title="Open this match's hospitality guest list"
-      className={`shrink-0 rounded-lg border border-[#1fd8c9]/40 bg-white px-2.5 py-1 text-[10px] font-bold uppercase text-[#1fd8c9] shadow-sm transition-colors hover:bg-[#1fd8c9]/10 ${className}`}
+      aria-label="Open this match's hospitality guest list"
+      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#1fd8c9]/40 bg-white text-xs font-bold text-[#1fd8c9] shadow-sm transition-colors hover:bg-[#1fd8c9]/10 ${className}`}
     >
-      Hospitality
+      T
     </button>
   );
 }
