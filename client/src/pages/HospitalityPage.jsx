@@ -170,7 +170,7 @@ function FixtureListRow({ fixture, expanded, onToggle, guestCount, highlighted, 
               <span className="min-w-0 truncate text-sm font-semibold text-[#0f1e54]">{fixture.away.name}</span>
             </div>
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-1">
+          <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-2">
             {showDate && formatShortDate(fixture.date) && (
               <span className="text-xs font-semibold text-gray-500">{formatShortDate(fixture.date)}</span>
             )}
