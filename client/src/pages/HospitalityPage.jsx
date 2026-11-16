@@ -523,17 +523,35 @@ export default function HospitalityPage() {
     }
     setFixingLegacyRows(true);
     setLegacyFixError(null);
-    try {
-      await callWithReauth(session, async (token) => {
-        for (const fix of legacyFixes) {
-          await updateGuest(fix.id, fix.fields, token);
-        }
-      });
-    } catch (err) {
-      setLegacyFixError(err.message);
-    } finally {
-      setFixingLegacyRows(false);
+    // One callWithReauth PER ROW, not one wrapping the whole batch - a
+    // single access token lasts about an hour, and wrapping the entire
+    // loop in one callWithReauth meant that if it expired partway through
+    // a batch this size, the retry re-ran the WHOLE loop from scratch
+    // (wasteful but harmless) with no second retry if it expired again
+    // before finishing, silently abandoning however many rows were left.
+    // Likewise, one bad row (a transient network blip, a write Sheets
+    // rejects) used to abort every row after it - now it's just noted and
+    // skipped, so a single failure can't block the rest of a 200+ row
+    // batch. A short pause between rows keeps this from firing requests
+    // fast enough to trip the Sheets API's own per-minute write quota.
+    let fixed = 0;
+    const failures = [];
+    for (const fix of legacyFixes) {
+      try {
+        await callWithReauth(session, (token) => updateGuest(fix.id, fix.fields, token));
+        fixed += 1;
+      } catch (err) {
+        failures.push({ id: fix.id, message: err.message });
+      }
+      await new Promise((resolve) => setTimeout(resolve, 80));
     }
+    if (failures.length > 0) {
+      const sample = [...new Set(failures.map((f) => f.message))].slice(0, 2).join('; ');
+      setLegacyFixError(
+        `Fixed ${fixed} of ${legacyFixes.length} - ${failures.length} failed (${sample}). Press "Fix now" again to retry just those.`
+      );
+    }
+    setFixingLegacyRows(false);
   }
 
   // Every competition merged into one flat list, each fixture tagged with
