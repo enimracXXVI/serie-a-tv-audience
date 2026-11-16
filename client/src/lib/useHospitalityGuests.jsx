@@ -3,6 +3,7 @@ import {
   fetchHospitalityGuests,
   appendHospitalityGuest,
   updateHospitalityGuest,
+  batchUpdateHospitalityGuests,
   deleteHospitalityGuest,
 } from './hospitalityGuests.js';
 
@@ -44,11 +45,58 @@ export function useHospitalityGuests() {
   // Only the guest's own personal-info fields are ever passed in here (see
   // GuestForm's edit mode) - the match fields a row was created with
   // (fixtureId, homeTeam, matchDate, ...) never change on an edit, so a
-  // plain client-side merge is accurate without refetching the row.
+  // plain client-side merge is accurate without refetching the row. (The
+  // legacy repair pass that DOES touch those match fields goes through
+  // batchUpdateGuests below, not this.)
+  //
+  // updateHospitalityGuest resolves without throwing even when a requested
+  // field's column header wasn't found - it just didn't write that one
+  // field, and says so via missingFields, so the other fields in the same
+  // write still apply. Merging every requested field into local state
+  // regardless would make the UI claim a field was saved when the sheet
+  // never actually got it.
   const updateGuest = useCallback(async (id, fields, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
-    await updateHospitalityGuest(id, fields, accessToken);
-    setGuests((prev) => prev.map((g) => (g.id === id ? { ...g, ...fields } : g)));
+    const { missingFields } = await updateHospitalityGuest(id, fields, accessToken);
+    const missingHere = (missingFields ?? []).filter((f) => f in fields);
+    const applied = { ...fields };
+    for (const f of missingHere) delete applied[f];
+    setGuests((prev) => prev.map((g) => (g.id === id ? { ...g, ...applied } : g)));
+    if (missingHere.length > 0) {
+      throw new Error(`Saved, but the hospitalityGuests sheet has no column header for: ${missingHere.join(', ')}.`);
+    }
+  }, []);
+
+  // Bulk counterpart for a repair pass over many rows at once (see
+  // HospitalityPage's "Fix now" banner) - one Sheets request for the whole
+  // batch instead of one per row, since the latter reliably trips Sheets'
+  // per-minute write quota partway through a few hundred rows. Same
+  // missingFields-aware merge as updateGuest, per row.
+  const batchUpdateGuests = useCallback(async (updates, accessToken) => {
+    if (!accessToken) throw new Error('UNAUTHENTICATED');
+    const { results } = await batchUpdateHospitalityGuests(updates, accessToken);
+    const fieldsById = new Map(updates.map((u) => [u.id, u.fields]));
+    const resultById = new Map(results.map((r) => [r.id, r]));
+    setGuests((prev) =>
+      prev.map((g) => {
+        const fields = fieldsById.get(g.id);
+        if (!fields) return g;
+        const missingHere = resultById.get(g.id)?.missingFields ?? [];
+        const applied = { ...fields };
+        for (const f of missingHere) delete applied[f];
+        return { ...g, ...applied };
+      })
+    );
+    return results;
+  }, []);
+
+  // Re-reads the tab from Sheets, replacing local state outright - used
+  // after a batch write to confirm, against the sheet itself rather than
+  // the optimistic local merge above, which rows actually stuck.
+  const refetch = useCallback(async () => {
+    const rows = await fetchHospitalityGuests();
+    setGuests(rows);
+    return rows;
   }, []);
 
   const removeGuest = useCallback(async (id, accessToken) => {
@@ -60,5 +108,5 @@ export function useHospitalityGuests() {
     setGuests(rows);
   }, []);
 
-  return { guests, loading, error, addGuest, updateGuest, removeGuest };
+  return { guests, loading, error, addGuest, updateGuest, batchUpdateGuests, refetch, removeGuest };
 }

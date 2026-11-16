@@ -15,5 +15,6 @@ const client = createSheetTabClient({
 
 export const fetchHospitalityGuests = client.fetchAll;
 export const updateHospitalityGuest = client.updateRow;
+export const batchUpdateHospitalityGuests = client.updateRows;
 export const appendHospitalityGuest = client.appendRow;
 export const deleteHospitalityGuest = client.deleteRow;

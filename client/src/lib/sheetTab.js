@@ -184,6 +184,36 @@ export function createSheetTabClient({
     return { missingFields: missing };
   }
 
+  // Same job as updateRow, but for many rows in ONE Sheets request instead
+  // of one HTTP request per row. A loop calling updateRow per-row (even
+  // spaced out) blows through Sheets' per-minute write quota well before a
+  // few hundred rows finish, failing the back half with no obvious cause -
+  // batchUpdate already accepts any number of ranges in a single call, so a
+  // bulk repair pass should use that instead of reinventing pacing/retries
+  // around a request-per-row design that can't actually scale.
+  async function updateRows(updates, accessToken) {
+    if (!headerIndexCache) {
+      throw new Error(`"${sheetName}" data has not loaded yet - reload the page and try again.`);
+    }
+    const rawData = [];
+    const formulaData = [];
+    const results = [];
+    for (const { id, fields } of updates) {
+      const rowNumber = rowIndexCache?.[id];
+      if (rowNumber === undefined) {
+        results.push({ id, missingFields: Object.keys(fields) });
+        continue;
+      }
+      const { rawData: rowRaw, formulaData: rowFormula, missing } = buildWriteBatches(rowNumber, fields);
+      rawData.push(...rowRaw);
+      formulaData.push(...rowFormula);
+      results.push({ id, missingFields: missing });
+    }
+    await postBatchUpdate('RAW', rawData, accessToken);
+    await postBatchUpdate('USER_ENTERED', formulaData, accessToken);
+    return { results };
+  }
+
   async function appendRow(fields, accessToken) {
     // A fresh read right before appending, both to get an accurate header
     // index/next id and so two near-simultaneous creates don't reuse the
@@ -293,5 +323,5 @@ export function createSheetTabClient({
     return fetchAll();
   }
 
-  return { fetchAll, updateRow, appendRow, deleteRow };
+  return { fetchAll, updateRow, updateRows, appendRow, deleteRow };
 }

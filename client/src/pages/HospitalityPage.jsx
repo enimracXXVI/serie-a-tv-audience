@@ -475,7 +475,16 @@ export default function HospitalityPage() {
     loading: cupLoading,
     updateFixture: updateCupFixture,
   } = useCupFixtures(currentSeason);
-  const { guests, loading: guestsLoading, error: guestsError, addGuest, updateGuest, removeGuest } = useHospitalityGuests();
+  const {
+    guests,
+    loading: guestsLoading,
+    error: guestsError,
+    addGuest,
+    updateGuest,
+    batchUpdateGuests,
+    refetch: refetchGuests,
+    removeGuest,
+  } = useHospitalityGuests();
 
   // Two independent kinds of bad legacy data a guest row can be stuck with,
   // from before each was fixed at the source: homeTeam/awayTeam holding a
@@ -523,33 +532,51 @@ export default function HospitalityPage() {
     }
     setFixingLegacyRows(true);
     setLegacyFixError(null);
-    // One callWithReauth PER ROW, not one wrapping the whole batch - a
-    // single access token lasts about an hour, and wrapping the entire
-    // loop in one callWithReauth meant that if it expired partway through
-    // a batch this size, the retry re-ran the WHOLE loop from scratch
-    // (wasteful but harmless) with no second retry if it expired again
-    // before finishing, silently abandoning however many rows were left.
-    // Likewise, one bad row (a transient network blip, a write Sheets
-    // rejects) used to abort every row after it - now it's just noted and
-    // skipped, so a single failure can't block the rest of a 200+ row
-    // batch. A short pause between rows keeps this from firing requests
-    // fast enough to trip the Sheets API's own per-minute write quota.
-    let fixed = 0;
-    const failures = [];
-    for (const fix of legacyFixes) {
+    // One request per row (even paced out) reliably tripped Sheets' own
+    // per-minute write quota partway through a batch this size - the first
+    // chunk would silently "succeed" (no thrown error) while the rest
+    // failed outright, and even the "successful" rows weren't provably
+    // written since a non-throwing updateRow can still have skipped a
+    // field Sheets didn't recognize. Fixed by sending the whole batch as
+    // CHUNK_SIZE-sized groups, each ONE Sheets request covering every row
+    // in it, and then re-reading the tab afterwards to check what's
+    // actually sitting in the sheet rather than trusting the write calls'
+    // own say-so.
+    const CHUNK_SIZE = 200;
+    const updates = legacyFixes.map(({ id, fields }) => ({ id, fields }));
+    const allResults = [];
+    const chunkErrors = [];
+    for (let i = 0; i < updates.length; i += CHUNK_SIZE) {
+      const chunk = updates.slice(i, i + CHUNK_SIZE);
       try {
-        await callWithReauth(session, (token) => updateGuest(fix.id, fix.fields, token));
-        fixed += 1;
+        const results = await callWithReauth(session, (token) => batchUpdateGuests(chunk, token));
+        allResults.push(...results);
       } catch (err) {
-        failures.push({ id: fix.id, message: err.message });
+        chunkErrors.push(err.message);
       }
-      await new Promise((resolve) => setTimeout(resolve, 80));
     }
-    if (failures.length > 0) {
-      const sample = [...new Set(failures.map((f) => f.message))].slice(0, 2).join('; ');
-      setLegacyFixError(
-        `Fixed ${fixed} of ${legacyFixes.length} - ${failures.length} failed (${sample}). Press "Fix now" again to retry just those.`
-      );
+    let freshGuests = guests;
+    try {
+      freshGuests = await refetchGuests();
+    } catch {
+      // Fall back to pre-fetch verification below using current local
+      // state - worse than nothing only if a write silently failed AND
+      // the refetch itself failed, in which case the row stays flagged
+      // next render anyway.
+    }
+    const freshById = new Map(freshGuests.map((g) => [g.id, g]));
+    const stillBroken = updates.filter(({ id, fields }) => {
+      const fresh = freshById.get(id);
+      if (!fresh) return true;
+      return Object.entries(fields).some(([key, value]) => fresh[key] !== value);
+    });
+    const verifiedFixed = updates.length - stillBroken.length;
+    if (stillBroken.length > 0) {
+      const missingSample = [...new Set(allResults.flatMap((r) => r.missingFields ?? []))].slice(0, 3).join(', ');
+      const parts = [`Verified against the sheet: ${verifiedFixed} of ${updates.length} actually fixed, ${stillBroken.length} still wrong`];
+      if (missingSample) parts.push(`no column header in "hospitalityGuests" for: ${missingSample}`);
+      if (chunkErrors.length > 0) parts.push([...new Set(chunkErrors)].slice(0, 2).join('; '));
+      setLegacyFixError(`${parts.join(' - ')}. Press "Fix now" again to retry.`);
     }
     setFixingLegacyRows(false);
   }

@@ -611,7 +611,13 @@ rows to start:
   exact moment, not the fixture itself afterwards. Either way, the
   Hospitality page shows a one-off "Fix now" banner (only while such rows
   exist) that repairs whichever of the two problems a row actually has and
-  rewrites it in place.
+  rewrites it in place. The repair writes the whole batch as one Sheets
+  request (chunked at 200 rows) rather than one request per row - a
+  few-hundred-row batch sent as individual requests reliably trips Sheets'
+  own per-minute write quota partway through, failing the back half with no
+  obvious cause - then re-reads the tab afterwards and reports how many rows
+  are actually fixed in the sheet itself, rather than trusting that a write
+  call not throwing means it stuck.
 - `provinceOfBirth`/`cityOfBirth` and `provinceOfResidence`/`cityOfResidence`
   are only ever filled in when the corresponding nation is Italy - blank
   otherwise, since a comune/province pair only exists for a genuinely
