@@ -482,6 +482,7 @@ export default function HospitalityPage() {
     addGuest,
     updateGuest,
     batchUpdateGuests,
+    fixColumnFormats,
     refetch: refetchGuests,
     removeGuest,
   } = useHospitalityGuests();
@@ -532,20 +533,31 @@ export default function HospitalityPage() {
     }
     setFixingLegacyRows(true);
     setLegacyFixError(null);
-    // One request per row (even paced out) reliably tripped Sheets' own
-    // per-minute write quota partway through a batch this size - the first
-    // chunk would silently "succeed" (no thrown error) while the rest
-    // failed outright, and even the "successful" rows weren't provably
-    // written since a non-throwing updateRow can still have skipped a
-    // field Sheets didn't recognize. Fixed by sending the whole batch as
-    // CHUNK_SIZE-sized groups, each ONE Sheets request covering every row
-    // in it, and then re-reading the tab afterwards to check what's
-    // actually sitting in the sheet rather than trusting the write calls'
-    // own say-so.
+    // Two separate problems compounded here. (1) One request per row (even
+    // paced out) reliably tripped Sheets' own per-minute write quota
+    // partway through a batch this size - fixed by sending the whole batch
+    // as CHUNK_SIZE-sized groups, each ONE Sheets request covering every
+    // row in it. (2) matchDate/kickoffTime's columns carry an inherited
+    // Date/Time number format that silently re-coerces any RAW text write
+    // of those two fields straight back into a numeric serial, no matter
+    // how many times or how carefully it's rewritten - every row looked
+    // "fixed" (write didn't throw, no missing column header) and then
+    // reverted on the next read, because the value itself never actually
+    // became text. fixColumnFormats sets both columns to Plain text first
+    // (idempotent, and this also protects every future row the normal "add
+    // guest" flow writes, not just this batch) so the value write right
+    // after it has something to actually stick to. Either way, re-reads the
+    // tab afterwards to check what's actually sitting in the sheet rather
+    // than trusting the write calls' own say-so.
     const CHUNK_SIZE = 200;
     const updates = legacyFixes.map(({ id, fields }) => ({ id, fields }));
     const allResults = [];
     const chunkErrors = [];
+    try {
+      await callWithReauth(session, (token) => fixColumnFormats(['matchDate', 'kickoffTime'], token));
+    } catch (err) {
+      chunkErrors.push(err.message);
+    }
     for (let i = 0; i < updates.length; i += CHUNK_SIZE) {
       const chunk = updates.slice(i, i + CHUNK_SIZE);
       try {

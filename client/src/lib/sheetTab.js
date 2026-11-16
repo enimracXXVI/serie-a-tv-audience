@@ -214,6 +214,48 @@ export function createSheetTabClient({
     return { results };
   }
 
+  // A column can carry an inherited Date/Time number format (from however
+  // its very first rows were created) that keeps re-coercing any later RAW
+  // write of a clean "YYYY-MM-DD"/"HH:MM" string right back into a numeric
+  // serial, no matter how many times it's rewritten - valueInputOption=RAW
+  // stops Sheets parsing a value as a formula or locale-specific number, but
+  // does NOT stop an already-date/time-formatted cell reinterpreting a
+  // date/time-shaped string the same way typing it into that cell by hand
+  // would. The fix has to be structural (the column's own format), not
+  // another value write - this sets it to Plain text once, after which a
+  // RAW string actually sticks as text. Idempotent: safe to call every time,
+  // covers the whole column from row 2 to the end of the sheet (so it also
+  // protects rows added after this runs, not just existing ones).
+  async function forceTextColumns(fields, accessToken) {
+    if (!headerIndexCache) {
+      throw new Error(`"${sheetName}" data has not loaded yet - reload the page and try again.`);
+    }
+    const sheetId = await getSheetId(sheetName, accessToken);
+    const requests = fields
+      .filter((field) => headerIndexCache[field] !== undefined)
+      .map((field) => ({
+        repeatCell: {
+          range: {
+            sheetId,
+            startRowIndex: 1,
+            startColumnIndex: headerIndexCache[field],
+            endColumnIndex: headerIndexCache[field] + 1,
+          },
+          cell: { userEnteredFormat: { numberFormat: { type: 'TEXT' } } },
+          fields: 'userEnteredFormat.numberFormat',
+        },
+      }));
+    if (requests.length === 0) return;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}:batchUpdate`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requests }),
+    });
+    if (res.status === 401 || res.status === 403) throw new Error('UNAUTHENTICATED');
+    if (!res.ok) throw new Error(`Failed to set column formatting on the "${sheetName}" tab`);
+  }
+
   async function appendRow(fields, accessToken) {
     // A fresh read right before appending, both to get an accurate header
     // index/next id and so two near-simultaneous creates don't reuse the
@@ -323,5 +365,5 @@ export function createSheetTabClient({
     return fetchAll();
   }
 
-  return { fetchAll, updateRow, updateRows, appendRow, deleteRow };
+  return { fetchAll, updateRow, updateRows, forceTextColumns, appendRow, deleteRow };
 }

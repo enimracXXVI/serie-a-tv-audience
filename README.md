@@ -595,29 +595,43 @@ rows to start:
   `kickoffTime` are plain `"YYYY-MM-DD"`/`"HH:MM"` text, same as the
   fixtures tab's own columns.
   
-  Both kinds of value can end up wrong on an older row: `homeTeam`/
-  `awayTeam` holding a display name instead of a slug (from before that was
-  fixed), or `matchDate`/`kickoffTime` holding a raw Excel/Sheets serial
-  number (a 5-digit integer for a date, a `0.xxxx` decimal for a time)
-  instead of readable text - this happens if the **fixtures tab's own**
-  `date`/`kickoffTime` cell was ever hand-typed directly into the sheet
-  (rather than through this app, which always writes plain text) at the
-  exact moment a guest was added against that match; Sheets auto-types a
-  hand-typed date/time into a real Date/Time cell, and the API's
-  `UNFORMATTED_VALUE` read then returns its raw serial instead of text - see
-  `excelSerialToISODate`/`excelSerialToTime` in `dateFormat.js`, which both
-  `sheets.js` and `seasonFixtures.js` already convert back on every read, so
-  this only ever affects a guest row that copied the bad value in at that
-  exact moment, not the fixture itself afterwards. Either way, the
-  Hospitality page shows a one-off "Fix now" banner (only while such rows
-  exist) that repairs whichever of the two problems a row actually has and
-  rewrites it in place. The repair writes the whole batch as one Sheets
-  request (chunked at 200 rows) rather than one request per row - a
-  few-hundred-row batch sent as individual requests reliably trips Sheets'
-  own per-minute write quota partway through, failing the back half with no
-  obvious cause - then re-reads the tab afterwards and reports how many rows
-  are actually fixed in the sheet itself, rather than trusting that a write
-  call not throwing means it stuck.
+  Both kinds of value can end up wrong on a row: `homeTeam`/`awayTeam`
+  holding a display name instead of a slug (from before that was fixed), or
+  `matchDate`/`kickoffTime` holding a raw Excel/Sheets serial number (a
+  5-digit integer for a date, a `0.xxxx` decimal for a time) instead of
+  readable text - see `excelSerialToISODate`/`excelSerialToTime` in
+  `dateFormat.js`, which both `sheets.js` and `seasonFixtures.js` already
+  convert back on every fixtures read, and which `HospitalityPage.jsx`'s
+  own `fixedMatchDate`/`fixedKickoffTime` detect and convert the same way
+  for a guest row.
+
+  This isn't just an old-data problem: the `hospitalityGuests` tab's
+  `matchDate`/`kickoffTime` **columns** carry an inherited Date/Time number
+  format (from however their very first rows were created), and that
+  format keeps re-coercing any later write of a clean `"YYYY-MM-DD"`/
+  `"HH:MM"` string straight back into a numeric serial - `valueInputOption=
+  RAW` stops Sheets parsing a value as a formula or as a locale-specific
+  number, but does **not** stop an already-date/time-formatted cell
+  reinterpreting a date/time-shaped string the same way typing it into that
+  cell by hand would, so even a brand new guest row added right now through
+  the normal "add guest" flow can still come out with a numeric serial.
+  Fixing the value alone, however carefully, can never outlast that - the
+  column's own format has to change first (`forceTextColumns` in
+  `sheetTab.js`, invoked as `fixColumnFormats` in the Hospitality page: a
+  `spreadsheets.batchUpdate` `repeatCell` request setting
+  `userEnteredFormat.numberFormat.type` to `TEXT` on the whole column, idle
+  to call more than once). The Hospitality page shows a one-off "Fix now"
+  banner (only while such rows exist) that sets both columns to Plain text
+  first, then repairs whichever of the two problems a row actually has and
+  rewrites it in place - fixing the column format here also protects every
+  future row the normal "add guest" flow writes, not just this batch. The
+  value-level repair writes the whole batch as one Sheets request (chunked
+  at 200 rows) rather than one request per row - a few-hundred-row batch
+  sent as individual requests reliably trips Sheets' own per-minute write
+  quota partway through, failing the back half with no obvious cause - then
+  re-reads the tab afterwards and reports how many rows are actually fixed
+  in the sheet itself, rather than trusting that a write call not throwing
+  means it stuck.
 - `provinceOfBirth`/`cityOfBirth` and `provinceOfResidence`/`cityOfResidence`
   are only ever filled in when the corresponding nation is Italy - blank
   otherwise, since a comune/province pair only exists for a genuinely

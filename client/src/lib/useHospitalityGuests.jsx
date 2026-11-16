@@ -4,6 +4,7 @@ import {
   appendHospitalityGuest,
   updateHospitalityGuest,
   batchUpdateHospitalityGuests,
+  forceHospitalityTextColumns,
   deleteHospitalityGuest,
 } from './hospitalityGuests.js';
 
@@ -99,6 +100,17 @@ export function useHospitalityGuests() {
     return rows;
   }, []);
 
+  // One-time (but idempotent - safe to call every time) structural fix for
+  // matchDate/kickoffTime's inherited Date/Time column format, which
+  // silently re-coerces any RAW text write of those fields back into a
+  // numeric serial no matter how many times it's rewritten - see
+  // forceTextColumns in sheetTab.js. Needed before a value-level write of
+  // those fields has any chance of actually sticking.
+  const fixColumnFormats = useCallback(async (fields, accessToken) => {
+    if (!accessToken) throw new Error('UNAUTHENTICATED');
+    await forceHospitalityTextColumns(fields, accessToken);
+  }, []);
+
   const removeGuest = useCallback(async (id, accessToken) => {
     if (!accessToken) throw new Error('UNAUTHENTICATED');
     // Deleting actually shifts every row below it up by one - the response
@@ -108,5 +120,15 @@ export function useHospitalityGuests() {
     setGuests(rows);
   }, []);
 
-  return { guests, loading, error, addGuest, updateGuest, batchUpdateGuests, refetch, removeGuest };
+  return {
+    guests,
+    loading,
+    error,
+    addGuest,
+    updateGuest,
+    batchUpdateGuests,
+    fixColumnFormats,
+    refetch,
+    removeGuest,
+  };
 }
