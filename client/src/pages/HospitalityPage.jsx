@@ -32,6 +32,20 @@ function competitionLabel(slug, competitions) {
   return competitions.find((c) => c.slug === slug)?.name ?? slug;
 }
 
+function competitionLogo(slug, competitions) {
+  return competitions.find((c) => c.slug === slug)?.logoURL || null;
+}
+
+// Short enough to sit next to a kickoff time without wrapping - only shown
+// in the "by matchday" view, where there's no date heading above the row
+// the way the "by date" view has one.
+function formatShortDate(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+}
+
 // A guest row's matchDate/kickoffTime are copied in from the fixture at the
 // moment the guest is added, then never looked up live again - so if that
 // fixture's own date/kickoffTime cell was ever a raw Excel/Sheets serial
@@ -93,7 +107,7 @@ function isFullyBooked(guestCount, ticketsCount) {
 // "×" next to the badge, rather than buried inside the expanded guest
 // card where it's easy to miss right after that same link just put you
 // here. Removing it this way needs no guests added first.
-function FixtureListRow({ fixture, expanded, onToggle, guestCount, highlighted, isOverrideOnly, onRemoveOverride }) {
+function FixtureListRow({ fixture, expanded, onToggle, guestCount, highlighted, isOverrideOnly, onRemoveOverride, showDate }) {
   const ticketsCount = fixture.home.ticketsCount ?? null;
   const [removing, setRemoving] = useState(false);
   const [error, setError] = useState(null);
@@ -157,6 +171,9 @@ function FixtureListRow({ fixture, expanded, onToggle, guestCount, highlighted, 
             </div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">
+            {showDate && formatShortDate(fixture.date) && (
+              <span className="text-xs font-semibold text-gray-500">{formatShortDate(fixture.date)}</span>
+            )}
             {fixture.kickoffTime && <span className="text-xs text-gray-400">{fixture.kickoffTime}</span>}
             <span
               className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
@@ -650,7 +667,7 @@ export default function HospitalityPage() {
     const present = new Set(accessFixtures.map((f) => f.competition || SERIE_A_VALUE));
     return competitionOrder
       .filter((slug) => present.has(slug))
-      .map((slug) => ({ slug, label: competitionLabel(slug, competitions) }));
+      .map((slug) => ({ slug, label: competitionLabel(slug, competitions), logoURL: competitionLogo(slug, competitions) }));
   }, [accessFixtures, competitionOrder, competitions]);
 
   const [competitionFilter, setCompetitionFilter] = useState('all');
@@ -690,6 +707,7 @@ export default function HospitalityPage() {
         .map((slug) => ({
           slug,
           label: competitionLabel(slug, competitions),
+          logoURL: competitionLogo(slug, competitions),
           fixtures: [...byCompetition.get(slug)].sort((a, b) => (a.kickoffTime || '').localeCompare(b.kickoffTime || '')),
         }));
       return { date, competitionGroups };
@@ -715,9 +733,9 @@ export default function HospitalityPage() {
         byKey.set(key, {
           key,
           competition,
-          label: isSerieA
-            ? `${competitionLabel(competition, competitions)} — ${unit ? `Matchday ${unit}` : 'Matchday TBD'}`
-            : `${competitionLabel(competition, competitions)} — ${unit || 'Round TBD'}`,
+          competitionLabel: competitionLabel(competition, competitions),
+          competitionLogoURL: competitionLogo(competition, competitions),
+          unitLabel: isSerieA ? (unit ? `Matchday ${unit}` : 'Matchday TBD') : unit || 'Round TBD',
           fixtures: [],
         });
       }
@@ -764,6 +782,7 @@ export default function HospitalityPage() {
           highlighted={highlightFixtureId === f.id}
           isOverrideOnly={isOverrideOnly}
           onRemoveOverride={() => handleDisableOverride(f)}
+          showDate={groupBy === 'matchday'}
         />
         {expanded && (
           <MatchGuestSection
@@ -928,10 +947,11 @@ export default function HospitalityPage() {
                   key={c.slug}
                   type="button"
                   onClick={() => setCompetitionFilter(c.slug)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
                     competitionFilter === c.slug ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
                   }`}
                 >
+                  {c.logoURL && <img src={c.logoURL} alt="" className="h-3.5 max-w-[40px] object-contain" />}
                   {c.label}
                 </button>
               ))}
@@ -970,7 +990,14 @@ export default function HospitalityPage() {
           <div className="flex flex-col gap-6">
             {matchdayGroups.map((group) => (
               <div key={group.key} className="flex flex-col gap-2">
-                <h2 className="text-xs font-bold uppercase tracking-wide text-white/50">{group.label}</h2>
+                <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-white/50">
+                  {group.competitionLogoURL && (
+                    <img src={group.competitionLogoURL} alt="" className="h-4 max-w-[48px] object-contain" />
+                  )}
+                  {group.competitionLabel}
+                  <span className="text-white/30">—</span>
+                  {group.unitLabel}
+                </h2>
                 {group.fixtures.map(renderFixtureRow)}
               </div>
             ))}
@@ -980,9 +1007,12 @@ export default function HospitalityPage() {
             {dateGroups.map(({ date, competitionGroups }) => (
               <div key={date || 'tbd'} className="flex flex-col gap-3">
                 <h2 className="text-xs font-bold uppercase tracking-wide text-white/50">{formatDateHeading(date)}</h2>
-                {competitionGroups.map(({ slug, label, fixtures }) => (
+                {competitionGroups.map(({ slug, label, logoURL, fixtures }) => (
                   <div key={slug} className="flex flex-col gap-2">
-                    <h3 className="text-[10px] font-bold uppercase tracking-wide text-[#1fd8c9]">{label}</h3>
+                    <h3 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-[#1fd8c9]">
+                      {logoURL && <img src={logoURL} alt="" className="h-3.5 max-w-[40px] object-contain" />}
+                      {label}
+                    </h3>
                     {fixtures.map(renderFixtureRow)}
                   </div>
                 ))}
