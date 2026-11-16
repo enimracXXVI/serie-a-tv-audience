@@ -658,15 +658,31 @@ rows to start:
   real personal data.
 
 The Hospitality page shows **every** fixture across every competition in one
-flat list, grouped by date first and competition second - every date's own
-sub-heading always names its competition(s), even on a date with just one,
-so it's never ambiguous whether a given row is Serie A or a cup game. A
-"Show past games" toggle in the header is off by default - any fixture
-dated strictly before today is hidden, but a fixture dated **today** always
-stays visible even though it's technically "now", and a fixture with no
-date yet (TBD) is never hidden by this at all, since there's nothing to
-compare. Matches within a date/competition group are listed in kickoff
-order.
+flat list. A "Show past games" toggle in the header is off by default - any
+fixture dated strictly before today is hidden, but a fixture dated **today**
+always stays visible even though it's technically "now", and a fixture with
+no date yet (TBD) is never hidden by this at all, since there's nothing to
+compare. A competition filter (pill row - All, Serie A, then each cup -
+only shown once there's more than one competition in play) narrows the list
+down further; it's a filter here, not the Cups page's own quick-jump nav,
+since this page isn't sectioned by competition the way Cups is.
+
+The list itself can be grouped two ways, toggled in the header:
+- **By date** (the default) - date first, competition second. Every date's
+  own sub-heading always names its competition(s), even on a date with just
+  one, so it's never ambiguous whether a given row is Serie A or a cup
+  game. Matches within a date/competition group are listed in kickoff
+  order.
+- **By matchday** - Serie A's own `matchday` number, or a cup fixture's
+  `round`, whichever applies to that fixture's competition (the same
+  `round` grouping the Cups page itself uses, including its "whatever order
+  it was entered in the sheet" precedent for round order within a
+  competition - see `CupCompetitionsPage.jsx`). Each bucket is already
+  single-competition by construction, so there's no separate competition
+  sub-heading here - just named inline in the bucket's own heading
+  ("Serie A — Matchday 12", "Champions League — League Phase"). Buckets are
+  still ordered chronologically overall, by their earliest fixture's date,
+  with an undated bucket last.
 
 Only fixtures whose **home** club has `ticketsAvailable` turned on for the
 current season (see the `teamSeasons` tab above) can have guests added at

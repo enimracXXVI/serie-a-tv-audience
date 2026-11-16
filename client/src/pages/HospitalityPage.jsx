@@ -630,10 +630,36 @@ export default function HospitalityPage() {
   // A fixture without access is brought in by clicking its own hospitality
   // link on the Fixtures/Cup page instead (see HospitalityLinkButton and
   // the deep-link effect below, which turns access on for it automatically).
-  const visibleFixtures = useMemo(() => {
+  const accessFixtures = useMemo(() => {
     const dateFiltered = showPastGames ? allFixtures : allFixtures.filter((f) => !f.date || f.date >= todayISO());
     return dateFiltered.filter((f) => hasHospitalityAccess(f, competitions));
   }, [allFixtures, showPastGames, competitions]);
+
+  const competitionOrder = useMemo(
+    () => [SERIE_A_VALUE, ...competitions.filter((c) => c.slug !== SERIE_A_VALUE).map((c) => c.slug)],
+    [competitions]
+  );
+
+  // Pills built from accessFixtures (pre competition-filter), not
+  // visibleFixtures below, so the pill for whichever competition is
+  // currently selected never disappears just because it's the only one
+  // left showing - same All/Serie A/cup pill styling as the Cups page's
+  // own quick-nav row, but an actual filter here rather than a scroll link,
+  // since this page isn't sectioned by competition the way Cups is.
+  const competitionPills = useMemo(() => {
+    const present = new Set(accessFixtures.map((f) => f.competition || SERIE_A_VALUE));
+    return competitionOrder
+      .filter((slug) => present.has(slug))
+      .map((slug) => ({ slug, label: competitionLabel(slug, competitions) }));
+  }, [accessFixtures, competitionOrder, competitions]);
+
+  const [competitionFilter, setCompetitionFilter] = useState('all');
+  const [groupBy, setGroupBy] = useState('date');
+
+  const visibleFixtures = useMemo(() => {
+    if (competitionFilter === 'all') return accessFixtures;
+    return accessFixtures.filter((f) => (f.competition || SERIE_A_VALUE) === competitionFilter);
+  }, [accessFixtures, competitionFilter]);
 
   // Date first, competition second (Serie A, then every cup in the same
   // order the competitions tab lists them) - fixtures with no date yet sort
@@ -651,7 +677,6 @@ export default function HospitalityPage() {
       if (b === '') return -1;
       return a.localeCompare(b);
     });
-    const competitionOrder = [SERIE_A_VALUE, ...competitions.filter((c) => c.slug !== SERIE_A_VALUE).map((c) => c.slug)];
 
     return dateKeys.map((date) => {
       const byCompetition = new Map();
@@ -669,10 +694,95 @@ export default function HospitalityPage() {
         }));
       return { date, competitionGroups };
     });
-  }, [visibleFixtures, competitions]);
+  }, [visibleFixtures, competitionOrder, competitions]);
+
+  // Matchday/round first instead of calendar date - a matchday number only
+  // means anything within Serie A, and a round only within its own cup, so
+  // each bucket here is already single-competition; no need for a
+  // competition sub-heading the way dateGroups needs one, just the
+  // competition named inline in the bucket's own heading. Buckets are
+  // ordered by their earliest fixture's date so the overall list still
+  // reads chronologically, with "TBD" (no matchday/round, or no dated
+  // fixture in it yet) last, same convention as dateGroups' own TBD bucket.
+  const matchdayGroups = useMemo(() => {
+    const byKey = new Map();
+    for (const f of visibleFixtures) {
+      const competition = f.competition || SERIE_A_VALUE;
+      const isSerieA = competition === SERIE_A_VALUE;
+      const unit = isSerieA ? f.matchday : f.round;
+      const key = `${competition}::${unit ?? ''}`;
+      if (!byKey.has(key)) {
+        byKey.set(key, {
+          key,
+          competition,
+          label: isSerieA
+            ? `${competitionLabel(competition, competitions)} — ${unit ? `Matchday ${unit}` : 'Matchday TBD'}`
+            : `${competitionLabel(competition, competitions)} — ${unit || 'Round TBD'}`,
+          fixtures: [],
+        });
+      }
+      byKey.get(key).fixtures.push(f);
+    }
+    const groups = [...byKey.values()];
+    for (const group of groups) {
+      group.fixtures.sort((a, b) => {
+        const dateCmp = (a.date || '9999-99-99').localeCompare(b.date || '9999-99-99');
+        if (dateCmp !== 0) return dateCmp;
+        return (a.kickoffTime || '').localeCompare(b.kickoffTime || '');
+      });
+      group.earliestDate = group.fixtures.find((f) => f.date)?.date || '';
+    }
+    const competitionRank = new Map(competitionOrder.map((slug, i) => [slug, i]));
+    groups.sort((a, b) => {
+      const dateCmp = (a.earliestDate || '9999-99-99').localeCompare(b.earliestDate || '9999-99-99');
+      if (dateCmp !== 0) return dateCmp;
+      return (competitionRank.get(a.competition) ?? 0) - (competitionRank.get(b.competition) ?? 0);
+    });
+    return groups;
+  }, [visibleFixtures, competitionOrder, competitions]);
 
   function guestsForFixture(fixtureId) {
     return guests.filter((g) => g.fixtureId === fixtureId && g.season === currentSeason.label);
+  }
+
+  // Shared between the date and matchday views below, which otherwise just
+  // differ in how they bucket/order the same fixtures.
+  function renderFixtureRow(f) {
+    const expanded = expandedFixtureIds.includes(f.id);
+    const fixtureGuests = guestsForFixture(f.id);
+    // Only a match let in purely via the one-off override (not a real
+    // team-level ticket deal) gets an undo control - computed once, shared
+    // by the row's own "×" and the expanded card's "Remove access".
+    const isOverrideOnly = !f.home.ticketsAvailable && Boolean(f.hospitalityOverride);
+    return (
+      <div key={`${f.competition}-${f.id}`} id={`hospitality-fixture-${f.competition}-${f.id}`} className="flex flex-col gap-2">
+        <FixtureListRow
+          fixture={f}
+          expanded={expanded}
+          onToggle={() => toggleExpanded(f.id)}
+          guestCount={fixtureGuests.length}
+          highlighted={highlightFixtureId === f.id}
+          isOverrideOnly={isOverrideOnly}
+          onRemoveOverride={() => handleDisableOverride(f)}
+        />
+        {expanded && (
+          <MatchGuestSection
+            fixture={f}
+            competitions={competitions}
+            clubsBySlug={clubsBySlug}
+            guestSources={guestSources}
+            guests={fixtureGuests}
+            allGuests={guests}
+            session={session}
+            addGuest={addGuest}
+            updateGuest={updateGuest}
+            removeGuest={removeGuest}
+            isOverrideOnly={isOverrideOnly}
+            onRemoveOverride={() => handleDisableOverride(f)}
+          />
+        )}
+      </div>
+    );
   }
 
   function toggleExpanded(id) {
@@ -718,6 +828,9 @@ export default function HospitalityPage() {
       setExpandedFixtureIds((prev) => (prev.includes(fixture.id) ? prev : [...prev, fixture.id]));
       setHighlightFixtureId(fixture.id);
       if (fixture.date && fixture.date < todayISO()) setShowPastGames(true);
+      // The competition filter could otherwise hide the very fixture this
+      // link points to.
+      setCompetitionFilter('all');
       pendingScrollRef.current = { competition: fixture.competition, id: fixture.id };
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -798,14 +911,70 @@ export default function HospitalityPage() {
         )}
         {legacyConfirmDialog}
 
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {competitionPills.length > 1 ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setCompetitionFilter('all')}
+                className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                  competitionFilter === 'all' ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+              >
+                All
+              </button>
+              {competitionPills.map((c) => (
+                <button
+                  key={c.slug}
+                  type="button"
+                  onClick={() => setCompetitionFilter(c.slug)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                    competitionFilter === c.slug ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div />
+          )}
+          <div className="flex items-center gap-1 rounded-full bg-white/5 p-1">
+            {[
+              { value: 'date', label: 'By date' },
+              { value: 'matchday', label: 'By matchday' },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setGroupBy(opt.value)}
+                className={`rounded-full px-3 py-1 text-xs font-bold transition-colors ${
+                  groupBy === opt.value ? 'bg-white text-black' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {loading ? (
           <p className="text-sm text-white/40">Loading…</p>
-        ) : dateGroups.length === 0 ? (
+        ) : visibleFixtures.length === 0 ? (
           <p className="text-sm text-white/40">
             {showPastGames
               ? 'No fixtures with hospitality access yet - click a fixture’s hospitality link on the Fixtures or Cup page to add one.'
               : 'No upcoming fixtures with hospitality access - try "Show past games", or click a fixture’s hospitality link on the Fixtures or Cup page to add one.'}
           </p>
+        ) : groupBy === 'matchday' ? (
+          <div className="flex flex-col gap-6">
+            {matchdayGroups.map((group) => (
+              <div key={group.key} className="flex flex-col gap-2">
+                <h2 className="text-xs font-bold uppercase tracking-wide text-white/50">{group.label}</h2>
+                {group.fixtures.map(renderFixtureRow)}
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="flex flex-col gap-6">
             {dateGroups.map(({ date, competitionGroups }) => (
@@ -814,44 +983,7 @@ export default function HospitalityPage() {
                 {competitionGroups.map(({ slug, label, fixtures }) => (
                   <div key={slug} className="flex flex-col gap-2">
                     <h3 className="text-[10px] font-bold uppercase tracking-wide text-[#1fd8c9]">{label}</h3>
-                    {fixtures.map((f) => {
-                      const expanded = expandedFixtureIds.includes(f.id);
-                      const fixtureGuests = guestsForFixture(f.id);
-                      // Only a match let in purely via the one-off override
-                      // (not a real team-level ticket deal) gets an undo
-                      // control - computed once, shared by the row's own
-                      // "×" and the expanded card's "Remove access".
-                      const isOverrideOnly = !f.home.ticketsAvailable && Boolean(f.hospitalityOverride);
-                      return (
-                        <div key={`${f.competition}-${f.id}`} id={`hospitality-fixture-${f.competition}-${f.id}`} className="flex flex-col gap-2">
-                          <FixtureListRow
-                            fixture={f}
-                            expanded={expanded}
-                            onToggle={() => toggleExpanded(f.id)}
-                            guestCount={fixtureGuests.length}
-                            highlighted={highlightFixtureId === f.id}
-                            isOverrideOnly={isOverrideOnly}
-                            onRemoveOverride={() => handleDisableOverride(f)}
-                          />
-                          {expanded && (
-                            <MatchGuestSection
-                              fixture={f}
-                              competitions={competitions}
-                              clubsBySlug={clubsBySlug}
-                              guestSources={guestSources}
-                              guests={fixtureGuests}
-                              allGuests={guests}
-                              session={session}
-                              addGuest={addGuest}
-                              updateGuest={updateGuest}
-                              removeGuest={removeGuest}
-                              isOverrideOnly={isOverrideOnly}
-                              onRemoveOverride={() => handleDisableOverride(f)}
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
+                    {fixtures.map(renderFixtureRow)}
                   </div>
                 ))}
               </div>
