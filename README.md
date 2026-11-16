@@ -605,33 +605,38 @@ rows to start:
   own `fixedMatchDate`/`fixedKickoffTime` detect and convert the same way
   for a guest row.
 
-  This isn't just an old-data problem: the `hospitalityGuests` tab's
-  `matchDate`/`kickoffTime` **columns** carry an inherited Date/Time number
-  format (from however their very first rows were created), and that
-  format keeps re-coercing any later write of a clean `"YYYY-MM-DD"`/
-  `"HH:MM"` string straight back into a numeric serial - `valueInputOption=
-  RAW` stops Sheets parsing a value as a formula or as a locale-specific
-  number, but does **not** stop an already-date/time-formatted cell
-  reinterpreting a date/time-shaped string the same way typing it into that
-  cell by hand would, so even a brand new guest row added right now through
-  the normal "add guest" flow can still come out with a numeric serial.
-  Fixing the value alone, however carefully, can never outlast that - the
-  column's own format has to change first (`forceTextColumns` in
-  `sheetTab.js`, invoked as `fixColumnFormats` in the Hospitality page: a
-  `spreadsheets.batchUpdate` `repeatCell` request setting
-  `userEnteredFormat.numberFormat.type` to `TEXT` on the whole column, idle
-  to call more than once). The Hospitality page shows a one-off "Fix now"
-  banner (only while such rows exist) that sets both columns to Plain text
-  first, then repairs whichever of the two problems a row actually has and
-  rewrites it in place - fixing the column format here also protects every
-  future row the normal "add guest" flow writes, not just this batch. The
-  value-level repair writes the whole batch as one Sheets request (chunked
-  at 200 rows) rather than one request per row - a few-hundred-row batch
-  sent as individual requests reliably trips Sheets' own per-minute write
-  quota partway through, failing the back half with no obvious cause - then
-  re-reads the tab afterwards and reports how many rows are actually fixed
-  in the sheet itself, rather than trusting that a write call not throwing
-  means it stuck.
+  This isn't just an old-data problem: writing `matchDate`/`kickoffTime` to
+  `hospitalityGuests` via plain `valueInputOption=RAW` still came out
+  numeric for a *brand new* guest row added right now through the normal
+  "add guest" flow, confirmed by reading `userEnteredValue` straight off the
+  live cell - Sheets had recorded the value itself as a number, not RAW
+  honoring the literal string as documented. Changing the column's own
+  number format to Plain text (tried first, via a `repeatCell` request)
+  didn't stop it either. What does: write the value as a quoted formula
+  (`="2026-11-16"`) via `USER_ENTERED` instead of a literal via `RAW` - a
+  formula's result type is exactly what the formula says it is, so Sheets
+  has nothing left to "helpfully" reinterpret, unlike a bare literal value.
+  This is the same trick already used for an `=IMAGE("url")` field (see
+  `imageFormulaFields` below); `textFormulaFields` in `sheetTab.js` is the
+  generalized version, configured for `matchDate`/`kickoffTime` in
+  `hospitalityGuests.js`. `appendRow` keeps every *other* field as a plain
+  RAW write for the row's main insert and only sends the formula fields as
+  a small separate follow-up call - switching the whole row to
+  `USER_ENTERED` would let a leading `=` in some unrelated field (a name, a
+  handle) get evaluated as a real formula instead of staying literal text.
+
+  The Hospitality page shows a one-off "Fix now" banner (only while such
+  rows exist) that repairs whichever of the two problems (slug vs. name,
+  numeric vs. text) a row actually has and rewrites it in place, as the
+  same formula write described above, so it's no more vulnerable to being
+  silently reverted than a brand new row's own write is. The repair writes
+  the whole batch as one Sheets request (chunked at 200 rows) rather than
+  one request per row - a few-hundred-row batch sent as individual requests
+  reliably trips Sheets' own per-minute write quota partway through,
+  failing the back half with no obvious cause - then re-reads the tab
+  afterwards and reports how many rows are actually fixed in the sheet
+  itself, rather than trusting that a write call not throwing means it
+  stuck.
 - `provinceOfBirth`/`cityOfBirth` and `provinceOfResidence`/`cityOfResidence`
   are only ever filled in when the corresponding nation is Italy - blank
   otherwise, since a comune/province pair only exists for a genuinely

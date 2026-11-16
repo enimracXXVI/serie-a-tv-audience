@@ -11,6 +11,13 @@ const client = createSheetTabClient({
   idField: 'id',
   autoIncrementId: true,
   numericFields: ['id', 'matchday', 'fixtureId'],
+  // matchDate/kickoffTime are written as ="..." formulas, not literal RAW
+  // text - confirmed directly against this spreadsheet that Sheets still
+  // re-interprets a RAW-submitted "YYYY-MM-DD"/"HH:MM" string as a numeric
+  // date/time serial despite RAW's documented "stored as-is" behavior, so
+  // only a formula's unambiguous string result actually survives (see
+  // textFormulaFields in sheetTab.js).
+  textFormulaFields: ['matchDate', 'kickoffTime'],
 });
 
 export const fetchHospitalityGuests = client.fetchAll;

@@ -18,6 +18,19 @@ export function createSheetTabClient({
   numericFields = [],
   booleanFields = [],
   imageFormulaFields = [],
+  // A field whose value can look like a date/number (an ISO date, a plain
+  // decimal) needs to go in as a formula, not a literal - valueInputOption
+  // RAW is documented to store a value "as-is", but empirically Sheets
+  // still re-interprets a RAW-submitted date/time-shaped STRING back into
+  // a numeric serial (confirmed directly against this spreadsheet: a
+  // freshly-written "2026-11-16" came back with userEnteredValue.numberValue
+  // set, i.e. Sheets itself decided it was a number, not RAW honoring the
+  // literal string). A quoted formula's result type is unambiguous - Sheets
+  // can't reinterpret the STRING RESULT of `="2026-11-16"` as a date the
+  // way it reinterprets a literal value - so a field listed here is always
+  // written as that formula via USER_ENTERED instead, the same trick
+  // already used for imageFormulaFields.
+  textFormulaFields = [],
   // A tab keyed by a natural key (slug, label, ...) can still carry its own
   // separate bookkeeping "id" column for the user's own reference (see
   // README) - set this to that column's name (almost always 'id') to have a
@@ -29,6 +42,7 @@ export function createSheetTabClient({
   const NUMERIC_FIELDS = new Set(numericFields);
   const BOOLEAN_FIELDS = new Set(booleanFields);
   const IMAGE_FORMULA_FIELDS = new Set(imageFormulaFields);
+  const TEXT_FORMULA_FIELDS = new Set(textFormulaFields);
   // Unbounded column width - a fixed column-letter cap silently truncates
   // the header read once a tab grows past that column (see fetchFixtures in
   // sheets.js, which hit exactly this with a 34+ column fixtures tab).
@@ -56,6 +70,13 @@ export function createSheetTabClient({
     const match = trimmed.match(/^=image\(\s*"([^"]*)"/i);
     if (match) return match[1] || null;
     return trimmed || null;
+  }
+
+  // The formula result is the literal text between the quotes, exactly as
+  // UNFORMATTED_VALUE would hand back a plain string cell - no second
+  // FORMULA-mode read needed on read-back, unlike imageFormulaFields.
+  function textFormula(value) {
+    return `="${String(value).replace(/"/g, '""')}"`;
   }
 
   function rowToItem(row, headerIndex) {
@@ -160,6 +181,8 @@ export function createSheetTabClient({
         const url = fields[field];
         const value = url ? `=IMAGE("${String(url).replace(/"/g, '""')}")` : '';
         formulaData.push({ range, majorDimension: 'ROWS', values: [[value]] });
+      } else if (TEXT_FORMULA_FIELDS.has(field) && fields[field]) {
+        formulaData.push({ range, majorDimension: 'ROWS', values: [[textFormula(fields[field])]] });
       } else {
         rawData.push({ range, majorDimension: 'ROWS', values: [[fields[field] ?? '']] });
       }
@@ -295,6 +318,14 @@ export function createSheetTabClient({
     const maxIdx = Math.max(...Object.values(headerIndexCache));
     const row = new Array(maxIdx + 1).fill('');
     const missing = [];
+    // A text-formula field is left blank in this row and written in a
+    // separate, surgical follow-up call below instead of inline here -
+    // append only supports one valueInputOption for the WHOLE row, and
+    // switching that to USER_ENTERED for every field (rather than just
+    // image-formula ones, as before) would let a leading "=" in any other
+    // field - a name, a handle, an email - get evaluated as a real formula
+    // instead of staying literal text.
+    const textFormulaFollowUps = {};
     for (const [key, value] of Object.entries(allFields)) {
       const idx = headerIndexCache[key];
       if (idx === undefined) {
@@ -303,6 +334,8 @@ export function createSheetTabClient({
       }
       if (IMAGE_FORMULA_FIELDS.has(key)) {
         row[idx] = value ? `=IMAGE("${String(value).replace(/"/g, '""')}")` : '';
+      } else if (TEXT_FORMULA_FIELDS.has(key) && value) {
+        textFormulaFollowUps[key] = value;
       } else {
         row[idx] = value ?? '';
       }
@@ -332,7 +365,13 @@ export function createSheetTabClient({
     // rowIndexCache wouldn't know this row's number until the next fetchAll,
     // and editing another field on it in the same session (before a reload)
     // would fail with "data has not loaded yet" even though it just saved.
-    rowIndexCache[allFields[idField]] = current.length + 2;
+    const newRowNumber = current.length + 2;
+    rowIndexCache[allFields[idField]] = newRowNumber;
+
+    if (Object.keys(textFormulaFollowUps).length > 0) {
+      const { formulaData } = buildWriteBatches(newRowNumber, textFormulaFollowUps);
+      await postBatchUpdate('USER_ENTERED', formulaData, accessToken);
+    }
 
     return { id: allFields[idField], item: allFields };
   }
