@@ -210,7 +210,7 @@ function FixtureListRow({ fixture, expanded, onToggle, guestCount, highlighted, 
             disabled={removing}
             title="Remove this one-off hospitality access - this match has no standing ticket deal"
             aria-label="Remove hospitality access for this match"
-            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-red-200 text-xs font-bold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-5 w-5 shrink-0 self-center items-center justify-center rounded-full border border-red-200 text-xs font-bold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             ×
           </button>
