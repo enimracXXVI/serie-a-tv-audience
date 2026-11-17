@@ -46,6 +46,24 @@ function formatShortDate(dateStr) {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 }
 
+// A competition's logo is set up for sitting on white (the fixture cards,
+// the Cups page's own white-ish layout) - some, like the Champions League
+// ball, are mostly dark/navy art and all but disappear directly on this
+// page's own dark navy header background. Wrapping it in its own small
+// white chip guarantees contrast no matter the logo's own colours, rather
+// than hoping every competition's art happens to read fine on dark.
+function CompetitionLogo({ src, size = 16 }) {
+  if (!src) return null;
+  return (
+    <span
+      className="flex shrink-0 items-center justify-center rounded bg-white p-0.5"
+      style={{ height: size + 4 }}
+    >
+      <img src={src} alt="" className="max-w-[40px] object-contain" style={{ height: size }} />
+    </span>
+  );
+}
+
 // A guest row's matchDate/kickoffTime are copied in from the fixture at the
 // moment the guest is added, then never looked up live again - so if that
 // fixture's own date/kickoffTime cell was ever a raw Excel/Sheets serial
@@ -160,12 +178,13 @@ function FixtureListRow({ fixture, expanded, onToggle, guestCount, highlighted, 
           >
             ▶
           </span>
-          <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
             <div className="flex min-w-0 items-center gap-1.5">
               <Crest team={fixture.home} size={16} />
               <span className="min-w-0 truncate text-sm font-semibold text-[#0f1e54]">{fixture.home.name}</span>
             </div>
-            <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
+            <span className="hidden shrink-0 text-xs font-normal text-gray-400 sm:inline">vs</span>
+            <div className="flex min-w-0 items-center gap-1.5">
               <Crest team={fixture.away} size={16} />
               <span className="min-w-0 truncate text-sm font-semibold text-[#0f1e54]">{fixture.away.name}</span>
             </div>
@@ -951,7 +970,7 @@ export default function HospitalityPage() {
                     competitionFilter === c.slug ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'
                   }`}
                 >
-                  {c.logoURL && <img src={c.logoURL} alt="" className="h-3.5 max-w-[40px] object-contain" />}
+                  <CompetitionLogo src={c.logoURL} size={14} />
                   {c.label}
                 </button>
               ))}
@@ -990,10 +1009,8 @@ export default function HospitalityPage() {
           <div className="flex flex-col gap-6">
             {matchdayGroups.map((group) => (
               <div key={group.key} className="flex flex-col gap-2">
-                <h2 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-white/50">
-                  {group.competitionLogoURL && (
-                    <img src={group.competitionLogoURL} alt="" className="h-4 max-w-[48px] object-contain" />
-                  )}
+                <h2 className="flex w-fit items-center gap-1.5 rounded-full bg-white/10 py-1 pl-1.5 pr-3 text-xs font-bold uppercase tracking-wide text-white/70">
+                  <CompetitionLogo src={group.competitionLogoURL} />
                   {group.competitionLabel}
                   <span className="text-white/30">—</span>
                   {group.unitLabel}
@@ -1009,8 +1026,8 @@ export default function HospitalityPage() {
                 <h2 className="text-xs font-bold uppercase tracking-wide text-white/50">{formatDateHeading(date)}</h2>
                 {competitionGroups.map(({ slug, label, logoURL, fixtures }) => (
                   <div key={slug} className="flex flex-col gap-2">
-                    <h3 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-[#1fd8c9]">
-                      {logoURL && <img src={logoURL} alt="" className="h-3.5 max-w-[40px] object-contain" />}
+                    <h3 className="flex w-fit items-center gap-1.5 rounded-full bg-[#1fd8c9]/10 py-1 pl-1.5 pr-3 text-[10px] font-bold uppercase tracking-wide text-[#1fd8c9]">
+                      <CompetitionLogo src={logoURL} size={14} />
                       {label}
                     </h3>
                     {fixtures.map(renderFixtureRow)}
